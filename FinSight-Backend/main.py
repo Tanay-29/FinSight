@@ -1,10 +1,21 @@
+import os
+from dotenv import load_dotenv
+import json
+import yfinance as yf
 from flask import Flask, jsonify
 from flask_cors import CORS
-import yfinance as yf
+from google import genai
+
+# Load the hidden variables from the .env file
+load_dotenv()
 
 app = Flask(__name__)
 # This allows your React Native app to talk to Flask safely
 CORS(app) 
+
+# --- AI CONFIGURATION ---
+# The new client automatically picks up GEMINI_API_KEY from your .env file
+client = genai.Client()
 
 # Yahoo Finance Tickers mapped to your UI
 TICKERS = {
@@ -14,50 +25,7 @@ TICKERS = {
     "INR=X": "USD/INR"
 }
 
-# --- HINGLISH INSIGHT DATABASE ---
-INSIGHT_TEMPLATES = {
-    "NIFTY 50": {
-        "up": {
-            "title": "Why is NIFTY 50 up today?",
-            "text": "Market sentiment positive hai! Jab top 50 companies grow karti hain, index upar jata hai. Think of it like a school's average grade going up because the top students scored well. Great day for equity investors!"
-        },
-        "down": {
-            "title": "Why did NIFTY 50 dip?",
-            "text": "Market mein thodi profit booking ho rahi hai. Log apne profits nikal rahe hain. Ghabrane ki baat nahi, for long-term investors, market dips are often good buying opportunities."
-        }
-    },
-    "GOLD (Futures)": {
-        "up": {
-            "title": "Why did gold prices jump today?",
-            "text": "Gold prices surged! Jab equity market volatile hota hai, gold becomes a safe haven. Think of it like this: if your savings account gives less interest, you prefer buying gold instead. Global uncertainty bhi gold demand push karti hai."
-        },
-        "down": {
-            "title": "Why is gold falling?",
-            "text": "Gold prices dipped slightly. Jab stock markets strong perform karte hain, investors gold se paisa nikal kar companies mein invest karte hain for better returns."
-        }
-    },
-    "SENSEX": {
-         "up": {
-            "title": "Sensex is in the green!",
-            "text": "BSE Sensex upar hai! Major sectors like IT and Banking acha perform kar rahe hain. Economy ke liye yeh ek strong positive signal hai."
-        },
-        "down": {
-            "title": "Sensex is seeing a correction",
-            "text": "Market thoda thanda pad raha hai aaj. Sometimes markets need to cool down after a rally. Consistency is key, keep your SIPs running!"
-        }
-    },
-    "USD/INR": {
-         "up": {
-            "title": "Why is the Dollar getting stronger?",
-            "text": "Rupee thoda weak hua hai against the Dollar. Imports mehange ho sakte hain, but our IT and pharma exports will actually benefit from this!"
-        },
-        "down": {
-            "title": "Rupee is gaining strength!",
-            "text": "Dollar ke mukable Rupee strong hua hai. Good news for the Indian economy as importing oil and electronics becomes slightly cheaper."
-        }
-    }
-}
-
+# --- 1. MARKET PULSE ROUTE (Kept exactly as you had it!) ---
 @app.route('/api/market-pulse', methods=['GET'])
 def get_market_pulse():
     try:
@@ -69,7 +37,6 @@ def get_market_pulse():
         
         for symbol, name in TICKERS.items():
             info = data.tickers[symbol].fast_info
-            
             current_price = info.last_price
             prev_close = info.previous_close
             change_percent = ((current_price - prev_close) / prev_close) * 100
@@ -86,50 +53,64 @@ def get_market_pulse():
         return jsonify(market_data)
 
     except Exception as e:
-        # Returns a 500 error code if Yahoo Finance is down
         return jsonify({"error": f"Failed to fetch market data: {str(e)}"}), 500
 
+
+# --- 2. THE NEW GEMINI AI INSIGHTS ROUTE ---
 @app.route('/api/market-insight', methods=['GET'])
 def get_market_insight():
     try:
+        # Step A: Fetch current market data to feed the AI context
         tickers_str = " ".join(TICKERS.keys())
         data = yf.Tickers(tickers_str)
         
-        insights_list = []
-        
+        market_summary = []
         for symbol, name in TICKERS.items():
             info = data.tickers[symbol].fast_info
-            current_price = info.last_price
-            prev_close = info.previous_close
-            change_percent = ((current_price - prev_close) / prev_close) * 100
+            change_percent = ((info.last_price - info.previous_close) / info.previous_close) * 100
+            direction = "up" if change_percent >= 0 else "down"
+            market_summary.append(f"{name} is {direction} by {abs(change_percent):.2f}%")
             
-            trend = "up" if change_percent >= 0 else "down"
-            
-            # Fetch the corresponding Hinglish explanation
-            insight_data = INSIGHT_TEMPLATES.get(name, {}).get(trend, {
-                "title": f"Movement in {name}",
-                "text": f"{name} is seeing significant movement today at {abs(change_percent):.2f}%. Keep an eye on market trends!"
-            })
-            
-            # Attach an absolute change value so we can sort them mathematically
-            insight_data['abs_change'] = abs(change_percent)
-            insights_list.append(insight_data)
-            
-        # Sort the list from biggest movers to smallest movers (Descending order)
-        insights_list.sort(key=lambda x: x['abs_change'], reverse=True)
+        summary_str = ", ".join(market_summary)
+
+        # Step B: Give Gemini the live data and strict instructions
+        prompt = f"""
+        You are 'FinSight AI', a friendly financial mentor for Indian college students.
+        Here is today's live market data: {summary_str}.
+
+        Pick the 2 most interesting market movements from that list and write a short, engaging insight for each.
+        Return ONLY a valid JSON array containing exactly 2 objects.
+        Each object MUST have exactly these two keys:
+        1. "title": A short question or statement (e.g., "Why is NIFTY 50 up today?")
+        2. "text": 2-3 sentences explaining the movement in simple Hinglish (a mix of Hindi and English), plus a quick takeaway for a beginner investor.
+
+        Do NOT wrap the output in ```json markdown blocks. Return only the raw JSON array.
+        """
+
+        # Step C: Generate content using the new client syntax
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        ai_response_text = response.text.strip()
         
-        # Clean up the extra math variable and grab the top 3
-        top_3_insights = []
-        for item in insights_list[:3]:
-            del item['abs_change']
-            top_3_insights.append(item)
-            
-        # Return the LIST of top 3 insights
-        return jsonify(top_3_insights)
+        # Step D: Clean up formatting just in case Gemini tries to add markdown
+        if ai_response_text.startswith("```json"):
+            ai_response_text = ai_response_text[7:-3].strip()
+        elif ai_response_text.startswith("```"):
+            ai_response_text = ai_response_text[3:-3].strip()
+
+        # Step E: Send it to the React Native app!
+        insight_data = json.loads(ai_response_text)
+        return jsonify(insight_data)
 
     except Exception as e:
-        return jsonify({"error": f"Failed to generate insight: {str(e)}"}), 500
-    
+        print(f"Error generating AI insight: {e}")
+        # If API limit is reached or internet drops, send a polite fallback array
+        return jsonify([{
+            "title": "AI is taking a nap 💤",
+            "text": "Market data process nahi ho pa raha hai. Please check your connection or try again in a minute!"
+        }])
+
 if __name__ == '__main__':
-    # 0.0.0.0 allows your phone to connect over Wi-Fi
     app.run(host='0.0.0.0', port=8000)

@@ -1,0 +1,15 @@
+# Security: Never commit environment variables or secrets
+.env
+
+# Virtual Environments: Too large and user-specific to commit
+venv/
+env/
+
+# Python Cache: Automatically generated, no need to save
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Mac OS specific (if you or teammates use a Mac)
+.DS_Store
