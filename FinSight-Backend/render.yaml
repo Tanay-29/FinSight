@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: finsight-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false   # You will paste this manually in the Render dashboard
