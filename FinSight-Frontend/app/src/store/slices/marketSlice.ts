@@ -5,7 +5,7 @@ export const fetchMarketData = createAsyncThunk(
   'market/fetchMarketPulse',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('http://192.168.0.208:8000/api/market-pulse');
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/market-pulse`);
       if (!response.ok) throw new Error('Failed to fetch from backend');
       return await response.json();
     } catch (error: any) {
@@ -19,7 +19,7 @@ export const fetchMarketInsight = createAsyncThunk(
   'market/fetchMarketInsight',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('http://192.168.0.208:8000/api/market-insight');
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/market-insight`);
       if (!response.ok) throw new Error('Failed to fetch insight');
       return await response.json();
     } catch (error: any) {

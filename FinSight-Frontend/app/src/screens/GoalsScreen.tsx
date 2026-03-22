@@ -22,6 +22,7 @@ import {
 } from '../store/slices/goalsSlice';
 import { FirestoreGoal } from '../services/firestoreService';
 import { differenceInDays, format, parseISO } from 'date-fns';
+import { useNavigation } from '@react-navigation/native';
 
 // ─── Goal Card ────────────────────────────────────────────────
 
@@ -470,7 +471,10 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
 
 export const GoalsScreen: React.FC = () => {
     const dispatch = useAppDispatch();
+    const navigation = useNavigation();
     const { items: goals, loading, error } = useAppSelector((state) => state.goals);
+    const { user } = useAppSelector((state) => state.auth);
+    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
 
     const [addModalVisible, setAddModalVisible] = useState(false);
     const [depositModalVisible, setDepositModalVisible] = useState(false);
@@ -537,7 +541,16 @@ export const GoalsScreen: React.FC = () => {
                             Track and grow your financial dreams
                         </Text>
                     </View>
-                    {loading && <ActivityIndicator size="small" color="#6366F1" />}
+                    <View className="flex-row items-center gap-3">
+                        {loading && <ActivityIndicator size="small" color="#6366F1" />}
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Profile' as never)}
+                            activeOpacity={0.8}
+                            className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                        >
+                            <Text className="text-white font-bold text-base">{userInitial}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Summary Banner (only if goals exist) */}

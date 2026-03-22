@@ -11,6 +11,8 @@ export const LearnScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const dispatch = useAppDispatch();
     const learningPaths = useAppSelector((state) => state.learning.paths);
+    const { user } = useAppSelector((state) => state.auth);
+    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
     const [searchQuery, setSearchQuery] = useState('');
     const [showGlossary, setShowGlossary] = useState(false);
 
@@ -36,11 +38,20 @@ export const LearnScreen: React.FC = () => {
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Header */}
-                <View className="px-4 pt-4 pb-2">
-                    <Text className="text-2xl font-bold text-text-primary">Learning Hub</Text>
-                    <Text className="text-sm text-text-secondary">
-                        Build your financial knowledge, one module at a time
-                    </Text>
+                <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
+                    <View>
+                        <Text className="text-2xl font-bold text-text-primary">Learning Hub</Text>
+                        <Text className="text-sm text-text-secondary">
+                            Build your financial knowledge, one module at a time
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Profile' as never)}
+                        activeOpacity={0.8}
+                        className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                    >
+                        <Text className="text-white font-bold text-base">{userInitial}</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Tab Toggle */}

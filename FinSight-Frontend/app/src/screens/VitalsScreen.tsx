@@ -43,11 +43,13 @@ const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: 
                 return (
                     <React.Fragment key={item.name}>
                         <Rect x={x} y={y} width={barWidth} height={barHeight} rx={6} fill={item.color} />
-                        <SvgText x={x + barWidth / 2} y={y - 6} textAnchor="middle" fontSize={11} fill="#111827">
-                            ₹{item.amount.toLocaleString('en-IN')}
+                        <SvgText x={x + barWidth / 2} y={y - 6} textAnchor="middle" fontSize={10} fill="#374151" fontWeight="600">
+                            {item.amount >= 1000
+                                ? `${(item.amount / 1000).toFixed(1)}k`
+                                : `${item.amount}`}
                         </SvgText>
                         <SvgText x={x + barWidth / 2} y={chartHeight + 16} textAnchor="middle" fontSize={9} fill="#9CA3AF">
-                            {item.name.substring(0, 4)}
+                            {item.name.substring(0, 6)}
                         </SvgText>
                     </React.Fragment>
                 );
@@ -241,6 +243,8 @@ export const VitalsScreen: React.FC = () => {
     const { items: budgets, loading: budgetsLoading } = useAppSelector((state) => state.budgets);
     const transactions = useAppSelector((state) => state.transactions.items);
     const goals = useAppSelector((state: any) => state.goals?.items || []); 
+    const { user } = useAppSelector((state) => state.auth);
+    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
 
     const currentMonthKey = format(new Date(), 'yyyy-MM');
     const [selectedBudget, setSelectedBudget] = React.useState<any>(null);
@@ -334,7 +338,16 @@ export const VitalsScreen: React.FC = () => {
                         <Text className="text-2xl font-bold text-text-primary">Financial Vitals</Text>
                         <Text className="text-sm text-text-secondary">{format(new Date(), 'MMMM yyyy')}</Text>
                     </View>
-                    {budgetsLoading && <ActivityIndicator size="small" color="#6366F1" />}
+                    <View className="flex-row items-center gap-3">
+                        {budgetsLoading && <ActivityIndicator size="small" color="#6366F1" />}
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Profile' as never)}
+                            activeOpacity={0.8}
+                            className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                        >
+                        <Text className="text-white font-bold text-base">{userInitial}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Daily/Weekly Spending Pulse */}
