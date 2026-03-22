@@ -4,7 +4,6 @@ import { FeedScreen } from '../screens/FeedScreen';
 import { VitalsScreen } from '../screens/VitalsScreen';
 import { LearnScreen } from '../screens/LearnScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
 import { COLORS } from '../theme/tokens';
 import { View, Text, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,13 +69,6 @@ export const BottomTabs: React.FC = () => {
                 options={{
                     tabBarLabel: 'Learn',
                     tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" focused={focused} />,
-                }}
-            />
-            <Tab.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{
-                    tabBarButton: () => null,
                 }}
             />
         </Tab.Navigator>

@@ -11,6 +11,7 @@ import type { RootState } from '../store/store';
 import LoginScreen from '../screens/LoginScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import { LearnPathDetailScreen } from '../screens/LearnPathDetailScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
 
 const Stack = createNativeStackNavigator();
@@ -61,7 +62,13 @@ export const RootNavigator = () => {
                         component={LearnPathDetailScreen}
                         options={{ presentation: 'card', headerShown: false }}
                     />
+                    <Stack.Screen
+                        name="Profile"
+                        component={ProfileScreen}
+                        options={{ presentation: 'card', headerShown: false }}
+                    />
                 </Stack.Group>
+
             ) : (
                 // Unauthenticated Stack
                 <Stack.Screen name="Login" component={LoginScreen} />
