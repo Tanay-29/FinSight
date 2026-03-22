@@ -137,13 +137,25 @@ export const FeedScreen: React.FC = () => {
                 }
             >
                 {/* Greeting Header */}
-                <View className="px-4 pt-4 pb-2">
-                    <Text className="text-2xl font-bold text-text-primary">
-                        {greeting}, {displayName} 👋
-                    </Text>
-                    <Text className="text-sm text-text-secondary">
-                        {format(today, 'EEEE, MMMM d')}
-                    </Text>
+                <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
+                    <View>
+                        <Text className="text-2xl font-bold text-text-primary">
+                            {greeting}, {displayName} 👋
+                        </Text>
+                        <Text className="text-sm text-text-secondary">
+                            {format(today, 'EEEE, MMMM d')}
+                        </Text>
+                    </View>
+                    {/* Profile Avatar — top-right */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Profile' as never)}
+                        activeOpacity={0.8}
+                        className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                    >
+                        <Text className="text-white font-bold text-base">
+                            {displayName.charAt(0).toUpperCase()}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Market Pulse (Now completely decoupled from FeedScreen props!) */}

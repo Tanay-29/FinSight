@@ -35,7 +35,7 @@ export const BottomTabs: React.FC = () => {
                     paddingBottom: (Platform.OS === 'ios' ? 25 : 10) + insets.bottom,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: '600',
                 },
             }}
@@ -76,8 +76,7 @@ export const BottomTabs: React.FC = () => {
                 name="Profile"
                 component={ProfileScreen}
                 options={{
-                    tabBarLabel: 'Profile',
-                    tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+                    tabBarButton: () => null,
                 }}
             />
         </Tab.Navigator>

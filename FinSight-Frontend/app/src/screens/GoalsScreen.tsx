@@ -49,7 +49,7 @@ const GoalCard: React.FC<{
 
     return (
         <View
-            className="bg-white border border-border rounded-xl p-4"
+            className="bg-white border border-border rounded-xl p-4 mx-4 mb-3"
         >
             {/* Header */}
             <View className="flex-row items-center justify-between mb-3">
@@ -531,7 +531,7 @@ export const GoalsScreen: React.FC = () => {
                 <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
                     <View>
                         <Text className="text-2xl font-bold text-text-primary">
-                            Savings Goals 🎯
+                            Savings Goals
                         </Text>
                         <Text className="text-sm text-text-secondary">
                             Track and grow your financial dreams

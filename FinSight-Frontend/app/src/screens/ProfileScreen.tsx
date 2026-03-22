@@ -21,7 +21,7 @@ export const ProfileScreen: React.FC = () => {
             >
                 {/* Header */}
                 <View className="px-4 pt-4 pb-2">
-                    <Text className="text-2xl font-bold text-text-primary">Profile 👤</Text>
+                    <Text className="text-2xl font-bold text-text-primary">Profile</Text>
                 </View>
 
                 {/* User Card */}

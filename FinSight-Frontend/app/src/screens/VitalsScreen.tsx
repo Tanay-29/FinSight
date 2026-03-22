@@ -331,14 +331,14 @@ export const VitalsScreen: React.FC = () => {
                 {/* Header */}
                 <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
                     <View>
-                        <Text className="text-2xl font-bold text-text-primary">Financial Vitals 📊</Text>
+                        <Text className="text-2xl font-bold text-text-primary">Financial Vitals</Text>
                         <Text className="text-sm text-text-secondary">{format(new Date(), 'MMMM yyyy')}</Text>
                     </View>
                     {budgetsLoading && <ActivityIndicator size="small" color="#6366F1" />}
                 </View>
 
                 {/* Daily/Weekly Spending Pulse */}
-                <View className="mx-4 mt-3 flex-row justify-between space-x-4">
+                <View className="mx-4 mt-3 flex-row justify-between gap-3">
                     <View className="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
                         <Text className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Spent Today</Text>
                         <Text className="text-xl font-bold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>

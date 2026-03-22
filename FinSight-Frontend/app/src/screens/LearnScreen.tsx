@@ -37,7 +37,7 @@ export const LearnScreen: React.FC = () => {
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View className="px-4 pt-4 pb-2">
-                    <Text className="text-2xl font-bold text-text-primary">Learning Hub 🎓</Text>
+                    <Text className="text-2xl font-bold text-text-primary">Learning Hub</Text>
                     <Text className="text-sm text-text-secondary">
                         Build your financial knowledge, one module at a time
                     </Text>
