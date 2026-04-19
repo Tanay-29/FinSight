@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
@@ -13,6 +12,8 @@ import AddTransactionScreen from '../screens/AddTransactionScreen';
 import { LearnPathDetailScreen } from '../screens/LearnPathDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
+// 1. IMPORT YOUR NEW ONBOARDING SCREEN
+import OnboardingScreen from '../screens/OnboardingScreen'; 
 
 const Stack = createNativeStackNavigator();
 
@@ -22,7 +23,6 @@ export const RootNavigator = () => {
 
     // Listen for Firebase Auth changes
     useEffect(() => {
-        // Subscribe to auth state changes
         const unsubscribe = onAuthChange((firebaseUser) => {
             if (firebaseUser) {
                 dispatch(setUser({
@@ -51,6 +51,9 @@ export const RootNavigator = () => {
             {user ? (
                 // Authenticated Stack
                 <Stack.Group>
+                    {/* 2. ADDED ONBOARDING HERE (Putting it first makes it the initial screen when logged in!) */}
+                    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+                    
                     <Stack.Screen name="MainTabs" component={BottomTabs} />
                     <Stack.Screen
                         name="AddTransaction"
