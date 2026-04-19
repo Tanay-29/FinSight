@@ -26,11 +26,17 @@ import { useNavigation } from '@react-navigation/native';
 
 // ─── Goal Card ────────────────────────────────────────────────
 
+// ─── Goal Card ────────────────────────────────────────────────
+
 const GoalCard: React.FC<{
     goal: FirestoreGoal;
     onDeposit: (goal: FirestoreGoal) => void;
     onDelete: (goalId: string) => void;
 }> = ({ goal, onDeposit, onDelete }) => {
+    
+    // NEW: We need navigation inside the card to route to Accelerate
+    const navigation = useNavigation();
+
     const progress = Math.min((goal.savedAmount / goal.targetAmount) * 100, 100);
     const remaining = goal.targetAmount - goal.savedAmount;
     const isComplete = progress >= 100;
@@ -41,17 +47,13 @@ const GoalCard: React.FC<{
             : daysLeft === 0
                 ? 'Due today'
                 : `${daysLeft}d left`;
-
-    // Monthly savings needed to hit goal
     const monthlySuggestion =
         daysLeft > 0 && remaining > 0
             ? Math.ceil(remaining / Math.max(Math.ceil(daysLeft / 30), 1))
             : 0;
 
     return (
-        <View
-            className="bg-white border border-border rounded-xl p-4 mx-4 mb-3"
-        >
+        <View className="bg-white border border-border rounded-xl p-4 mx-4 mb-3">
             {/* Header */}
             <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center flex-1">
@@ -141,18 +143,29 @@ const GoalCard: React.FC<{
                 </View>
             )}
 
-            {/* Action button */}
+            {/* Action buttons */}
             {!isComplete ? (
-                <TouchableOpacity
-                    className="rounded-xl py-2.5 items-center"
-                    style={{ backgroundColor: goal.color }}
-                    onPress={() => onDeposit(goal)}
-                    activeOpacity={0.8}
-                >
-                    <Text className="text-white font-semibold text-sm">
-                        + Add Money
-                    </Text>
-                </TouchableOpacity>
+                <View className="flex-row gap-3">
+                    {/* Standard Add Money Button */}
+                    <TouchableOpacity
+                        className="flex-1 py-2.5 rounded-xl border items-center justify-center"
+                        style={{ borderColor: goal.color, backgroundColor: `${goal.color}10` }}
+                        onPress={() => onDeposit(goal)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={{ color: goal.color }} className="font-bold text-sm">+ Add Money</Text>
+                    </TouchableOpacity>
+
+                    {/* NEW: Accelerate Goal Button */}
+                    <TouchableOpacity 
+                        onPress={() => navigation.navigate('GoalAcceleration' as never)}
+                        className="flex-1 py-2.5 rounded-xl flex-row justify-center items-center shadow-sm"
+                        style={{ backgroundColor: goal.color }}
+                    >
+                        <Text className="text-white font-bold text-sm mr-1">Accelerate</Text>
+                        <Text className="text-white text-sm">⚡</Text>
+                    </TouchableOpacity>
+                </View>
             ) : (
                 <View className="bg-profit-bg rounded-xl py-2.5 items-center flex-row justify-center">
                     <CheckCircle color="#10B981" size={16} />

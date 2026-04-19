@@ -121,7 +121,7 @@ export const FeedScreen: React.FC = () => {
         });
     }, [transactions]);
 
-    return (
+return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'left', 'right']}>
             <ScrollView
                 className="flex-1"
@@ -146,7 +146,6 @@ export const FeedScreen: React.FC = () => {
                             {format(today, 'EEEE, MMMM d')}
                         </Text>
                     </View>
-                    {/* Profile Avatar — top-right */}
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Profile' as never)}
                         activeOpacity={0.8}
@@ -158,10 +157,32 @@ export const FeedScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Market Pulse (Now completely decoupled from FeedScreen props!) */}
+                {/* Market Pulse */}
                 <View className="mt-3">
                     <MarketPulseWidget />
                 </View>
+
+                {/* NEW: Start Investing Entry Point */}
+                <TouchableOpacity 
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('CuratedBasket' as never)}
+                    className="bg-indigo-900 rounded-3xl p-5 mx-4 mt-4 border border-indigo-800 shadow-md flex-row items-center justify-between"
+                >
+                    <View className="flex-1 mr-4">
+                        <Text className="text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">
+                            Build Wealth
+                        </Text>
+                        <Text className="text-white text-lg font-bold mb-1">
+                            Get Your Curated Basket
+                        </Text>
+                        <Text className="text-indigo-200 text-sm">
+                            Based on your risk profile.
+                        </Text>
+                    </View>
+                    <View className="w-12 h-12 bg-indigo-500 rounded-full items-center justify-center">
+                        <Text className="text-white text-xl">→</Text>
+                    </View>
+                </TouchableOpacity>
 
                 {/* EITM Cards Carousel */}
                 <View className="mt-5">
@@ -171,7 +192,6 @@ export const FeedScreen: React.FC = () => {
                         </Text>
                     </View>
 
-                    {/* 4. The Mapping Logic Fix */}
                     {marketLoading && eitmCards.length === 0 ? (
                          <View className="px-4 py-8 items-center justify-center">
                              <Text className="text-sm text-text-secondary">Analyzing Dalal Street...</Text>
@@ -182,7 +202,7 @@ export const FeedScreen: React.FC = () => {
                             showsHorizontalScrollIndicator={false} 
                             contentContainerStyle={{ paddingHorizontal: 16 }}
                             decelerationRate="fast"
-                            snapToInterval={336} // Adjusted for new width (320px + 16px margin)
+                            snapToInterval={336} 
                         >
                             {eitmCards.map((insightItem, index) => (
                                 <EITMCard key={index} insight={insightItem} />
@@ -228,7 +248,6 @@ export const FeedScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            {/* FAB */}
             <TouchableOpacity
                 className="absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
                 onPress={() => navigation.navigate('AddTransaction' as never)}

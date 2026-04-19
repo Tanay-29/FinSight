@@ -7,13 +7,14 @@ import { setUser } from '../store/slices/authSlice';
 import type { RootState } from '../store/store';
 
 // Screens
+import GoalAccelerationScreen from '../screens/GoalAccelerationScreen';
 import LoginScreen from '../screens/LoginScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import { LearnPathDetailScreen } from '../screens/LearnPathDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
-// 1. IMPORT YOUR NEW ONBOARDING SCREEN
 import OnboardingScreen from '../screens/OnboardingScreen'; 
+import CuratedBasketScreen from '../screens/CuratedBasketScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,7 +22,6 @@ export const RootNavigator = () => {
     const dispatch = useDispatch();
     const { user, isLoading } = useSelector((state: RootState) => state.auth);
 
-    // Listen for Firebase Auth changes
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
             if (firebaseUser) {
@@ -37,7 +37,6 @@ export const RootNavigator = () => {
         return unsubscribe;
     }, [dispatch]);
 
-    // Show loading spinner while checking auth state
     if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
@@ -49,12 +48,15 @@ export const RootNavigator = () => {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
-                // Authenticated Stack
                 <Stack.Group>
-                    {/* 2. ADDED ONBOARDING HERE (Putting it first makes it the initial screen when logged in!) */}
+                    {/* 1. MainTabs is FIRST, so it becomes the default home screen */}
+                    <Stack.Screen name="MainTabs" component={BottomTabs} />
+                    
+                    {/* 2. Register standalone screens so we can route to them! */}
+                    <Stack.Screen name="CuratedBasket" component={CuratedBasketScreen} />
+                    <Stack.Screen name="GoalAcceleration" component={GoalAccelerationScreen} />
                     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
                     
-                    <Stack.Screen name="MainTabs" component={BottomTabs} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}
@@ -73,7 +75,6 @@ export const RootNavigator = () => {
                 </Stack.Group>
 
             ) : (
-                // Unauthenticated Stack
                 <Stack.Screen name="Login" component={LoginScreen} />
             )}
         </Stack.Navigator>
