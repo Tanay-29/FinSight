@@ -28,13 +28,14 @@ export async function signUp(
     await createUserProfile(credential.user.uid, {
         name: displayName,
         email,
-        riskProfile: 'moderate',
+        riskProfile: 'moderate',          // temporary default — overwritten by onboarding Step 5
         primaryGoal: 'savings',
         preferences: {
             notifications: true,
             language: 'en-IN',
         },
         createdAt: new Date().toISOString(),
+        onboardingComplete: false,         // ensures new users always go through onboarding first
     });
     return credential.user;
 }

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { signUp, signIn, logOut } from '../../services/authService';
+import { getUserProfile, updateUserProfile, UserProfile } from '../../services/firestoreService';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -11,6 +12,8 @@ interface AuthUser {
 
 interface AuthState {
     user: AuthUser | null;
+    profile: UserProfile | null;
+    profileLoading: boolean;
     isLoading: boolean;
     error: string | null;
     isAuthenticated: boolean;
@@ -18,6 +21,8 @@ interface AuthState {
 
 const initialState: AuthState = {
     user: null,
+    profile: null,
+    profileLoading: false,
     isLoading: false,
     error: null,
     isAuthenticated: false,
@@ -74,6 +79,34 @@ export const logOutUser = createAsyncThunk(
     }
 );
 
+/** Fetch Firestore profile — called after auth state confirms user is logged in */
+export const fetchUserProfile = createAsyncThunk(
+    'auth/fetchUserProfile',
+    async (uid: string, { rejectWithValue }) => {
+        try {
+            return await getUserProfile(uid);
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to load profile');
+        }
+    }
+);
+
+/** Persist onboarding data to Firestore + update Redux profile */
+export const completeOnboarding = createAsyncThunk(
+    'auth/completeOnboarding',
+    async (
+        { uid, data }: { uid: string; data: Partial<UserProfile> },
+        { rejectWithValue }
+    ) => {
+        try {
+            await updateUserProfile(uid, { ...data, onboardingComplete: true });
+            return { ...data, onboardingComplete: true } as Partial<UserProfile>;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to save onboarding data');
+        }
+    }
+);
+
 // ─── Slice ───────────────────────────────────────────────────
 
 const authSlice = createSlice({
@@ -86,6 +119,11 @@ const authSlice = createSlice({
             state.isAuthenticated = action.payload !== null;
             state.isLoading = false;
             state.error = null;
+            // Reset profile when user logs out
+            if (!action.payload) {
+                state.profile = null;
+                state.profileLoading = false;
+            }
         },
         clearError(state) {
             state.error = null;
@@ -125,11 +163,35 @@ const authSlice = createSlice({
             });
 
         // Logout
+        builder.addCase(logOutUser.fulfilled, (state) => {
+            state.user = null;
+            state.profile = null;
+            state.isAuthenticated = false;
+            state.isLoading = false;
+        });
+
+        // Fetch Profile
         builder
-            .addCase(logOutUser.fulfilled, (state) => {
-                state.user = null;
-                state.isAuthenticated = false;
-                state.isLoading = false;
+            .addCase(fetchUserProfile.pending, (state) => {
+                state.profileLoading = true;
+            })
+            .addCase(fetchUserProfile.fulfilled, (state, action) => {
+                state.profileLoading = false;
+                state.profile = action.payload;
+            })
+            .addCase(fetchUserProfile.rejected, (state) => {
+                state.profileLoading = false;
+                // Non-fatal — fall through to onboarding
+            });
+
+        // Complete Onboarding
+        builder
+            .addCase(completeOnboarding.fulfilled, (state, action) => {
+                if (state.profile) {
+                    state.profile = { ...state.profile, ...action.payload };
+                } else {
+                    state.profile = action.payload as UserProfile;
+                }
             });
     },
 });
