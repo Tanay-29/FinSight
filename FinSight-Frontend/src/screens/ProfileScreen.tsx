@@ -1,16 +1,51 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppSelector } from '../store/hooks';
+import {
+    Target, Bell, RefreshCw, Lock, Upload, Info,
+    Trash2, Rocket, ChevronRight,
+} from 'lucide-react-native';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { logOutUser } from '../store/slices/authSlice';
+
+const SettingsRow: React.FC<{
+    icon: React.ReactNode;
+    label: string;
+    onPress?: () => void;
+    rightElement?: React.ReactNode;
+    danger?: boolean;
+}> = ({ icon, label, onPress, rightElement, danger }) => (
+    <TouchableOpacity
+        className="flex-row items-center px-4 py-3.5 border-b border-border"
+        onPress={onPress}
+        activeOpacity={onPress ? 0.7 : 1}
+    >
+        <View className="w-8 h-8 rounded-lg bg-surface-secondary items-center justify-center mr-3">
+            {icon}
+        </View>
+        <Text className={`text-base flex-1 ${danger ? 'text-loss' : 'text-text-primary'}`}>
+            {label}
+        </Text>
+        {rightElement ?? <ChevronRight size={16} color="#9CA3AF" />}
+    </TouchableOpacity>
+);
 
 export const ProfileScreen: React.FC = () => {
     const { user } = useAppSelector((state) => state.auth);
+    const dispatch = useAppDispatch();
     const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
     const [autoTrackingEnabled, setAutoTrackingEnabled] = React.useState(true);
 
     const displayName = user?.displayName || 'Finance User';
     const email = user?.email || 'user@example.com';
     const initial = displayName.charAt(0).toUpperCase();
+
+    const handleLogout = () => {
+        Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign Out', style: 'destructive', onPress: () => dispatch(logOutUser()) },
+        ]);
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
@@ -33,10 +68,11 @@ export const ProfileScreen: React.FC = () => {
                         <View className="flex-1">
                             <Text className="text-xl font-bold text-text-primary">{displayName}</Text>
                             <Text className="text-sm text-text-secondary">{email}</Text>
-                            <View className="flex-row items-center mt-1">
-                                <View className="bg-brand-primary-light/20 rounded-full px-3 py-1">
-                                    <Text className="text-xs font-semibold text-brand-primary">
-                                        Pro Member 🚀
+                            <View className="flex-row items-center mt-1.5">
+                                <View className="bg-brand-primary/10 rounded-full px-3 py-1 flex-row items-center">
+                                    <Rocket size={11} color="#6366F1" />
+                                    <Text className="text-xs font-semibold text-brand-primary ml-1">
+                                        Pro Member
                                     </Text>
                                 </View>
                             </View>
@@ -44,11 +80,11 @@ export const ProfileScreen: React.FC = () => {
                     </View>
                 </View>
 
-                {/* Financial Goal */}
+                {/* Primary Goal */}
                 <View className="mx-4 mt-4 bg-white border border-border rounded-xl p-4">
                     <View className="flex-row items-center mb-3">
-                        <Text className="text-lg mr-2">🎯</Text>
-                        <Text className="text-lg font-semibold text-text-primary">
+                        <Target size={20} color="#6366F1" />
+                        <Text className="text-lg font-semibold text-text-primary ml-2">
                             Primary Goal
                         </Text>
                     </View>
@@ -74,61 +110,51 @@ export const ProfileScreen: React.FC = () => {
                         <Text className="text-lg font-semibold text-text-primary">Settings</Text>
                     </View>
 
-                    {/* Notifications */}
-                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
-                        <View className="flex-row items-center">
-                            <Text className="text-base mr-3">🔔</Text>
-                            <Text className="text-base text-text-primary">Notifications</Text>
-                        </View>
-                        <Switch
-                            value={notificationsEnabled}
-                            onValueChange={setNotificationsEnabled}
-                            trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
-                            thumbColor={notificationsEnabled ? '#6366F1' : '#9CA3AF'}
-                        />
-                    </View>
-
-                    {/* Auto Tracking */}
-                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
-                        <View className="flex-row items-center">
-                            <Text className="text-base mr-3">🔄</Text>
-                            <Text className="text-base text-text-primary">Auto Expense Tracking</Text>
-                        </View>
-                        <Switch
-                            value={autoTrackingEnabled}
-                            onValueChange={setAutoTrackingEnabled}
-                            trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
-                            thumbColor={autoTrackingEnabled ? '#6366F1' : '#9CA3AF'}
-                        />
-                    </View>
-
-                    {/* Privacy */}
-                    <TouchableOpacity className="flex-row items-center px-4 py-3 border-b border-border">
-                        <Text className="text-base mr-3">🔒</Text>
-                        <Text className="text-base text-text-primary flex-1">Privacy & Data</Text>
-                        <Text className="text-text-tertiary">→</Text>
-                    </TouchableOpacity>
-
-                    {/* Export Data */}
-                    <TouchableOpacity
-                        className="flex-row items-center px-4 py-3 border-b border-border"
+                    <SettingsRow
+                        icon={<Bell size={16} color="#6B7280" />}
+                        label="Notifications"
+                        onPress={undefined}
+                        rightElement={
+                            <Switch
+                                value={notificationsEnabled}
+                                onValueChange={setNotificationsEnabled}
+                                trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+                                thumbColor={notificationsEnabled ? '#6366F1' : '#9CA3AF'}
+                            />
+                        }
+                    />
+                    <SettingsRow
+                        icon={<RefreshCw size={16} color="#6B7280" />}
+                        label="Auto Expense Tracking"
+                        onPress={undefined}
+                        rightElement={
+                            <Switch
+                                value={autoTrackingEnabled}
+                                onValueChange={setAutoTrackingEnabled}
+                                trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+                                thumbColor={autoTrackingEnabled ? '#6366F1' : '#9CA3AF'}
+                            />
+                        }
+                    />
+                    <SettingsRow
+                        icon={<Lock size={16} color="#6B7280" />}
+                        label="Privacy & Data"
+                        onPress={() => {}}
+                    />
+                    <SettingsRow
+                        icon={<Upload size={16} color="#6B7280" />}
+                        label="Export Data (JSON)"
                         onPress={() => Alert.alert('Export Data', 'Your data will be exported as JSON.')}
-                    >
-                        <Text className="text-base mr-3">📤</Text>
-                        <Text className="text-base text-text-primary flex-1">Export Data (JSON)</Text>
-                        <Text className="text-text-tertiary">→</Text>
-                    </TouchableOpacity>
-
-                    {/* About */}
-                    <TouchableOpacity className="flex-row items-center px-4 py-3 border-b border-border">
-                        <Text className="text-base mr-3">ℹ️</Text>
-                        <Text className="text-base text-text-primary flex-1">About FinSight</Text>
-                        <Text className="text-text-tertiary">→</Text>
-                    </TouchableOpacity>
-
-                    {/* Delete Account */}
-                    <TouchableOpacity
-                        className="flex-row items-center px-4 py-3"
+                    />
+                    <SettingsRow
+                        icon={<Info size={16} color="#6B7280" />}
+                        label="About FinSight"
+                        onPress={() => {}}
+                    />
+                    <SettingsRow
+                        icon={<Trash2 size={16} color="#EF4444" />}
+                        label="Delete Account"
+                        danger
                         onPress={() =>
                             Alert.alert(
                                 'Delete Account',
@@ -139,17 +165,22 @@ export const ProfileScreen: React.FC = () => {
                                 ]
                             )
                         }
-                    >
-                        <Text className="text-base mr-3">🗑️</Text>
-                        <Text className="text-base text-loss flex-1">Delete Account</Text>
-                        <Text className="text-text-tertiary">→</Text>
-                    </TouchableOpacity>
+                    />
                 </View>
+
+                {/* Sign Out */}
+                <TouchableOpacity
+                    className="mx-4 mt-4 bg-white border border-border rounded-xl p-4 items-center"
+                    onPress={handleLogout}
+                    activeOpacity={0.8}
+                >
+                    <Text className="text-base font-semibold text-loss">Sign Out</Text>
+                </TouchableOpacity>
 
                 {/* App Info */}
                 <View className="items-center py-6">
                     <Text className="text-xs text-text-tertiary">FinSight v1.0.0</Text>
-                    <Text className="text-xs text-text-tertiary">Made with ❤️ in India</Text>
+                    <Text className="text-xs text-text-tertiary">Made with care in India</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>

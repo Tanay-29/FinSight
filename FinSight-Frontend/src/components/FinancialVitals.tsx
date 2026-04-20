@@ -1,6 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Svg, Polyline } from 'react-native-svg';
+import {
+    Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
+    TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
+    TrendingDown,
+} from 'lucide-react-native';
 import { CategorySpending } from '../data/mockData';
 
 interface FinancialVitalsProps {
@@ -9,6 +14,22 @@ interface FinancialVitalsProps {
     weeklyTrend: number[];
     comparison: { type: 'increase' | 'decrease'; percentage: number };
 }
+
+const CATEGORY_ICON_MAP: Record<string, React.ComponentType<any>> = {
+    dining: Utensils,
+    shopping: ShoppingBag,
+    transport: Car,
+    groceries: ShoppingCart,
+    utilities: Zap,
+    entertainment: Film,
+    investments: TrendingUp,
+    health: Heart,
+    healthcare: Heart,
+    education: BookOpen,
+    housing: Home,
+    rent: Home,
+    miscellaneous: Package,
+};
 
 const SpendingTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
     if (data.length === 0) return null;
@@ -46,10 +67,14 @@ const CategoryBar: React.FC<{
     maxAmount: number;
 }> = ({ category, maxAmount }) => {
     const percentage = (category.amount / maxAmount) * 100;
+    const key = category.name.toLowerCase();
+    const IconComponent = CATEGORY_ICON_MAP[key] || DollarSign;
 
     return (
         <TouchableOpacity className="flex-row items-center py-2" activeOpacity={0.7}>
-            <Text className="text-base mr-2">{category.icon}</Text>
+            <View className="w-6 h-6 rounded-md bg-surface-secondary items-center justify-center mr-2">
+                <IconComponent size={14} color="#6B7280" />
+            </View>
             <View className="flex-1">
                 <View className="flex-row justify-between mb-1">
                     <Text className="text-sm font-medium text-text-primary">
@@ -84,6 +109,8 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
 }) => {
     const maxAmount = Math.max(...categories.map((c) => c.amount));
     const isIncrease = comparison.type === 'increase';
+    const IconComp = isIncrease ? TrendingUp : TrendingDown;
+    const iconColor = isIncrease ? '#F59E0B' : '#10B981';
 
     return (
         <View className="bg-white border border-border rounded-xl p-4 mx-4">
@@ -117,11 +144,11 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
 
             {/* Comparison Footer */}
             <View className="mt-3 pt-3 border-t border-border flex-row items-center">
+                <IconComp size={12} color={iconColor} />
                 <Text
-                    className={`text-xs font-semibold ${isIncrease ? 'text-alert-amber' : 'text-profit'}`}
+                    className={`text-xs font-semibold ml-1 ${isIncrease ? 'text-alert-amber' : 'text-profit'}`}
                 >
-                    {isIncrease ? '↑' : '↓'} {comparison.percentage}% {isIncrease ? 'higher' : 'lower'}{' '}
-                    than last month {isIncrease ? '⚠️' : '🎉'}
+                    {comparison.percentage}% {isIncrease ? 'higher' : 'lower'} than last month
                 </Text>
             </View>
         </View>

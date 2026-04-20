@@ -5,20 +5,26 @@ import { VitalsScreen } from '../screens/VitalsScreen';
 import { LearnScreen } from '../screens/LearnScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { COLORS } from '../theme/tokens';
-import { View, Text, Platform } from 'react-native';
+import { View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Home, BarChart2, Target, GraduationCap } from 'lucide-react-native';
 
 const Tab = createBottomTabNavigator();
 
-const TabIcon: React.FC<{ emoji: string; focused: boolean }> = ({ emoji, focused }) => (
-    <View className={`items-center justify-center ${focused ? 'opacity-100' : 'opacity-50'}`}>
-        <Text className="text-xl">{emoji}</Text>
+// Typed Lucide icon wrapper so focused/unfocused opacity is applied consistently
+const TabIcon: React.FC<{
+    Icon: React.ComponentType<{ size: number; color: string }>;
+    focused: boolean;
+    color: string;
+}> = ({ Icon, focused, color }) => (
+    <View style={{ opacity: focused ? 1 : 0.5 }}>
+        <Icon size={22} color={color} />
     </View>
 );
 
 export const BottomTabs: React.FC = () => {
     const insets = useSafeAreaInsets();
-    
+
     return (
         <Tab.Navigator
             screenOptions={{
@@ -34,7 +40,7 @@ export const BottomTabs: React.FC = () => {
                     paddingBottom: (Platform.OS === 'ios' ? 25 : 10) + insets.bottom,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: '600',
                 },
             }}
@@ -44,7 +50,9 @@ export const BottomTabs: React.FC = () => {
                 component={FeedScreen}
                 options={{
                     tabBarLabel: 'Feed',
-                    tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+                    tabBarIcon: ({ focused, color }) => (
+                        <TabIcon Icon={Home} focused={focused} color={color} />
+                    ),
                 }}
             />
             <Tab.Screen
@@ -52,15 +60,19 @@ export const BottomTabs: React.FC = () => {
                 component={VitalsScreen}
                 options={{
                     tabBarLabel: 'Vitals',
-                    tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} />,
+                    tabBarIcon: ({ focused, color }) => (
+                        <TabIcon Icon={BarChart2} focused={focused} color={color} />
+                    ),
                 }}
             />
             <Tab.Screen
-                name="Goals"                                    // ← NEW TAB
+                name="Goals"
                 component={GoalsScreen}
                 options={{
                     tabBarLabel: 'Goals',
-                    tabBarIcon: ({ focused }) => <TabIcon emoji="🎯" focused={focused} />,
+                    tabBarIcon: ({ focused, color }) => (
+                        <TabIcon Icon={Target} focused={focused} color={color} />
+                    ),
                 }}
             />
             <Tab.Screen
@@ -68,7 +80,9 @@ export const BottomTabs: React.FC = () => {
                 component={LearnScreen}
                 options={{
                     tabBarLabel: 'Learn',
-                    tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" focused={focused} />,
+                    tabBarIcon: ({ focused, color }) => (
+                        <TabIcon Icon={GraduationCap} focused={focused} color={color} />
+                    ),
                 }}
             />
         </Tab.Navigator>

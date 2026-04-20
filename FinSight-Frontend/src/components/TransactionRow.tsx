@@ -1,6 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { COLORS, CATEGORY_ICONS } from '../theme/tokens';
+import {
+    Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
+    TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
+    RefreshCw,
+} from 'lucide-react-native';
+import { COLORS } from '../theme/tokens';
 import { format } from 'date-fns';
 
 interface TransactionRowProps {
@@ -13,6 +18,22 @@ interface TransactionRowProps {
     onPress?: () => void;
 }
 
+const CATEGORY_ICON_MAP: Record<string, React.ComponentType<any>> = {
+    dining: Utensils,
+    shopping: ShoppingBag,
+    transport: Car,
+    groceries: ShoppingCart,
+    utilities: Zap,
+    entertainment: Film,
+    investments: TrendingUp,
+    health: Heart,
+    healthcare: Heart,
+    education: BookOpen,
+    housing: Home,
+    rent: Home,
+    miscellaneous: Package,
+};
+
 export const TransactionRow: React.FC<TransactionRowProps> = ({
     category,
     merchant,
@@ -22,7 +43,8 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     source,
     onPress,
 }) => {
-    const icon = CATEGORY_ICONS[category] || '📦';
+    const key = category.toLowerCase();
+    const IconComponent = CATEGORY_ICON_MAP[key] || DollarSign;
     const isDebit = type === 'debit';
     const formattedAmount = `${isDebit ? '-' : '+'}₹${amount.toLocaleString('en-IN')}`;
     const formattedTime = format(new Date(date), 'h:mm a');
@@ -37,15 +59,21 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
             accessibilityRole="button"
         >
             <View className="w-10 h-10 rounded-lg bg-surface-secondary items-center justify-center mr-3">
-                <Text className="text-xl">{icon}</Text>
+                <IconComponent size={18} color={COLORS.text.secondary} />
             </View>
 
             <View className="flex-1">
                 <Text className="text-base font-semibold text-text-primary">{merchant}</Text>
-                <Text className="text-xs text-text-tertiary">
-                    {category.charAt(0).toUpperCase() + category.slice(1)} • {formattedTime}
-                    {source === 'auto' && ' • 🔄'}
-                </Text>
+                <View className="flex-row items-center">
+                    <Text className="text-xs text-text-tertiary">
+                        {category.charAt(0).toUpperCase() + category.slice(1)} • {formattedTime}
+                    </Text>
+                    {source === 'auto' && (
+                        <View className="ml-1.5">
+                            <RefreshCw size={10} color={COLORS.text.tertiary} />
+                        </View>
+                    )}
+                </View>
             </View>
 
             <Text

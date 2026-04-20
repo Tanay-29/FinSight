@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { BookOpen, Trophy, CheckCircle2 } from 'lucide-react-native';
 import { LearningPath } from '../data/mockData';
 
 interface LearningPathCardProps {
@@ -26,11 +27,15 @@ export const LearningPathCard: React.FC<LearningPathCardProps> = ({
         >
             {/* Title row */}
             <View className="flex-row items-center mb-2">
-                <Text className="text-lg mr-2">📚</Text>
+                <View className="w-8 h-8 rounded-lg bg-brand-primary/10 items-center justify-center mr-2">
+                    <BookOpen size={16} color="#6366F1" />
+                </View>
                 <Text className="text-lg font-semibold text-text-primary flex-1">
                     {path.title}
                 </Text>
-                {path.badgeEarned && <Text className="text-xl">🏆</Text>}
+                {path.badgeEarned && (
+                    <Trophy size={20} color="#F59E0B" />
+                )}
             </View>
 
             {/* Description */}
@@ -52,17 +57,19 @@ export const LearningPathCard: React.FC<LearningPathCardProps> = ({
             </View>
 
             {/* Progress info */}
-            <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-text-secondary">
-                    {isComplete ? '✅' : '📖'} {progressPercentage}% Complete
-                    {!isComplete && ` • Next: ${path.nextModule}`}
-                </Text>
+            <View className="flex-row items-center justify-between mb-1">
+                <View className="flex-row items-center">
+                    <CheckCircle2 size={13} color={isComplete ? '#10B981' : '#9CA3AF'} />
+                    <Text className="text-sm text-text-secondary ml-1">
+                        {progressPercentage}% Complete
+                        {!isComplete && ` • Next: ${path.nextModule}`}
+                    </Text>
+                </View>
             </View>
 
             {/* CTA */}
             <TouchableOpacity
-                className={`mt-3 rounded-lg py-2 items-center ${isComplete ? 'bg-profit' : 'bg-brand-primary'
-                    }`}
+                className={`mt-3 rounded-lg py-2 items-center ${isComplete ? 'bg-profit' : 'bg-brand-primary'}`}
             >
                 <Text className="text-white font-semibold text-sm">
                     {isComplete ? 'Review Again →' : 'Continue Learning →'}

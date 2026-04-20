@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { Svg, Polyline } from 'react-native-svg';
+import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../store/store'; 
+import { AppDispatch, RootState } from '../store/store';
 import { fetchMarketData } from '../store/slices/marketSlice';
 
-// 1. KEEP YOUR AWESOME SPARKLINE COMPONENT EXACTLY AS IS
 const Sparkline: React.FC<{ data: number[]; positive: boolean }> = ({ data, positive }) => {
     if (data.length === 0) return null;
     const min = Math.min(...data);
@@ -37,13 +37,11 @@ const Sparkline: React.FC<{ data: number[]; positive: boolean }> = ({ data, posi
     );
 };
 
-// 2. ADAPT YOUR INDEX ROW TO READ THE LIVE REDUX DATA
 const IndexRow: React.FC<{ index: any }> = ({ index }) => {
     const isPositive = index.isUp;
-    
-    // Fallback dummy sparkline data based on the trend, since our current Python 
-    // backend only sends the current price, not the 7-day history yet.
     const sparklineData = isPositive ? [1, 2, 4, 3, 6, 5, 8] : [8, 7, 5, 6, 3, 4, 1];
+    const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+    const trendColor = isPositive ? '#10B981' : '#EF4444';
 
     return (
         <View className="flex-row items-center justify-between py-2 border-b border-gray-50">
@@ -59,8 +57,9 @@ const IndexRow: React.FC<{ index: any }> = ({ index }) => {
             </Text>
 
             <View className="flex-row items-center w-20 justify-end">
-                <Text className={`text-sm font-semibold mr-2 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                    {isPositive ? '▲' : '▼'} {index.change}%
+                <TrendIcon size={12} color={trendColor} />
+                <Text className={`text-sm font-semibold ml-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {index.change}%
                 </Text>
             </View>
 
@@ -71,19 +70,16 @@ const IndexRow: React.FC<{ index: any }> = ({ index }) => {
     );
 };
 
-// 3. YOUR MAIN WIDGET, NOW POWERED BY REDUX
 export const MarketPulseWidget = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { data: marketData, loading, error } = useSelector((state: RootState) => state.market);
 
     useEffect(() => {
         dispatch(fetchMarketData());
-        // Refresh every 60 seconds
         const interval = setInterval(() => dispatch(fetchMarketData()), 60000);
         return () => clearInterval(interval);
     }, [dispatch]);
 
-    // Show loading spinner only on initial load
     if (loading && marketData.length === 0) {
         return (
             <View className="bg-white border border-gray-200 rounded-xl p-4 mx-4 items-center justify-center h-40">
@@ -100,8 +96,8 @@ export const MarketPulseWidget = () => {
             accessibilityLabel="Market Pulse Widget"
         >
             <View className="flex-row items-center mb-3">
-                <Text className="text-lg mr-2">📈</Text>
-                <Text className="text-lg font-semibold text-gray-900">Market Pulse</Text>
+                <TrendingUp size={20} color="#1F2937" />
+                <Text className="text-lg font-semibold text-gray-900 ml-2">Market Pulse</Text>
             </View>
 
             {error && <Text className="text-red-500 text-xs mb-2">{error}</Text>}
@@ -117,6 +113,4 @@ export const MarketPulseWidget = () => {
     );
 };
 
-// Important: If you imported this as `MarketPulse` in your HomeScreen before, 
-// you might need to update that import since the component is now exported as `MarketPulseWidget`
 export default MarketPulseWidget;

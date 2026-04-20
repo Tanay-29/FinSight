@@ -12,7 +12,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle } from 'lucide-react-native';
+import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle, CalendarDays, Star, Zap } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchGoals,
@@ -67,12 +67,19 @@ const GoalCard: React.FC<{
                         <Text className="text-base font-bold text-text-primary" numberOfLines={1}>
                             {goal.title}
                         </Text>
-                        <Text
-                            className="text-xs font-medium"
-                            style={{ color: daysLeft < 7 && !isComplete ? '#DC2626' : '#9CA3AF' }}
-                        >
-                            {isComplete ? '🎉 Goal reached!' : `📅 ${deadlineLabel}`}
-                        </Text>
+                        <View className="flex-row items-center">
+                            {isComplete ? (
+                                <Star size={11} color="#10B981" />
+                            ) : (
+                                <CalendarDays size={11} color={daysLeft < 7 ? '#DC2626' : '#9CA3AF'} />
+                            )}
+                            <Text
+                                className="text-xs font-medium ml-0.5"
+                                style={{ color: daysLeft < 7 && !isComplete ? '#DC2626' : '#9CA3AF' }}
+                            >
+                                {isComplete ? 'Goal reached!' : deadlineLabel}
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
@@ -163,15 +170,14 @@ const GoalCard: React.FC<{
                         style={{ backgroundColor: goal.color }}
                     >
                         <Text className="text-white font-bold text-sm mr-1">Accelerate</Text>
-                        <Text className="text-white text-sm">⚡</Text>
+                        <Zap size={14} color="white" />
                     </TouchableOpacity>
                 </View>
             ) : (
                 <View className="bg-profit-bg rounded-xl py-2.5 items-center flex-row justify-center">
                     <CheckCircle color="#10B981" size={16} />
-                    <Text className="text-profit font-semibold text-sm ml-2">
-                        Completed! 🎉
-                    </Text>
+                    <Text className="text-profit font-semibold text-sm ml-2">Completed!</Text>
+                    <Star size={14} color="#10B981" style={{ marginLeft: 4 }} />
                 </View>
             )}
         </View>
@@ -462,9 +468,12 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
                         <Text className="text-white font-bold text-lg">{overallPct}%</Text>
                     </View>
                     {completed > 0 && (
-                        <Text className="text-white/80 text-xs mt-1">
-                            {completed} done 🎉
-                        </Text>
+                        <View className="flex-row items-center mt-1">
+                            <Star size={11} color="rgba(255,255,255,0.8)" />
+                            <Text className="text-white/80 text-xs ml-1">
+                                {completed} done
+                            </Text>
+                        </View>
                     )}
                 </View>
             </View>

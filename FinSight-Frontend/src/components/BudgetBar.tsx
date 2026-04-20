@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 
 interface BudgetBarProps {
     category: string;
-    icon: string;
+    icon: React.ReactNode;   // Changed: accepts a Lucide <Icon /> element
     spent: number;
     limit: number;
 }
@@ -35,7 +35,9 @@ export const BudgetBar: React.FC<BudgetBarProps> = ({
     return (
         <View className="mb-4">
             <View className="flex-row items-center mb-1">
-                <Text className="text-base mr-2">{icon}</Text>
+                <View className="w-7 h-7 rounded-lg bg-surface-secondary items-center justify-center mr-2">
+                    {icon}
+                </View>
                 <Text className="text-sm font-semibold text-text-primary flex-1">
                     {category.charAt(0).toUpperCase() + category.slice(1)}
                 </Text>

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus } from 'lucide-react-native';
+import { Plus, Bot } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -13,15 +13,6 @@ import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import { format } from 'date-fns';
 
-// Helper for icons
-const getCategoryIcon = (category: string) => {
-    const map: Record<string, string> = {
-        dining: '🍽️', shopping: '🛍️', transport: '🚗', groceries: '🛒',
-        utilities: '⚡', entertainment: '🎬', investments: '📈', health: '💊',
-        education: '📚', housing: '🏠'
-    };
-    return map[category.toLowerCase()] || '💸';
-};
 
 export const FeedScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -101,7 +92,7 @@ export const FeedScreen: React.FC = () => {
                 name: name.charAt(0).toUpperCase() + name.slice(1),
                 amount,
                 percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
-                icon: getCategoryIcon(name),
+                icon: name, // category key — FinancialVitals uses its own Lucide icon map
             }))
             .sort((a, b) => b.amount - a.amount);
     }, [transactions]);
@@ -140,7 +131,7 @@ return (
                 <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
                     <View>
                         <Text className="text-2xl font-bold text-text-primary">
-                            {greeting}, {displayName} 👋
+                            {greeting}, {displayName}
                         </Text>
                         <Text className="text-sm text-text-secondary">
                             {format(today, 'EEEE, MMMM d')}
@@ -187,8 +178,9 @@ return (
                 {/* EITM Cards Carousel */}
                 <View className="mt-5">
                     <View className="px-4 mb-2 flex-row items-center">
-                        <Text className="text-[10px] font-bold tracking-widest text-brand-primary uppercase">
-                            🤖 AI Insights & Alerts
+                        <Bot size={12} color="#6366F1" />
+                        <Text className="text-[10px] font-bold tracking-widest text-brand-primary uppercase ml-1">
+                            AI Insights & Alerts
                         </Text>
                     </View>
 
