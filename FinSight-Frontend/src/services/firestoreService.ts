@@ -35,6 +35,15 @@ export interface UserProfile {
         language: string;
     };
     createdAt: string;
+    // Onboarding profile fields
+    age?: number;
+    experienceLevel?: 'beginner' | 'intermediate' | 'experienced';
+    appGoals?: Array<'budgeting' | 'goals' | 'investing' | 'education'>;
+    incomeRange?: string;
+    onboardingComplete?: boolean;
+    // Learning streak
+    streak?: number;
+    lastStudiedDate?: string; // ISO date string e.g. '2026-04-20'
 }
 
 export interface FirestoreTransaction {
@@ -243,14 +252,19 @@ export interface FirestoreLearningPath {
 
 /** Get all learning paths */
 export async function getLearningPaths(): Promise<FirestoreLearningPath[]> {
-    const q = query(collection(db, 'learning_paths'), orderBy('title'));
-    const snap = await getDocs(q);
+    const snap = await getDocs(collection(db, 'learning_paths'));
     return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreLearningPath));
 }
 
-/** Seed learning paths */
+/**
+ * Seed learning paths using setDoc with stable IDs (path.id as doc ID).
+ * Idempotent — re-running won't create duplicates.
+ */
 export async function seedLearningPaths(paths: FirestoreLearningPath[]): Promise<void> {
-    const promises = paths.map((path) => addDoc(collection(db, 'learning_paths'), path));
+    const promises = paths.map((path) => {
+        const docId = (path as any).id ?? path.title.replace(/\s+/g, '_').toLowerCase();
+        return setDoc(doc(db, 'learning_paths', docId), path, { merge: false });
+    });
     await Promise.all(promises);
 }
 /** Clear all user data */
@@ -325,4 +339,116 @@ export async function deleteGoal(
     goalId: string
 ): Promise<void> {
     await deleteDoc(doc(db, 'users', userId, 'goals', goalId));
+}
+
+// ─── Learning Progress (per user) ────────────────────────────
+
+export interface UserProgress {
+    pathId: string;
+    completedModules: string[];   // array of module IDs
+    lastModuleId: string | null;
+    percentage: number;           // 0-100
+    badgeEarned: boolean;
+    updatedAt: string;            // ISO string
+}
+
+/**
+ * Fetch all progress documents for a user.
+ * Returns a map of { [pathId]: UserProgress } for easy lookup.
+ */
+export async function getUserProgress(
+    userId: string
+): Promise<Record<string, UserProgress>> {
+    const snap = await getDocs(
+        collection(db, 'users', userId, 'learning_progress')
+    );
+    const result: Record<string, UserProgress> = {};
+    snap.docs.forEach((d) => {
+        result[d.id] = { pathId: d.id, ...d.data() } as UserProgress;
+    });
+    return result;
+}
+
+/**
+ * Mark a module complete for a user in a given path.
+ * Handles:
+ * - Adding moduleId to completedModules array
+ * - Calculating new percentage
+ * - Setting badgeEarned if all modules done
+ * - Updating daily streak on the user profile
+ */
+export async function markModuleComplete(
+    userId: string,
+    pathId: string,
+    moduleId: string,
+    totalModules: number
+): Promise<void> {
+    const progressRef = doc(db, 'users', userId, 'learning_progress', pathId);
+    const snap = await getDoc(progressRef);
+
+    // Build updated completedModules array
+    let existing: string[] = [];
+    if (snap.exists()) {
+        existing = (snap.data().completedModules as string[]) || [];
+    }
+    if (existing.includes(moduleId)) return; // already done — idempotent
+
+    const updated = [...existing, moduleId];
+    const percentage = Math.round((updated.length / totalModules) * 100);
+    const badgeEarned = updated.length >= totalModules;
+
+    await setDoc(
+        progressRef,
+        {
+            pathId,
+            completedModules: updated,
+            lastModuleId: moduleId,
+            percentage,
+            badgeEarned,
+            updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+    );
+
+    // Update streak on user profile
+    const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+        const data = userSnap.data();
+        const lastDate: string = data.lastStudiedDate || '';
+        const currentStreak: number = data.streak || 0;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        let newStreak = 1;
+        if (lastDate === today) {
+            newStreak = currentStreak; // already studied today, don't change
+        } else if (lastDate === yesterdayStr) {
+            newStreak = currentStreak + 1; // consecutive day
+        }
+        // else: streak resets to 1
+
+        await updateDoc(userRef, {
+            streak: newStreak,
+            lastStudiedDate: today,
+        });
+    }
+}
+
+/** Get streak info from user profile */
+export async function getStreakData(
+    userId: string
+): Promise<{ streak: number; lastStudiedDate: string }> {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (snap.exists()) {
+        const data = snap.data();
+        return {
+            streak: data.streak || 0,
+            lastStudiedDate: data.lastStudiedDate || '',
+        };
+    }
+    return { streak: 0, lastStudiedDate: '' };
 }
