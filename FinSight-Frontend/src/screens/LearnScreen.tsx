@@ -1,52 +1,114 @@
+/**
+ * LearnScreen — Education Hub
+ *
+ * Features:
+ * - Real stats: total modules done, badges earned, day streak (from Redux)
+ * - Onboarding-aware path recommendations (appGoals from user profile)
+ * - Live progress bars on LearningPathCards from Firestore subcollection
+ * - Searchable glossary
+ */
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import {
+    BookOpen, Award, Flame, Search, HelpCircle, GraduationCap,
+    ChevronRight, Trophy, Target, Sparkles,
+} from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setLearningPaths, fetchGlossary, fetchLearningPaths } from '../store/slices/learningSlice';
-import { LearningPathCard } from '../components/LearningPathCard';
-import { MOCK_LEARNING_PATHS, MOCK_GLOSSARY, GlossaryTerm } from '../data/mockData';
+import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
+import { MOCK_GLOSSARY, MOCK_LEARNING_PATHS } from '../data/mockData';
+
+// Map onboarding goal → which pathId to promote first
+const GOAL_PATH_PRIORITY: Record<string, string> = {
+    budgeting: 'budgetBasics',
+    investing: 'investing101',
+    education: 'taxSimplified',
+    goals: 'budgetBasics',
+};
 
 export const LearnScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const dispatch = useAppDispatch();
-    const learningPaths = useAppSelector((state) => state.learning.paths);
-    const { user } = useAppSelector((state) => state.auth);
-    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
+
+    const { user, profile } = useAppSelector((s) => s.auth);
+    const { paths, glossary, progress, loading, progressLoading, streak } = useAppSelector((s) => s.learning);
+
+    const [activeTab, setActiveTab] = useState<'paths' | 'glossary'>('paths');
     const [searchQuery, setSearchQuery] = useState('');
-    const [showGlossary, setShowGlossary] = useState(false);
 
+    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
 
-
+    // Fetch on mount
     useEffect(() => {
         dispatch(fetchLearningPaths());
         dispatch(fetchGlossary());
-    }, [dispatch]);
+        if (user?.uid) {
+            dispatch(fetchUserProgress(user.uid));
+        }
+    }, [dispatch, user?.uid]);
 
-    const glossary = useAppSelector((state) => state.learning.glossary);
+    // ── Real stats ───────────────────────────────────────────────
+    const totalDone = Object.values(progress).reduce(
+        (sum, p) => sum + (p.completedModules?.length ?? 0), 0
+    );
+    const badgesEarned = Object.values(progress).filter((p) => p.badgeEarned).length;
+    const currentStreak = profile?.streak ?? streak;
+
+    // ── Onboarding-aware path ordering ─────────────────────────
+    const displayPaths = (() => {
+        const all = paths.length > 0 ? paths : (MOCK_LEARNING_PATHS as any[]);
+        if (!profile?.appGoals || profile.appGoals.length === 0) return all;
+
+        // Build priority list from user's goals
+        const priorityIds = profile.appGoals
+            .map((g) => GOAL_PATH_PRIORITY[g])
+            .filter(Boolean);
+
+        const sorted = [...all].sort((a, b) => {
+            const aIdx = priorityIds.indexOf(a.id ?? '');
+            const bIdx = priorityIds.indexOf(b.id ?? '');
+            if (aIdx !== -1 && bIdx === -1) return -1;
+            if (bIdx !== -1 && aIdx === -1) return 1;
+            if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+            return 0;
+        });
+        return sorted;
+    })();
+
+    // ── Glossary ────────────────────────────────────────────────
     const displayGlossary = glossary.length > 0 ? glossary : MOCK_GLOSSARY;
-    
-    const displayPaths = learningPaths && learningPaths.length > 0 ? learningPaths : MOCK_LEARNING_PATHS;
-
     const filteredGlossary = displayGlossary.filter(
-        (term) =>
-            term.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            term.definition.toLowerCase().includes(searchQuery.toLowerCase())
+        (t) =>
+            t.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            t.definition.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // ── Resolve real progress for a given path ──────────────────
+    const getPathProgress = (pathId: string | undefined) => {
+        if (!pathId) return { completed: 0, total: 0 };
+        const p = progress[pathId];
+        const total = displayPaths.find((dp) => dp.id === pathId)?.modules?.length ?? 0;
+        return { completed: p?.completedModules?.length ?? 0, total };
+    };
+
     return (
-        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
+        <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+            <ScrollView
+                className="flex-1"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 32 }}
+            >
+                {/* ── Header ──────────────────────────────────── */}
+                <View className="px-4 pt-4 pb-3 flex-row justify-between items-center bg-white border-b border-gray-100">
                     <View>
-                        <Text className="text-2xl font-bold text-text-primary">Learning Hub</Text>
-                        <Text className="text-sm text-text-secondary">
-                            Build your financial knowledge, one module at a time
+                        <Text className="text-2xl font-bold text-gray-900">Learning Hub</Text>
+                        <Text className="text-sm text-gray-500 mt-0.5">
+                            Build financial knowledge, one module at a time
                         </Text>
                     </View>
                     <TouchableOpacity
-                        onPress={() => navigation.navigate('Profile' as never)}
+                        onPress={() => navigation.navigate('Profile')}
                         activeOpacity={0.8}
                         className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
                     >
@@ -54,113 +116,196 @@ export const LearnScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Tab Toggle */}
-                <View className="flex-row mx-4 mt-3 bg-surface-tertiary rounded-xl p-1">
+                {/* ── Stats Row ──────────────────────────────── */}
+                <View className="mx-4 mt-4 flex-row gap-3">
+                    {/* Modules done */}
+                    <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 }}>
+                        <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center mb-2">
+                            <BookOpen size={18} color="#6366F1" />
+                        </View>
+                        <Text className="text-2xl font-bold text-gray-900">{totalDone}</Text>
+                        <Text className="text-xs text-gray-400 text-center mt-0.5">Modules done</Text>
+                    </View>
+
+                    {/* Badges earned */}
+                    <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 }}>
+                        <View className="w-10 h-10 rounded-full bg-amber-50 items-center justify-center mb-2">
+                            <Trophy size={18} color="#F59E0B" />
+                        </View>
+                        <Text className="text-2xl font-bold text-gray-900">{badgesEarned}</Text>
+                        <Text className="text-xs text-gray-400 text-center mt-0.5">Badges earned</Text>
+                    </View>
+
+                    {/* Streak */}
+                    <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 }}>
+                        <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mb-2">
+                            <Flame size={18} color="#F97316" />
+                        </View>
+                        <Text className="text-2xl font-bold text-gray-900">{currentStreak}</Text>
+                        <Text className="text-xs text-gray-400 text-center mt-0.5">Day streak</Text>
+                    </View>
+                </View>
+
+                {/* ── Personalised Banner ─────────────────────── */}
+                {profile?.appGoals && profile.appGoals.length > 0 && (
+                    <View className="mx-4 mt-4 bg-indigo-600 rounded-2xl px-4 py-3.5 flex-row items-center">
+                        <Sparkles size={18} color="white" />
+                        <View className="flex-1 ml-3">
+                            <Text className="text-white font-bold text-sm">Recommended for you</Text>
+                            <Text className="text-indigo-200 text-xs mt-0.5">
+                                Based on your onboarding goals
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* ── Tab Switcher ────────────────────────────── */}
+                <View className="flex-row mx-4 mt-4 bg-gray-100 rounded-xl p-1">
                     <TouchableOpacity
-                        className={`flex-1 rounded-lg py-2 items-center ${!showGlossary ? 'bg-white' : ''
-                            }`}
-                        onPress={() => setShowGlossary(false)}
+                        onPress={() => setActiveTab('paths')}
+                        activeOpacity={0.8}
+                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'paths' ? 'bg-white' : ''}`}
+                        style={activeTab === 'paths' ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
                     >
-                        <Text
-                            className={`text-sm font-semibold ${!showGlossary ? 'text-brand-primary' : 'text-text-tertiary'
-                                }`}
-                        >
-                            📚 Paths
+                        <GraduationCap size={14} color={activeTab === 'paths' ? '#6366F1' : '#9CA3AF'} />
+                        <Text style={{ color: activeTab === 'paths' ? '#6366F1' : '#9CA3AF' }} className="text-sm font-semibold ml-1.5">
+                            Courses
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className={`flex-1 rounded-lg py-2 items-center ${showGlossary ? 'bg-white' : ''
-                            }`}
-                        onPress={() => setShowGlossary(true)}
+                        onPress={() => setActiveTab('glossary')}
+                        activeOpacity={0.8}
+                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'glossary' ? 'bg-white' : ''}`}
+                        style={activeTab === 'glossary' ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
                     >
-                        <Text
-                            className={`text-sm font-semibold ${showGlossary ? 'text-brand-primary' : 'text-text-tertiary'
-                                }`}
-                        >
-                            🔤 FinVocab
+                        <HelpCircle size={14} color={activeTab === 'glossary' ? '#6366F1' : '#9CA3AF'} />
+                        <Text style={{ color: activeTab === 'glossary' ? '#6366F1' : '#9CA3AF' }} className="text-sm font-semibold ml-1.5">
+                            Glossary
                         </Text>
                     </TouchableOpacity>
                 </View>
 
-                {!showGlossary ? (
-                    /* Learning Paths */
-                    <View className="mt-4">
-                        {/* Stats - Moved to Top */}
-                        <View className="mx-4 mb-6 mt-2 bg-white border border-border rounded-xl p-4">
-                            <Text className="text-sm font-semibold text-text-primary mb-2">
-                                📊 Your Stats
-                            </Text>
-                            <View className="flex-row justify-between">
-                                <View className="items-center flex-1">
-                                    <Text className="text-2xl font-bold text-brand-primary">8</Text>
-                                    <Text className="text-xs text-text-tertiary">Modules Done</Text>
-                                </View>
-                                <View className="w-px bg-border" />
-                                <View className="items-center flex-1">
-                                    <Text className="text-2xl font-bold text-profit">1</Text>
-                                    <Text className="text-xs text-text-tertiary">Badges Earned</Text>
-                                </View>
-                                <View className="w-px bg-border" />
-                                <View className="items-center flex-1">
-                                    <Text className="text-2xl font-bold text-alert-amber">🔥 3</Text>
-                                    <Text className="text-xs text-text-tertiary">Day Streak</Text>
-                                </View>
+                {/* ── Courses Tab ─────────────────────────────── */}
+                {activeTab === 'paths' && (
+                    <View className="mx-4 mt-4">
+                        {loading ? (
+                            <View className="items-center py-10">
+                                <ActivityIndicator size="large" color="#6366F1" />
+                                <Text className="text-gray-400 text-sm mt-3">Loading courses…</Text>
                             </View>
-                        </View>
+                        ) : displayPaths.length === 0 ? (
+                            <View className="bg-white border border-gray-100 rounded-2xl p-6 items-center">
+                                <BookOpen size={32} color="#D1D5DB" />
+                                <Text className="text-gray-500 text-sm mt-3 text-center">
+                                    No courses found. Check your connection.
+                                </Text>
+                            </View>
+                        ) : (
+                            displayPaths.map((path) => {
+                                const { completed, total } = getPathProgress(path.id);
+                                const pBadge = progress[path.id ?? '']?.badgeEarned ?? false;
+                                const pPct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-                        {/* Learning Paths */}
-                        {displayPaths.map((path) => (
-                            <LearningPathCard
-                                key={path.id}
-                                path={{ ...path, id: path.id || '' }}
-                                onPress={() => navigation.navigate('LearnPathDetail', { path })}
-                            />
-                        ))}
+                                return (
+                                    <TouchableOpacity
+                                        key={path.id}
+                                        activeOpacity={0.85}
+                                        onPress={() => navigation.navigate('LearnPathDetail', { path })}
+                                        className="mb-4 bg-white rounded-2xl border border-gray-100 overflow-hidden"
+                                        style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}
+                                    >
+                                        {/* Top accent bar */}
+                                        <View style={{ height: 3, backgroundColor: pBadge ? '#10B981' : pPct > 0 ? '#6366F1' : '#E5E7EB' }} />
+
+                                        <View className="p-4">
+                                            <View className="flex-row items-start justify-between mb-2">
+                                                <View className="flex-1 mr-3">
+                                                    <Text className="text-base font-bold text-gray-900">{path.title}</Text>
+                                                    <Text className="text-xs text-gray-500 mt-0.5 leading-4">{path.description}</Text>
+                                                </View>
+                                                {pBadge && (
+                                                    <View className="bg-emerald-50 rounded-full p-1.5">
+                                                        <Trophy size={14} color="#10B981" />
+                                                    </View>
+                                                )}
+                                            </View>
+
+                                            {/* Module count + progress */}
+                                            <View className="flex-row items-center justify-between mt-2 mb-3">
+                                                <Text className="text-xs text-gray-400">{total} modules · {path.modules?.reduce((sum: number, m: any) => {
+                                                    const mins = parseInt(m.duration) || 0;
+                                                    return sum + mins;
+                                                }, 0)} min total</Text>
+                                                <Text className="text-xs font-semibold" style={{ color: pPct === 100 ? '#10B981' : '#6366F1' }}>
+                                                    {completed}/{total} done
+                                                </Text>
+                                            </View>
+
+                                            {/* Progress bar */}
+                                            <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+                                                <View
+                                                    style={{
+                                                        width: `${pPct}%`,
+                                                        backgroundColor: pPct === 100 ? '#10B981' : '#6366F1',
+                                                    }}
+                                                    className="h-full rounded-full"
+                                                />
+                                            </View>
+
+                                            {/* CTA */}
+                                            <View className="flex-row items-center justify-between">
+                                                <Text className="text-xs text-gray-400">
+                                                    {pPct === 0 ? 'Not started' : pPct === 100 ? 'Completed' : `${pPct}% complete`}
+                                                </Text>
+                                                <View className="flex-row items-center">
+                                                    <Text className="text-xs font-semibold text-indigo-600 mr-1">
+                                                        {pPct === 0 ? 'Start' : pPct === 100 ? 'Review' : 'Continue'}
+                                                    </Text>
+                                                    <ChevronRight size={14} color="#6366F1" />
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })
+                        )}
                     </View>
-                ) : (
-                    /* Glossary */
-                    <View className="mt-4 mx-4">
+                )}
+
+                {/* ── Glossary Tab ────────────────────────────── */}
+                {activeTab === 'glossary' && (
+                    <View className="mx-4 mt-4">
                         {/* Search */}
-                        <View className="bg-white border border-border rounded-xl px-4 py-3 mb-4 flex-row items-center">
-                            <Text className="text-base mr-2">🔍</Text>
+                        <View className="flex-row items-center bg-white border border-gray-200 rounded-xl px-3 mb-4">
+                            <Search size={16} color="#9CA3AF" />
                             <TextInput
-                                className="flex-1 text-base text-text-primary"
-                                placeholder="Search financial terms..."
-                                placeholderTextColor="#9CA3AF"
+                                className="flex-1 py-3 pl-2 text-sm text-gray-700"
+                                placeholder="Search terms…"
+                                placeholderTextColor="#D1D5DB"
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
                         </View>
 
-                        {/* Terms */}
-                        {filteredGlossary.map((term) => (
-                            <GlossaryTermCard key={term.term} term={term} />
-                        ))}
-
-                        {filteredGlossary.length === 0 && (
-                            <View className="items-center py-8">
-                                <Text className="text-4xl mb-2">🤔</Text>
-                                <Text className="text-sm text-text-tertiary">
-                                    No terms found for "{searchQuery}"
-                                </Text>
+                        {filteredGlossary.length === 0 ? (
+                            <View className="bg-white border border-gray-100 rounded-2xl p-6 items-center">
+                                <HelpCircle size={28} color="#D1D5DB" />
+                                <Text className="text-gray-400 text-sm mt-2">No terms match "{searchQuery}"</Text>
                             </View>
+                        ) : (
+                            filteredGlossary.map((term, idx) => (
+                                <View
+                                    key={term.term + idx}
+                                    className="bg-white border border-gray-100 rounded-2xl px-4 py-3.5 mb-3"
+                                >
+                                    <Text className="text-sm font-bold text-indigo-600 mb-1">{term.term}</Text>
+                                    <Text className="text-sm text-gray-600 leading-5">{term.definition}</Text>
+                                </View>
+                            ))
                         )}
-
-                        <View className="h-6" />
                     </View>
                 )}
             </ScrollView>
         </SafeAreaView>
     );
 };
-
-const GlossaryTermCard: React.FC<{ term: GlossaryTerm }> = ({ term }) => (
-    <View className="bg-white border border-border rounded-xl p-4 mb-3">
-        <Text className="text-base font-semibold text-brand-primary mb-1">
-            {term.term}
-        </Text>
-        <Text className="text-sm text-text-secondary leading-5">
-            {term.definition}
-        </Text>
-    </View>
-);

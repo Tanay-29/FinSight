@@ -1,0 +1,504 @@
+/**
+ * ModuleReaderScreen
+ *
+ * Three-phase immersive learning experience:
+ *   Phase 1 — Reading: full content + highlighted key points
+ *   Phase 2 — Quiz:    3 MCQ questions with animated feedback
+ *   Phase 3 — Done:    score, badge reveal, streak celebration
+ *
+ * On module complete → dispatches completeModule thunk → Firestore write + Redux optimistic update
+ */
+import React, { useState, useRef, useCallback } from 'react';
+import {
+    View, Text, ScrollView, TouchableOpacity,
+    Animated, Dimensions, ActivityIndicator,
+    StatusBar,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import {
+    ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb,
+    Trophy, Flame, BookOpen, Star, RefreshCw, CheckCircle2,
+} from 'lucide-react-native';
+import { Module, QuizQuestion } from '../data/mockData';
+import { FirestoreLearningPath } from '../services/firestoreService';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { completeModule } from '../store/slices/learningSlice';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+
+// ─── Types ───────────────────────────────────────────────────
+
+type Phase = 'reading' | 'quiz' | 'done';
+
+type Props = NativeStackScreenProps<any, 'ModuleReader'>;
+
+// ─── Small components ─────────────────────────────────────────
+
+const DifficultyBadge: React.FC<{ level: string }> = ({ level }) => {
+    const cfg: Record<string, { bg: string; text: string; label: string }> = {
+        beginner: { bg: '#D1FAE5', text: '#059669', label: 'Beginner' },
+        intermediate: { bg: '#FEF3C7', text: '#D97706', label: 'Intermediate' },
+        advanced: { bg: '#FEE2E2', text: '#DC2626', label: 'Advanced' },
+    };
+    const c = cfg[level] ?? cfg.beginner;
+    return (
+        <View style={{ backgroundColor: c.bg }} className="px-2 py-0.5 rounded-full">
+            <Text style={{ color: c.text }} className="text-xs font-semibold">{c.label}</Text>
+        </View>
+    );
+};
+
+// ─── Phase 1: Reading ──────────────────────────────────────────
+
+const ReadingPhase: React.FC<{
+    module: Module;
+    onStartQuiz: () => void;
+}> = ({ module, onStartQuiz }) => (
+    <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+    >
+        {/* Content card */}
+        <View className="mx-4 mt-4 bg-white rounded-2xl p-5 border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
+            <View className="flex-row items-center mb-3">
+                <BookOpen size={16} color="#6366F1" />
+                <Text className="text-sm font-semibold text-indigo-600 ml-1.5">In this module</Text>
+            </View>
+            <Text className="text-base text-gray-700 leading-7">{module.content}</Text>
+        </View>
+
+        {/* Key Points */}
+        <View className="mx-4 mt-4">
+            <View className="flex-row items-center mb-3">
+                <Lightbulb size={16} color="#F59E0B" />
+                <Text className="text-sm font-bold text-gray-800 ml-1.5">Key Takeaways</Text>
+            </View>
+            {module.keyPoints.map((point, idx) => (
+                <View
+                    key={idx}
+                    className="flex-row items-start mb-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3"
+                >
+                    <View className="w-5 h-5 rounded-full bg-amber-400 items-center justify-center mt-0.5 mr-3 shrink-0">
+                        <Text className="text-white text-xs font-bold">{idx + 1}</Text>
+                    </View>
+                    <Text className="text-sm text-gray-700 leading-5 flex-1">{point}</Text>
+                </View>
+            ))}
+        </View>
+
+        {/* Start Quiz CTA */}
+        <View className="mx-4 mt-6">
+            <TouchableOpacity
+                onPress={onStartQuiz}
+                activeOpacity={0.85}
+                className="bg-indigo-600 rounded-2xl py-4 flex-row items-center justify-center"
+            >
+                <Star size={18} color="white" />
+                <Text className="text-white font-bold text-base ml-2">Test Your Knowledge</Text>
+                <ChevronRight size={18} color="white" className="ml-1" />
+            </TouchableOpacity>
+            <Text className="text-center text-xs text-gray-400 mt-2">3 quick questions</Text>
+        </View>
+    </ScrollView>
+);
+
+// ─── Phase 2: Quiz ──────────────────────────────────────────────
+
+const QuizPhase: React.FC<{
+    questions: QuizQuestion[];
+    onFinish: (score: number) => void;
+}> = ({ questions, onFinish }) => {
+    const [qIndex, setQIndex] = useState(0);
+    const [selectedOption, setSelectedOption] = useState<number | null>(null);
+    const [answered, setAnswered] = useState(false);
+    const [score, setScore] = useState(0);
+    const slideAnim = useRef(new Animated.Value(0)).current;
+
+    const q = questions[qIndex];
+    const isCorrect = selectedOption === q.answerIndex;
+
+    const handleSelect = (idx: number) => {
+        if (answered) return;
+        setSelectedOption(idx);
+        setAnswered(true);
+        if (idx === q.answerIndex) setScore((s) => s + 1);
+    };
+
+    const handleNext = () => {
+        // Slide out current, slide in next
+        Animated.sequence([
+            Animated.timing(slideAnim, { toValue: -SCREEN_W, duration: 200, useNativeDriver: true }),
+        ]).start(() => {
+            if (qIndex + 1 < questions.length) {
+                setQIndex((i) => i + 1);
+                setSelectedOption(null);
+                setAnswered(false);
+                slideAnim.setValue(SCREEN_W);
+                Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+            } else {
+                const finalScore = isCorrect ? score + 1 : score;
+                // +1 because state update is async
+                onFinish(selectedOption === q.answerIndex ? score + 1 : score);
+            }
+        });
+    };
+
+    const getOptionStyle = (idx: number) => {
+        if (!answered) return { borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' };
+        if (idx === q.answerIndex) return { borderColor: '#10B981', backgroundColor: '#F0FDF4' };
+        if (idx === selectedOption) return { borderColor: '#EF4444', backgroundColor: '#FFF5F5' };
+        return { borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' };
+    };
+
+    const getOptionTextColor = (idx: number) => {
+        if (!answered) return '#374151';
+        if (idx === q.answerIndex) return '#059669';
+        if (idx === selectedOption) return '#DC2626';
+        return '#9CA3AF';
+    };
+
+    return (
+        <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 32 }}
+        >
+            {/* Progress indicator */}
+            <View className="mx-4 mt-4 mb-5">
+                <View className="flex-row justify-between mb-1.5">
+                    <Text className="text-xs text-gray-400 font-medium">
+                        Question {qIndex + 1} of {questions.length}
+                    </Text>
+                    <Text className="text-xs text-indigo-500 font-semibold">
+                        {score} pts
+                    </Text>
+                </View>
+                <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <View
+                        style={{ width: `${((qIndex) / questions.length) * 100}%` }}
+                        className="h-full bg-indigo-500 rounded-full"
+                    />
+                </View>
+            </View>
+
+            {/* Question */}
+            <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+                <View className="mx-4 bg-white rounded-2xl p-5 border border-gray-100 mb-4" style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
+                    <Text className="text-base font-bold text-gray-900 leading-6">{q.question}</Text>
+                </View>
+
+                {/* Options */}
+                {q.options.map((option, idx) => (
+                    <TouchableOpacity
+                        key={idx}
+                        onPress={() => handleSelect(idx)}
+                        activeOpacity={answered ? 1 : 0.7}
+                        style={[{ borderWidth: answered && idx === q.answerIndex ? 2 : 1 }, getOptionStyle(idx)]}
+                        className="mx-4 mb-3 rounded-xl px-4 py-3.5 flex-row items-center"
+                    >
+                        <View
+                            style={{
+                                backgroundColor: answered && idx === q.answerIndex
+                                    ? '#10B981'
+                                    : answered && idx === selectedOption
+                                        ? '#EF4444'
+                                        : '#F3F4F6',
+                            }}
+                            className="w-7 h-7 rounded-full items-center justify-center mr-3 shrink-0"
+                        >
+                            {answered && idx === q.answerIndex ? (
+                                <Check size={14} color="white" strokeWidth={3} />
+                            ) : answered && idx === selectedOption ? (
+                                <X size={14} color="white" strokeWidth={3} />
+                            ) : (
+                                <Text className="text-xs font-bold text-gray-500">
+                                    {['A', 'B', 'C', 'D'][idx]}
+                                </Text>
+                            )}
+                        </View>
+                        <Text style={{ color: getOptionTextColor(idx) }} className="text-sm flex-1 leading-5">
+                            {option}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+
+                {/* Explanation */}
+                {answered && (
+                    <View className={`mx-4 mt-1 rounded-xl p-4 border ${isCorrect ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                        <View className="flex-row items-center mb-1">
+                            {isCorrect
+                                ? <Check size={14} color="#059669" strokeWidth={3} />
+                                : <X size={14} color="#DC2626" strokeWidth={3} />
+                            }
+                            <Text style={{ color: isCorrect ? '#059669' : '#DC2626' }} className="text-xs font-bold ml-1.5">
+                                {isCorrect ? 'Correct!' : 'Not quite'}
+                            </Text>
+                        </View>
+                        <Text className="text-sm text-gray-600 leading-5">{q.explanation}</Text>
+                    </View>
+                )}
+
+                {/* Next button */}
+                {answered && (
+                    <TouchableOpacity
+                        onPress={handleNext}
+                        activeOpacity={0.85}
+                        className="mx-4 mt-5 bg-indigo-600 rounded-2xl py-4 flex-row items-center justify-center"
+                    >
+                        <Text className="text-white font-bold text-base mr-2">
+                            {qIndex + 1 < questions.length ? 'Next Question' : 'See Results'}
+                        </Text>
+                        <ChevronRight size={18} color="white" />
+                    </TouchableOpacity>
+                )}
+            </Animated.View>
+        </ScrollView>
+    );
+};
+
+// ─── Phase 3: Completion ───────────────────────────────────────
+
+const DonePhase: React.FC<{
+    score: number;
+    total: number;
+    badgeEarned: boolean;
+    streak: number;
+    moduleName: string;
+    isSaving: boolean;
+    onBack: () => void;
+    onRetake: () => void;
+}> = ({ score, total, badgeEarned, streak, moduleName, isSaving, onBack, onRetake }) => {
+    const pct = Math.round((score / total) * 100);
+    const perfect = score === total;
+    const passed = pct >= 60;
+
+    // Simple scale animation
+    const scaleAnim = useRef(new Animated.Value(0.5)).current;
+    React.useEffect(() => {
+        Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+    }, []);
+
+    return (
+        <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 60, alignItems: 'center', paddingTop: 32 }}
+        >
+            {/* Score circle */}
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                <View
+                    style={{
+                        width: 140, height: 140, borderRadius: 70,
+                        backgroundColor: passed ? '#EEF2FF' : '#FFF5F5',
+                        borderWidth: 4,
+                        borderColor: passed ? '#6366F1' : '#EF4444',
+                        alignItems: 'center', justifyContent: 'center',
+                    }}
+                >
+                    <Text style={{ color: passed ? '#6366F1' : '#EF4444' }} className="text-4xl font-extrabold">
+                        {score}/{total}
+                    </Text>
+                    <Text style={{ color: passed ? '#818CF8' : '#F87171' }} className="text-xs font-semibold mt-0.5">
+                        {pct}% correct
+                    </Text>
+                </View>
+            </Animated.View>
+
+            {/* Result text */}
+            <Text className="text-2xl font-bold text-gray-900 mt-6 text-center px-8">
+                {perfect ? 'Perfect score!' : passed ? 'Well done!' : 'Keep practising!'}
+            </Text>
+            <Text className="text-sm text-gray-500 mt-2 text-center px-8 leading-5">
+                {perfect
+                    ? `You aced "${moduleName}". Your understanding is solid.`
+                    : passed
+                        ? `Good progress on "${moduleName}". Review the explanations to reinforce.`
+                        : `No worries — re-read "${moduleName}" and try the quiz again.`
+                }
+            </Text>
+
+            {/* Streak badge */}
+            {streak > 0 && passed && (
+                <View className="mt-5 flex-row items-center bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3">
+                    <Flame size={20} color="#F97316" />
+                    <Text className="text-sm font-bold text-orange-600 ml-2">
+                        {streak}-day learning streak!
+                    </Text>
+                </View>
+            )}
+
+            {/* Badge */}
+            {badgeEarned && (
+                <View className="mt-4 flex-row items-center bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3">
+                    <Trophy size={20} color="#10B981" />
+                    <Text className="text-sm font-bold text-emerald-600 ml-2">
+                        Course badge earned! 🎉
+                    </Text>
+                </View>
+            )}
+
+            {/* Saving state */}
+            {isSaving && (
+                <View className="mt-4 flex-row items-center">
+                    <ActivityIndicator size="small" color="#6366F1" />
+                    <Text className="text-xs text-gray-400 ml-2">Saving your progress…</Text>
+                </View>
+            )}
+
+            {/* Actions */}
+            <View className="w-full px-4 mt-8 gap-3">
+                <TouchableOpacity
+                    onPress={onBack}
+                    activeOpacity={0.85}
+                    className="bg-indigo-600 rounded-2xl py-4 flex-row items-center justify-center"
+                >
+                    <CheckCircle2 size={18} color="white" />
+                    <Text className="text-white font-bold text-base ml-2">Back to Course</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={onRetake}
+                    activeOpacity={0.7}
+                    className="border border-gray-200 rounded-2xl py-3.5 flex-row items-center justify-center"
+                >
+                    <RefreshCw size={16} color="#6B7280" />
+                    <Text className="text-gray-500 font-semibold text-sm ml-2">Retake Quiz</Text>
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
+    );
+};
+
+// ─── Main ModuleReaderScreen ───────────────────────────────────
+
+const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
+    const dispatch = useAppDispatch();
+    const { user, profile } = useAppSelector((s) => s.auth);
+    const { progress } = useAppSelector((s) => s.learning);
+
+    const module: Module = route.params?.module;
+    const path: FirestoreLearningPath = route.params?.path;
+
+    const [phase, setPhase] = useState<Phase>('reading');
+    const [quizScore, setQuizScore] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
+    const [quizAttempt, setQuizAttempt] = useState(0); // increment to retake
+
+    if (!module || !path) {
+        return (
+            <SafeAreaView className="flex-1 bg-white items-center justify-center">
+                <Text className="text-gray-500">Module not found.</Text>
+            </SafeAreaView>
+        );
+    }
+
+    const pathProgress = progress[path.id || ''];
+    const isAlreadyComplete = pathProgress?.completedModules?.includes(module.id) ?? false;
+    const badgeEarned = pathProgress?.badgeEarned ?? false;
+    const streak = profile?.streak ?? 0;
+
+    const handleStartQuiz = () => setPhase('quiz');
+
+    const handleQuizFinish = useCallback(async (score: number) => {
+        setQuizScore(score);
+        setPhase('done');
+
+        // Mark complete in Firestore regardless of score (reading = learning)
+        if (user?.uid && path.id) {
+            setIsSaving(true);
+            await dispatch(completeModule({
+                userId: user.uid,
+                pathId: path.id,
+                moduleId: module.id,
+                totalModules: path.modules?.length ?? 1,
+            }));
+            setIsSaving(false);
+        }
+    }, [user, path, module, dispatch]);
+
+    const handleRetake = () => {
+        setQuizAttempt((a) => a + 1);
+        setPhase('quiz');
+    };
+
+    const handleBack = () => navigation.goBack();
+
+    const PHASE_LABELS: Record<Phase, string> = {
+        reading: 'Read',
+        quiz: 'Quiz',
+        done: 'Complete',
+    };
+
+    return (
+        <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'bottom']}>
+            <StatusBar barStyle="dark-content" />
+
+            {/* Header */}
+            <View className="bg-white border-b border-gray-100 px-4 py-3 flex-row items-center">
+                <TouchableOpacity
+                    onPress={handleBack}
+                    className="w-9 h-9 items-center justify-center rounded-full bg-gray-100 mr-3"
+                    activeOpacity={0.7}
+                >
+                    <ArrowLeft size={18} color="#374151" />
+                </TouchableOpacity>
+
+                <View className="flex-1">
+                    <Text numberOfLines={1} className="text-sm font-bold text-gray-900">
+                        {module.title}
+                    </Text>
+                    <View className="flex-row items-center gap-2 mt-0.5">
+                        <Clock size={11} color="#9CA3AF" />
+                        <Text className="text-xs text-gray-400">{module.duration}</Text>
+                        <DifficultyBadge level={module.difficulty} />
+                    </View>
+                </View>
+
+                {/* Phase indicator */}
+                <View className="flex-row gap-1">
+                    {(['reading', 'quiz', 'done'] as Phase[]).map((p, i) => (
+                        <View
+                            key={p}
+                            style={{
+                                width: 24, height: 4, borderRadius: 2,
+                                backgroundColor: phase === p
+                                    ? '#6366F1'
+                                    : (['reading', 'quiz', 'done'] as Phase[]).indexOf(phase) > i
+                                        ? '#A5B4FC'
+                                        : '#E5E7EB',
+                            }}
+                        />
+                    ))}
+                </View>
+            </View>
+
+            {/* Phase content */}
+            {phase === 'reading' && (
+                <ReadingPhase module={module} onStartQuiz={handleStartQuiz} />
+            )}
+            {phase === 'quiz' && module.quiz && module.quiz.length > 0 && (
+                <QuizPhase
+                    key={quizAttempt}
+                    questions={module.quiz}
+                    onFinish={handleQuizFinish}
+                />
+            )}
+            {phase === 'done' && (
+                <DonePhase
+                    score={quizScore}
+                    total={module.quiz?.length ?? 3}
+                    badgeEarned={badgeEarned}
+                    streak={streak}
+                    moduleName={module.title}
+                    isSaving={isSaving}
+                    onBack={handleBack}
+                    onRetake={handleRetake}
+                />
+            )}
+        </SafeAreaView>
+    );
+};
+
+export default ModuleReaderScreen;
