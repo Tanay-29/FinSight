@@ -1,173 +1,437 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
-import { ArrowRight, Clock, TrendingUp, ShieldCheck, Zap, ChevronLeft } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+/**
+ * GoalAccelerationScreen.tsx
+ *
+ * Dynamic compound-interest simulator for any savings goal.
+ * Receives { goalId } from route params, reads real goal from Redux.
+ *
+ * Sections:
+ *   1. Goal hero card — real title, emoji, progress, deadline
+ *   2. Contribution adjuster — +/− ₹1,000 steps, live recalc
+ *   3. Smart budget tip — reads top over-budget category from transactions
+ *   4. Side-by-side timeline card — Bank 4% vs SIP 9%
+ *   5. Months-saved hero number
+ */
+import React, { useState, useMemo } from 'react';
+import {
+    View, Text, ScrollView, TouchableOpacity,
+    SafeAreaView, Animated, Platform,
+} from 'react-native';
+import {
+    ChevronLeft, Clock, TrendingUp, ShieldCheck, Zap,
+    PiggyBank, Calendar, Minus, Plus, AlertCircle,
+} from 'lucide-react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useAppSelector } from '../store/hooks';
+import { differenceInDays, format, parseISO, addMonths } from 'date-fns';
 
-// We are pulling data directly matching your uploaded screenshot!
-const GOAL_DATA = {
-    name: "Harrier",
-    target: 1800000,
-    currentSaved: 15000,
-    daysLeft: 543,
-};
+// ─── Types ────────────────────────────────────────────────────
 
-// Standard Bank Rate vs Our Suggested Portfolio Rate
-const BANK_RATE_ANNUAL = 0.04; // 4% Savings Account
-const PORTFOLIO_RATE_ANNUAL = 0.09; // 9% Conservative Hybrid (Medium Term)
+type RouteParams = { goalId?: string };
 
-// The Math Engine: Calculates how many months it takes to hit the target
-const calculateMonthsToGoal = (target: number, current: number, annualRate: number, monthlyContribution: number) => {
-    if (monthlyContribution <= 0) return 999;
-    
-    let months = 0;
+// ─── Math engine ──────────────────────────────────────────────
+
+const BANK_RATE = 0.04;       // 4%  p.a. — standard savings account
+const SIP_RATE  = 0.09;       // 9%  p.a. — conservative hybrid MF
+
+/**
+ * Iterative month-wise compound + contribution calculator.
+ * Returns number of months until `target` is reached, capped at 600 (50 years).
+ */
+function monthsToGoal(
+    target: number,
+    current: number,
+    annualRate: number,
+    monthlyContrib: number,
+): number {
+    if (monthlyContrib <= 0) return 600;
+    const r = annualRate / 12;
     let balance = current;
-    const monthlyRate = annualRate / 12;
-
-    // Iterative calculation for accuracy
-    while (balance < target && months < 600) { // Capped at 50 years to prevent infinite loops
-        balance = balance * (1 + monthlyRate) + monthlyContribution;
+    let months = 0;
+    while (balance < target && months < 600) {
+        balance = balance * (1 + r) + monthlyContrib;
         months++;
     }
     return months;
-};
+}
 
-export const GoalAccelerationScreen = () => {
+function formatMonths(m: number): string {
+    if (m >= 600) return '50+ yrs';
+    const y = Math.floor(m / 12);
+    const mo = m % 12;
+    if (y === 0) return `${mo}m`;
+    if (mo === 0) return `${y}y`;
+    return `${y}y ${mo}m`;
+}
+
+function targetDate(months: number): string {
+    if (months >= 600) return 'N/A';
+    return format(addMonths(new Date(), months), 'MMM yyyy');
+}
+
+// ─── Category rules for smart tip ────────────────────────────
+
+const NEEDS_CATS  = ['groceries','utilities','transport','health','housing'];
+const WANTS_CATS  = ['dining','shopping','entertainment','education'];
+
+// ─── Component ───────────────────────────────────────────────
+
+const GoalAccelerationScreen: React.FC = () => {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
-    
-    // We start them at a reasonable ₹90,000/mo SIP to reach their 18L goal in ~1.5 years
-    const [monthlySip, setMonthlySip] = useState(90000);
+    const route = useRoute<RouteProp<Record<string, RouteParams>, string>>();
+    const goalId = route.params?.goalId;
 
-    // Calculate timelines
-    const monthsWithBank = calculateMonthsToGoal(GOAL_DATA.target, GOAL_DATA.currentSaved, BANK_RATE_ANNUAL, monthlySip);
-    const monthsWithPortfolio = calculateMonthsToGoal(GOAL_DATA.target, GOAL_DATA.currentSaved, PORTFOLIO_RATE_ANNUAL, monthlySip);
-    
-    // The magic number!
-    const monthsSaved = monthsWithBank - monthsWithPortfolio;
+    // Redux
+    const goals       = useAppSelector((s) => s.goals.items);
+    const transactions = useAppSelector((s) => s.transactions.items);
 
-    const formatCurrency = (val: number) => `₹ ${val.toLocaleString('en-IN')}`;
+    // Find the goal (fallback to first if no id passed)
+    const goal = useMemo(
+        () => (goalId ? goals.find((g) => g.id === goalId) : goals[0]) ?? null,
+        [goals, goalId],
+    );
+
+    // Monthly contribution state (start at what they need per month to hit deadline)
+    const defaultContrib = useMemo(() => {
+        if (!goal) return 5000;
+        const daysLeft = differenceInDays(parseISO(goal.deadline), new Date());
+        const monthsLeft = Math.max(Math.ceil(daysLeft / 30), 1);
+        const remaining = Math.max(goal.targetAmount - goal.savedAmount, 0);
+        return Math.max(Math.ceil(remaining / monthsLeft / 1000) * 1000, 1000);
+    }, [goal]);
+
+    const [monthlyContrib, setMonthlyContrib] = useState(defaultContrib);
+    const step = monthlyContrib >= 10000 ? 2000 : 1000;
+
+    // Timeline calc
+    const bankMonths = useMemo(
+        () => goal ? monthsToGoal(goal.targetAmount, goal.savedAmount, BANK_RATE, monthlyContrib) : 0,
+        [goal, monthlyContrib],
+    );
+    const sipMonths = useMemo(
+        () => goal ? monthsToGoal(goal.targetAmount, goal.savedAmount, SIP_RATE, monthlyContrib) : 0,
+        [goal, monthlyContrib],
+    );
+    const monthsSaved = Math.max(bankMonths - sipMonths, 0);
+
+    // Smart budget tip: find category most over-budget this month
+    const smartTip = useMemo(() => {
+        const thisMonth = format(new Date(), 'yyyy-MM');
+        const catSpend: Record<string, number> = {};
+        transactions.forEach((t) => {
+            if (t.type === 'debit' && t.date.startsWith(thisMonth) && t.category) {
+                catSpend[t.category] = (catSpend[t.category] ?? 0) + t.amount;
+            }
+        });
+        // Find biggest "wants" category
+        const topWant = WANTS_CATS
+            .map((c) => ({ cat: c, spend: catSpend[c] ?? 0 }))
+            .filter((x) => x.spend > 0)
+            .sort((a, b) => b.spend - a.spend)[0];
+        if (!topWant) return null;
+        const redirect = Math.round(topWant.spend * 0.3 / 500) * 500; // suggest 30% redirect
+        if (redirect <= 0) return null;
+        const newSipMonths = goal
+            ? monthsToGoal(goal.targetAmount, goal.savedAmount, SIP_RATE, monthlyContrib + redirect)
+            : 0;
+        const extraMonthsSaved = Math.max(sipMonths - newSipMonths, 0);
+        return { category: topWant.cat, spend: topWant.spend, redirect, extraMonthsSaved };
+    }, [transactions, goal, monthlyContrib, sipMonths]);
+
+    // Progress %
+    const progress = goal
+        ? Math.min((goal.savedAmount / goal.targetAmount) * 100, 100)
+        : 0;
+    const daysLeft = goal
+        ? differenceInDays(parseISO(goal.deadline), new Date())
+        : 0;
+
+    // ── Empty state ───────────────────────────────────────────
+    if (!goal) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+                    <PiggyBank size={56} color="#C7D2FE" />
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginTop: 16, textAlign: 'center' }}>
+                        No Goals Yet
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center' }}>
+                        Create a savings goal first, then come back to simulate your investment strategy.
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={{ marginTop: 24, backgroundColor: '#6366F1', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}
+                    >
+                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>Go Back</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
-        <SafeAreaView 
-            className="flex-1 bg-surface-secondary"
-            style={Platform.OS === 'web' ? { height: '100vh', overflow: 'hidden' } : { flex: 1 }}
-        >
-            {/* --- HEADER --- */}
-            <View className="px-6 pt-4 pb-2 flex-row items-center">
-                <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2">
-                    <ChevronLeft color="#1F2937" size={28} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+
+            {/* ── Header ─────────────────────────────────────── */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                >
+                    <ChevronLeft size={20} color="#111827" />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold text-text-primary ml-2">Accelerate Goal</Text>
+                <View>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Accelerate Goal</Text>
+                    <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Compound interest simulator</Text>
+                </View>
             </View>
 
-            <ScrollView 
-                className="flex-1 px-6 pt-4" 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 120 }} 
+                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 }}
             >
-                {/* Goal Context Card */}
-                <View className="bg-white rounded-3xl p-6 border border-border mb-6 shadow-sm">
-                    <View className="flex-row items-center justify-between mb-4">
-                        <View className="flex-row items-center">
-                            <View className="w-10 h-10 bg-slate-100 rounded-full items-center justify-center mr-3">
-                                <Text className="text-xl">🚙</Text>
+                {/* ── 1. Goal Hero Card ──────────────────────── */}
+                <View style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: 20,
+                    padding: 20,
+                    marginBottom: 16,
+                    borderWidth: 1,
+                    borderColor: '#F3F4F6',
+                    shadowColor: '#000',
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
+                }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                        <View style={{
+                            width: 48, height: 48, borderRadius: 14,
+                            backgroundColor: `${goal.color}20`,
+                            alignItems: 'center', justifyContent: 'center', marginRight: 14,
+                        }}>
+                            <Text style={{ fontSize: 24 }}>{goal.emoji}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
+                                {goal.title}
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                                <Calendar size={12} color="#9CA3AF" />
+                                <Text style={{ fontSize: 12, color: '#9CA3AF', marginLeft: 4 }}>
+                                    {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? 'Due today' : 'Overdue'}
+                                </Text>
                             </View>
-                            <View>
-                                <Text className="text-lg font-bold text-text-primary">{GOAL_DATA.name}</Text>
-                                <Text className="text-sm text-text-secondary">Target: {formatCurrency(GOAL_DATA.target)}</Text>
-                            </View>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={{ fontSize: 20, fontWeight: '800', color: goal.color }}>
+                                {Math.round(progress)}%
+                            </Text>
+                            <Text style={{ fontSize: 11, color: '#9CA3AF' }}>saved</Text>
                         </View>
                     </View>
 
-                    {/* Progress Bar */}
-                    <View className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
-                        <View 
-                            className="h-full bg-indigo-500 rounded-full" 
-                            style={{ width: `${(GOAL_DATA.currentSaved / GOAL_DATA.target) * 100}%` }} 
-                        />
-                    </View>
-                    <Text className="text-xs text-text-tertiary">Currently saved: {formatCurrency(GOAL_DATA.currentSaved)}</Text>
-                </View>
-
-                {/* The "Smart Suggestion" Engine Output */}
-                <View className="mb-6">
-                    <Text className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-3 flex-row items-center">
-                        <Zap size={14} color="#059669" /> AI Strategy Match
-                    </Text>
-                    <View className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
-                        <View className="flex-row items-center mb-2">
-                            <ShieldCheck color="#059669" size={24} />
-                            <Text className="text-lg font-bold text-emerald-900 ml-3">Conservative Hybrid Fund</Text>
-                        </View>
-                        <Text className="text-emerald-700 text-sm leading-5">
-                            Since you need this money in roughly 1.5 years, we recommend a stable mix of 80% Debt and 20% Equity. It targets ~9% returns with minimal volatility.
+                    {/* Amount row */}
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 10 }}>
+                        <Text style={{ fontSize: 24, fontWeight: '800', color: goal.color }}>
+                            ₹{goal.savedAmount.toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: '#9CA3AF', marginLeft: 4 }}>
+                            {' '}/ ₹{goal.targetAmount.toLocaleString('en-IN')}
                         </Text>
                     </View>
+
+                    {/* Progress bar */}
+                    <View style={{ height: 8, backgroundColor: '#F3F4F6', borderRadius: 4, overflow: 'hidden' }}>
+                        <View style={{ height: '100%', width: `${progress}%`, backgroundColor: goal.color, borderRadius: 4 }} />
+                    </View>
+                    <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6 }}>
+                        ₹{Math.max(goal.targetAmount - goal.savedAmount, 0).toLocaleString('en-IN')} remaining
+                    </Text>
                 </View>
 
-                {/* The Mathematical Impact (The Wow Factor) */}
-                <View className="bg-indigo-900 rounded-3xl p-6 relative overflow-hidden mb-6">
-                    {/* Background decoration */}
-                    <View className="absolute -right-6 -top-6 opacity-10">
+                {/* ── 2. Contribution Adjuster ───────────────── */}
+                <View style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: 20,
+                    padding: 20,
+                    marginBottom: 16,
+                    borderWidth: 1,
+                    borderColor: '#F3F4F6',
+                }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
+                        Monthly Contribution
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <TouchableOpacity
+                            onPress={() => setMonthlyContrib((v) => Math.max(v - step, 1000))}
+                            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}
+                            activeOpacity={0.7}
+                        >
+                            <Minus size={20} color="#374151" />
+                        </TouchableOpacity>
+
+                        <View style={{ alignItems: 'center' }}>
+                            <Text style={{ fontSize: 32, fontWeight: '900', color: '#111827', letterSpacing: -1 }}>
+                                ₹{monthlyContrib.toLocaleString('en-IN')}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: '#9CA3AF' }}>per month</Text>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => setMonthlyContrib((v) => v + step)}
+                            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center' }}
+                            activeOpacity={0.7}
+                        >
+                            <Plus size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Quick presets */}
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, justifyContent: 'center' }}>
+                        {[2000, 5000, 10000, 20000].map((v) => (
+                            <TouchableOpacity
+                                key={v}
+                                onPress={() => setMonthlyContrib(v)}
+                                style={{
+                                    paddingHorizontal: 12, paddingVertical: 6,
+                                    borderRadius: 20, borderWidth: 1.5,
+                                    borderColor: monthlyContrib === v ? '#6366F1' : '#E5E7EB',
+                                    backgroundColor: monthlyContrib === v ? '#EEF2FF' : '#F9FAFB',
+                                }}
+                            >
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: monthlyContrib === v ? '#6366F1' : '#9CA3AF' }}>
+                                    ₹{v >= 1000 ? `${v / 1000}K` : v}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                {/* ── 3. Smart Budget Tip ────────────────────── */}
+                {smartTip && smartTip.extraMonthsSaved > 0 && (
+                    <View style={{
+                        flexDirection: 'row',
+                        backgroundColor: '#FFF7ED',
+                        borderRadius: 16,
+                        padding: 14,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: '#FED7AA',
+                        alignItems: 'flex-start',
+                    }}>
+                        <AlertCircle size={18} color="#F97316" style={{ marginTop: 2 }} />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#9A3412' }}>
+                                💡 Smart Tip
+                            </Text>
+                            <Text style={{ fontSize: 12, color: '#C2410C', marginTop: 2, lineHeight: 18 }}>
+                                You spent{' '}
+                                <Text style={{ fontWeight: '700' }}>
+                                    ₹{smartTip.spend.toLocaleString('en-IN')}
+                                </Text>
+                                {' '}on {smartTip.category} this month. Redirect{' '}
+                                <Text style={{ fontWeight: '700' }}>₹{smartTip.redirect.toLocaleString('en-IN')}</Text>
+                                {' '}to this goal and reach it{' '}
+                                <Text style={{ fontWeight: '700' }}>
+                                    {formatMonths(smartTip.extraMonthsSaved)} sooner!
+                                </Text>
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setMonthlyContrib((v) => v + smartTip.redirect)}
+                                style={{ marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#F97316', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }}
+                            >
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: 'white' }}>
+                                    Apply +₹{smartTip.redirect.toLocaleString('en-IN')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
+                {/* ── 4. Timeline Comparison Card ───────────────── */}
+                <View style={{
+                    backgroundColor: '#1E1B4B',
+                    borderRadius: 24,
+                    padding: 24,
+                    marginBottom: 16,
+                    overflow: 'hidden',
+                }}>
+                    {/* Decorative background clock */}
+                    <View style={{ position: 'absolute', right: -16, top: -16, opacity: 0.07 }}>
                         <Clock size={120} color="#FFFFFF" />
                     </View>
 
-                    <Text className="text-indigo-200 text-sm font-bold uppercase tracking-wider mb-2">
-                        Time Saved
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#A5B4FC', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                        Time Saved with Smart Investing
                     </Text>
-                    <View className="flex-row items-baseline mb-4">
-                        <Text className="text-white text-5xl font-black">{monthsSaved}</Text>
-                        <Text className="text-indigo-200 text-lg font-bold ml-2">Months</Text>
+
+                    {/* Hero number */}
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 }}>
+                        <Text style={{ fontSize: 60, fontWeight: '900', color: '#FFFFFF', letterSpacing: -2 }}>
+                            {monthsSaved}
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '700', color: '#A5B4FC', marginLeft: 8 }}>
+                            months saved
+                        </Text>
                     </View>
-                    
-                    <View className="bg-white/10 rounded-2xl p-4 flex-row justify-between items-center mb-6">
-                        <View>
-                            <Text className="text-indigo-200 text-xs mb-1">Standard Bank (4%)</Text>
-                            <Text className="text-white font-bold text-base">{monthsWithBank} months</Text>
-                        </View>
-                        <View className="w-px h-8 bg-white/20" />
-                        <View>
-                            <Text className="text-indigo-200 text-xs mb-1">FinSight Plan (9%)</Text>
-                            <Text className="text-emerald-400 font-bold text-base">{monthsWithPortfolio} months</Text>
+
+                    {/* Two-path comparison */}
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 16, marginBottom: 20 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            {/* Bank path */}
+                            <View style={{ flex: 1, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 11, color: '#A5B4FC', marginBottom: 6 }}>🏦 Bank (4% p.a.)</Text>
+                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>
+                                    {formatMonths(bankMonths)}
+                                </Text>
+                                <Text style={{ fontSize: 11, color: '#818CF8', marginTop: 4 }}>
+                                    {targetDate(bankMonths)}
+                                </Text>
+                            </View>
+
+                            {/* Divider */}
+                            <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginHorizontal: 16 }} />
+
+                            {/* SIP path */}
+                            <View style={{ flex: 1, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 11, color: '#A5B4FC', marginBottom: 6 }}>📈 SIP (9% p.a.)</Text>
+                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#34D399' }}>
+                                    {formatMonths(sipMonths)}
+                                </Text>
+                                <Text style={{ fontSize: 11, color: '#6EE7B7', marginTop: 4 }}>
+                                    {targetDate(sipMonths)}
+                                </Text>
+                            </View>
                         </View>
                     </View>
 
-                    {/* Interactive Slider / Adjuster */}
-                    <View>
-                        <Text className="text-indigo-200 text-xs mb-3 text-center">Simulate Monthly Investment</Text>
-                        <View className="flex-row justify-between items-center bg-white/5 rounded-full p-1 border border-white/10">
-                            <TouchableOpacity 
-                                onPress={() => setMonthlySip(Math.max(10000, monthlySip - 5000))}
-                                className="w-12 h-12 bg-white/10 rounded-full items-center justify-center"
-                            >
-                                <Text className="text-white text-2xl font-bold">-</Text>
-                            </TouchableOpacity>
-                            
-                            <Text className="text-white font-bold text-xl">{formatCurrency(monthlySip)}</Text>
-                            
-                            <TouchableOpacity 
-                                onPress={() => setMonthlySip(monthlySip + 5000)}
-                                className="w-12 h-12 bg-white/10 rounded-full items-center justify-center"
-                            >
-                                <Text className="text-white text-2xl font-bold">+</Text>
-                            </TouchableOpacity>
+                    {/* Investment strategy chip */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: 'rgba(52,211,153,0.12)', borderRadius: 14, padding: 14 }}>
+                        <ShieldCheck size={20} color="#34D399" />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#34D399' }}>
+                                {daysLeft < 365 ? 'Liquid Debt Fund' : daysLeft < 1095 ? 'Conservative Hybrid Fund' : 'Flexi Cap Equity MF'}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: '#6EE7B7', marginTop: 2, lineHeight: 17 }}>
+                                {daysLeft < 365
+                                    ? 'Short horizon (<1 year) — 100% debt for capital protection'
+                                    : daysLeft < 1095
+                                    ? 'Medium horizon (1–3 years) — 80% Debt + 20% Equity'
+                                    : 'Long horizon (3+ years) — 100% equity for maximum growth'
+                                }
+                            </Text>
                         </View>
                     </View>
                 </View>
 
+                {/* ── 5. Disclaimer ──────────────────────────── */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', padding: 12 }}>
+                    <Zap size={13} color="#9CA3AF" />
+                    <Text style={{ flex: 1, fontSize: 11, color: '#9CA3AF', marginLeft: 6, lineHeight: 16 }}>
+                        Returns shown are estimates and not guaranteed. Past performance of mutual funds does not indicate future returns. Invest based on your risk profile and consult a SEBI-registered financial advisor before investing.
+                    </Text>
+                </View>
             </ScrollView>
-
-            {/* STICKY BOTTOM BUTTON */}}
-            <View className="absolute bottom-0 w-full px-6 py-4 bg-white border-t border-border/40 pb-6 shadow-xl z-50">
-                <TouchableOpacity 
-                    // 👇 ADD THIS LINE RIGHT HERE! 👇
-                    onPress={() => navigation.replace('MainTabs')} 
-                    className="bg-indigo-600 p-4 rounded-2xl flex-row items-center justify-center"
-                >
-                    <Text className="text-white font-bold text-lg mr-2">Convert to Smart SIP</Text>
-                    <TrendingUp color="white" size={20} />
-                </TouchableOpacity>
-            </View>
         </SafeAreaView>
     );
 };
