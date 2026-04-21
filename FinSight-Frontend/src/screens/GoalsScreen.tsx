@@ -33,7 +33,7 @@ const GoalCard: React.FC<{
     onDeposit: (goal: FirestoreGoal) => void;
     onDelete: (goalId: string) => void;
 }> = ({ goal, onDeposit, onDelete }) => {
-    
+
     // NEW: We need navigation inside the card to route to Accelerate
     const navigation = useNavigation();
 
@@ -164,8 +164,8 @@ const GoalCard: React.FC<{
                     </TouchableOpacity>
 
                     {/* NEW: Accelerate Goal Button */}
-                    <TouchableOpacity 
-                        onPress={() => navigation.navigate('GoalAcceleration' as never)}
+                    <TouchableOpacity
+                        onPress={() => (navigation as any).navigate('GoalAcceleration', { goalId: goal.id })}
                         className="flex-1 py-2.5 rounded-xl flex-row justify-center items-center shadow-sm"
                         style={{ backgroundColor: goal.color }}
                     >

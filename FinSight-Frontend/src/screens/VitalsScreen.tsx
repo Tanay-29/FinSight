@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
+    ChevronRight, PieChart, Repeat,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
@@ -410,6 +411,53 @@ export const VitalsScreen: React.FC = () => {
                             </TouchableOpacity>
                         </View>
                     )}
+                </View>
+
+                {/* ─── Feature Quick-Access Row ──────────────────── */}
+                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 20, marginBottom: 4 }}>
+
+                    {/* 50/30/20 Money Manager */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('MoneyManager' as never)}
+                        activeOpacity={0.85}
+                        style={{
+                            flex: 1, backgroundColor: '#6366F1',
+                            borderRadius: 18, padding: 16,
+                            shadowColor: '#6366F1', shadowOpacity: 0.3,
+                            shadowRadius: 8, elevation: 4,
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                                <PieChart size={18} color="white" />
+                            </View>
+                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
+                        </View>
+                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>50/30/20</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Money Manager</Text>
+                    </TouchableOpacity>
+
+                    {/* Leaky Spend Tracker */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('SubscriptionTracker' as never)}
+                        activeOpacity={0.85}
+                        style={{
+                            flex: 1, backgroundColor: '#FFFFFF',
+                            borderRadius: 18, padding: 16,
+                            borderWidth: 1.5, borderColor: '#F3F4F6',
+                            shadowColor: '#000', shadowOpacity: 0.04,
+                            shadowRadius: 8, elevation: 2,
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' }}>
+                                <Repeat size={18} color="#D97706" />
+                            </View>
+                            <ChevronRight size={16} color="#D1D5DB" />
+                        </View>
+                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Leaky Spend</Text>
+                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Recurring charges</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Budget Breakdown */}

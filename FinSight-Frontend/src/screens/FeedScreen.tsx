@@ -11,6 +11,7 @@ import { MarketPulseWidget } from '../components/MarketPulseWidget';
 import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
+import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
 
 
@@ -147,6 +148,9 @@ return (
                         </Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* FinSight IQ Card */}
+                <FinSightIQCard />
 
                 {/* Market Pulse */}
                 <View className="mt-3">

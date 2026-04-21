@@ -16,6 +16,8 @@ import { BottomTabs } from './BottomTabs';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import CuratedBasketScreen from '../screens/CuratedBasketScreen';
 import ModuleReaderScreen from '../screens/ModuleReaderScreen';
+import MoneyManagerScreen from '../screens/MoneyManagerScreen';
+import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -66,6 +68,8 @@ export const RootNavigator = () => {
                     <Stack.Screen name="MainTabs" component={BottomTabs} />
                     <Stack.Screen name="CuratedBasket" component={CuratedBasketScreen} />
                     <Stack.Screen name="GoalAcceleration" component={GoalAccelerationScreen} />
+                    <Stack.Screen name="MoneyManager" component={MoneyManagerScreen} />
+                    <Stack.Screen name="SubscriptionTracker" component={SubscriptionTrackerScreen} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}
