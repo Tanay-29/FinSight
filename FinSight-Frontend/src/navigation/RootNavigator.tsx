@@ -18,6 +18,7 @@ import CuratedBasketScreen from '../screens/CuratedBasketScreen';
 import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
+import FlashcardScreen from '../screens/FlashcardScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -70,6 +71,7 @@ export const RootNavigator = () => {
                     <Stack.Screen name="GoalAcceleration" component={GoalAccelerationScreen} />
                     <Stack.Screen name="MoneyManager" component={MoneyManagerScreen} />
                     <Stack.Screen name="SubscriptionTracker" component={SubscriptionTrackerScreen} />
+                    <Stack.Screen name="Flashcards" component={FlashcardScreen} options={{ headerShown: false }} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}

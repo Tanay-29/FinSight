@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb,
-    Trophy, Flame, BookOpen, Star, RefreshCw, CheckCircle2,
+    Trophy, Flame, BookOpen, Star, RefreshCw, CheckCircle2, BrainCircuit,
 } from 'lucide-react-native';
 import { Module, QuizQuestion } from '../data/mockData';
 import { FirestoreLearningPath } from '../services/firestoreService';
@@ -269,7 +269,8 @@ const DonePhase: React.FC<{
     isSaving: boolean;
     onBack: () => void;
     onRetake: () => void;
-}> = ({ score, total, badgeEarned, streak, moduleName, isSaving, onBack, onRetake }) => {
+    onFlashcards: () => void;
+}> = ({ score, total, badgeEarned, streak, moduleName, isSaving, onBack, onRetake, onFlashcards }) => {
     const pct = Math.round((score / total) * 100);
     const perfect = score === total;
     const passed = pct >= 60;
@@ -349,6 +350,29 @@ const DonePhase: React.FC<{
 
             {/* Actions */}
             <View className="w-full px-4 mt-8 gap-3">
+                {/* AI Flashcards CTA */}
+                <TouchableOpacity
+                    onPress={onFlashcards}
+                    activeOpacity={0.85}
+                    style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 18, paddingVertical: 16,
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                        borderWidth: 1.5, borderColor: '#EEF2FF',
+                        shadowColor: '#6366F1', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
+                        gap: 10,
+                    }}
+                >
+                    <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' }}>
+                        <BrainCircuit size={18} color="#6366F1" />
+                    </View>
+                    <View>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#111827' }}>Revise with AI Flashcards</Text>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Gemini generates 5 cards from this module</Text>
+                    </View>
+                    <ChevronRight size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     onPress={onBack}
                     activeOpacity={0.85}
@@ -425,6 +449,14 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
 
     const handleBack = () => navigation.goBack();
 
+    const handleFlashcards = () => {
+        (navigation as any).navigate('Flashcards', {
+            moduleTitle: module.title,
+            moduleContent: module.content,
+            keyPoints: module.keyPoints ?? [],
+        });
+    };
+
     const PHASE_LABELS: Record<Phase, string> = {
         reading: 'Read',
         quiz: 'Quiz',
@@ -495,6 +527,7 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
                     isSaving={isSaving}
                     onBack={handleBack}
                     onRetake={handleRetake}
+                    onFlashcards={handleFlashcards}
                 />
             )}
         </SafeAreaView>
