@@ -6,24 +6,91 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from google import genai
 
-# Load the hidden variables from the .env file
 load_dotenv()
 
 app = Flask(__name__)
-# This allows your React Native app to talk to Flask safely
-CORS(app) 
-
-# --- AI CONFIGURATION ---
-# The new client automatically picks up GEMINI_API_KEY from your .env file
+CORS(app)
 client = genai.Client()
 
-# Yahoo Finance Tickers mapped to your UI
 TICKERS = {
     "^NSEI": "NIFTY 50",
     "^BSESN": "SENSEX",
     "GC=F": "GOLD (Futures)",
     "INR=X": "USD/INR"
 }
+
+
+# --- 0. FLASHCARD GENERATOR ROUTE (POST) ---
+@app.route('/api/generate-flashcards', methods=['POST'])
+def generate_flashcards():
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        title      = body.get('title', 'Finance Module')
+        content    = body.get('content', '')
+        key_points = body.get('keyPoints', [])
+
+        key_points_str = "\n".join(f"- {p}" for p in key_points) if key_points else "None provided."
+
+        prompt = f"""You are a financial education assistant creating study flashcards for Indian students.
+
+Based on the following module content, generate exactly 5 flashcards.
+
+MODULE TITLE: {title}
+
+MODULE CONTENT:
+{content[:2000]}
+
+KEY TAKEAWAYS:
+{key_points_str}
+
+Return ONLY a valid raw JSON array (no markdown, no code blocks) containing exactly 5 objects.
+Each object must have exactly these two string keys:
+- "question": A clear, specific question about a concept from this module (max 15 words)
+- "answer": A concise but complete answer (2-3 sentences max, use Indian rupee examples where relevant)
+
+Rules:
+- All text must be in English only.
+- Questions must test understanding, not just recall (e.g., "Why does..." "What happens when..." "How would you...")
+- Answers must be simple enough for a college student with no finance background.
+- Use Indian financial context where possible (SIP, NIFTY, EPF, etc.).
+- Return ONLY the raw JSON array. No extra text."""
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        raw = response.text.strip()
+        if raw.startswith("```json"): raw = raw[7:]
+        if raw.startswith("```"):     raw = raw[3:]
+        if raw.endswith("```"):       raw = raw[:-3]
+        cards = json.loads(raw.strip())
+
+        # Validate structure
+        if not isinstance(cards, list):
+            raise ValueError("Response is not a list")
+        cards = [
+            {"question": str(c.get("question", "")), "answer": str(c.get("answer", ""))}
+            for c in cards[:5]
+            if c.get("question") and c.get("answer")
+        ]
+        if len(cards) < 3:
+            raise ValueError("Not enough valid cards")
+
+        return jsonify(cards)
+
+    except Exception as e:
+        print(f"[flashcards] Error: {e}")
+        # Fallback: return 3 generic cards for the topic
+        title_safe = body.get('title', 'Finance') if 'body' in dir() else 'Finance'
+        return jsonify([
+            {"question": f"What is the main concept covered in '{title_safe}'?",
+             "answer": "This module covers a core financial concept. Re-read the content and key takeaways to solidify your understanding."},
+            {"question": "Why is financial planning important for young Indians?",
+             "answer": "Early financial planning allows you to leverage compound interest, build an emergency fund, and reach life goals faster with smaller monthly contributions."},
+            {"question": "What is the difference between saving and investing?",
+             "answer": "Saving is keeping money safely (e.g., in a bank) with low returns. Investing is putting money into assets like stocks or mutual funds for higher long-term growth but with some risk."},
+        ])
+
 
 # --- 1. MARKET PULSE ROUTE ---
 @app.route('/api/market-pulse', methods=['GET'])
