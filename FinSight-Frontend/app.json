@@ -22,15 +22,15 @@
         "backgroundColor": "#6366F1"
       },
       "package": "com.finsight.app",
-      "permissions": [
-        "RECEIVE_SMS",
-        "READ_SMS",
-        "RECEIVE_BOOT_COMPLETED",
-        "FOREGROUND_SERVICE"
-      ]
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a82789f8-7001-43f9-95ab-390b0d6a05db"
+      }
     }
   }
 }

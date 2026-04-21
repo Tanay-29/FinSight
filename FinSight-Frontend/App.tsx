@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,7 +16,12 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import './src/global.css';
 
+// NOTE: SMS background listener is disabled (native permissions removed).
+// The Smart Paste feature in AddTransactionScreen handles SMS parsing safely.
+
 SplashScreen.preventAutoHideAsync();
+
+// ─── Root component ───────────────────────────────────────────
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -45,8 +50,8 @@ export default function App() {
     <Provider store={store}>
       <SafeAreaProvider onLayout={onLayoutRootView}>
         <NavigationContainer>
-          <RootNavigator />
           <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={false} />
+          <RootNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
     </Provider>
