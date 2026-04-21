@@ -57,18 +57,20 @@ export const addTransaction = createAsyncThunk(
             // 1. Add Transaction
             const id = await addTransactionToFirestore(userId, transaction);
 
-            // 2. Find and Update Budget (if exists)
-            const transactionDate = new Date(transaction.date);
-            const month = format(transactionDate, 'yyyy-MM');
+            // 2. Find and Update Budget — ONLY for debit transactions
+            if (transaction.type === 'debit') {
+                const transactionDate = new Date(transaction.date);
+                const month = format(transactionDate, 'yyyy-MM');
 
-            const budgets = await getBudgets(userId, month);
-            const budget = budgets.find(
-                (b) => b.category.toLowerCase() === transaction.category.toLowerCase()
-            );
+                const budgets = await getBudgets(userId, month);
+                const budget = budgets.find(
+                    (b) => b.category.toLowerCase() === transaction.category.toLowerCase()
+                );
 
-            if (budget && budget.id) {
-                const newSpend = budget.currentSpend + transaction.amount;
-                await updateBudgetSpend(userId, budget.id, newSpend);
+                if (budget && budget.id) {
+                    const newSpend = budget.currentSpend + transaction.amount;
+                    await updateBudgetSpend(userId, budget.id, newSpend);
+                }
             }
 
             return { id, ...transaction };
