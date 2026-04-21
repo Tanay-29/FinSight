@@ -5,7 +5,9 @@ import transactionsReducer from './slices/transactionsSlice';
 import budgetsReducer from './slices/budgetsSlice';
 import learningReducer from './slices/learningSlice';
 import goalsReducer from './slices/goalsSlice';
-import marketReducer from './slices/marketSlice'; // ← 1. IMPORT THE NEW MARKET REDUCER
+import marketReducer from './slices/marketSlice';
+import smsReducer from './slices/smsSlice';
+import iqReducer from './slices/iqSlice';
 
 export const store = configureStore({
     reducer: {
@@ -15,7 +17,9 @@ export const store = configureStore({
         budgets: budgetsReducer,
         learning: learningReducer,
         goals: goalsReducer,
-        market: marketReducer, // ← 2. ADD IT TO YOUR REDUCER LIST
+        market: marketReducer,
+        sms: smsReducer,
+        iq: iqReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
