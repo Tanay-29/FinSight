@@ -19,6 +19,11 @@ import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
 import FlashcardScreen from '../screens/FlashcardScreen';
+// Phase 1: Execution Layer Screens
+import InvestScreen from '../screens/InvestScreen';
+import PortfolioScreen from '../screens/PortfolioScreen';
+import RoundUpScreen from '../screens/RoundUpScreen';
+import BurnRateScreen from '../screens/BurnRateScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -60,8 +65,6 @@ export const RootNavigator = () => {
                 <Stack.Screen name="Login" component={LoginScreen} />
             ) : !profile?.onboardingComplete ? (
                 // ── Logged in but onboarding not completed ────────────────
-                // This covers: new users (onboardingComplete: false) AND
-                // existing users with no onboardingComplete field at all.
                 <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             ) : (
                 // ── Fully onboarded user ──────────────────────────────────
@@ -72,6 +75,11 @@ export const RootNavigator = () => {
                     <Stack.Screen name="MoneyManager" component={MoneyManagerScreen} />
                     <Stack.Screen name="SubscriptionTracker" component={SubscriptionTrackerScreen} />
                     <Stack.Screen name="Flashcards" component={FlashcardScreen} options={{ headerShown: false }} />
+                    {/* Phase 1: Execution + Intelligence Layer */}
+                    <Stack.Screen name="Invest" component={InvestScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="RoundUp" component={RoundUpScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="BurnRate" component={BurnRateScreen} options={{ headerShown: false }} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}

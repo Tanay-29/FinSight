@@ -9,11 +9,12 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, PieChart, Repeat,
+    ChevronRight, PieChart, Repeat, Flame, Briefcase, PiggyBank,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
+import { loadRoundupBalance } from '../store/slices/walletSlice';
 import { BudgetBar } from '../components/BudgetBar';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
@@ -218,9 +219,12 @@ export const VitalsScreen: React.FC = () => {
     const [modalVisible, setModalVisible] = React.useState(false);
     const [createModalVisible, setCreateModalVisible] = React.useState(false);
 
+    const roundup = useAppSelector((s) => s.wallet.roundup);
+
     useEffect(() => {
         dispatch(fetchBudgets());
         dispatch(fetchTransactions());
+        dispatch(loadRoundupBalance());
     }, [dispatch]);
 
     const recentSpending = React.useMemo(() => {
@@ -459,6 +463,94 @@ export const VitalsScreen: React.FC = () => {
                         <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Recurring charges</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* ─── Intelligence Quick-Access Row ─────────────── */}
+                <View style={{ marginHorizontal: 16, marginTop: 10, marginBottom: 4 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Financial Intelligence</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 4 }}>
+
+                    {/* Burn Rate */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('BurnRate' as never)}
+                        activeOpacity={0.85}
+                        style={{
+                            flex: 1, backgroundColor: '#EF4444',
+                            borderRadius: 18, padding: 16,
+                            shadowColor: '#EF4444', shadowOpacity: 0.3,
+                            shadowRadius: 8, elevation: 4,
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                                <Flame size={18} color="white" />
+                            </View>
+                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
+                        </View>
+                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Burn Rate</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Spend projection</Text>
+                    </TouchableOpacity>
+
+                    {/* Invest & Portfolio */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Invest' as never)}
+                        activeOpacity={0.85}
+                        style={{
+                            flex: 1, backgroundColor: '#0F766E',
+                            borderRadius: 18, padding: 16,
+                            shadowColor: '#0F766E', shadowOpacity: 0.3,
+                            shadowRadius: 8, elevation: 4,
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                                <Briefcase size={18} color="white" />
+                            </View>
+                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
+                        </View>
+                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Invest</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Mock brokerage</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Round-Up Wallet mini-card */}
+                {roundup !== null && (
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('RoundUp' as never)}
+                        activeOpacity={0.85}
+                        style={{
+                            marginHorizontal: 16, marginTop: 10, marginBottom: 4,
+                            backgroundColor: '#FFFBEB',
+                            borderWidth: 1.5, borderColor: '#FDE68A',
+                            borderRadius: 18, padding: 16,
+                            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' }}>
+                                <PiggyBank size={20} color="#D97706" />
+                            </View>
+                            <View>
+                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400E' }}>Round-Up Wallet</Text>
+                                <Text style={{ fontSize: 18, fontWeight: '900', color: '#111827', marginTop: 1 }}>
+                                    ₹{(roundup?.roundup_balance || 0).toFixed(2)}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                            {roundup?.ready_to_invest ? (
+                                <View style={{ backgroundColor: '#D97706', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                                    <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 11 }}>Invest Now!</Text>
+                                </View>
+                            ) : (
+                                <Text style={{ fontSize: 12, color: '#B45309', fontWeight: '600' }}>
+                                    {(roundup?.progress_pct || 0).toFixed(0)}% to ₹500
+                                </Text>
+                            )}
+                            <ChevronRight size={14} color="#D97706" />
+                        </View>
+                    </TouchableOpacity>
+                )}
 
                 {/* Budget Breakdown */}
                 <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4 mb-8">

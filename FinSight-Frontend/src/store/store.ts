@@ -6,8 +6,11 @@ import budgetsReducer from './slices/budgetsSlice';
 import learningReducer from './slices/learningSlice';
 import goalsReducer from './slices/goalsSlice';
 import marketReducer from './slices/marketSlice';
-import smsReducer from './slices/smsSlice';
 import iqReducer from './slices/iqSlice';
+// Phase 1: Execution + Intelligence Layer
+import brokerageReducer from './slices/brokerageSlice';
+import walletReducer from './slices/walletSlice';
+import vitalsIntelReducer from './slices/vitalsIntelSlice';
 
 export const store = configureStore({
     reducer: {
@@ -18,8 +21,11 @@ export const store = configureStore({
         learning: learningReducer,
         goals: goalsReducer,
         market: marketReducer,
-        sms: smsReducer,
         iq: iqReducer,
+        // Phase 1
+        brokerage: brokerageReducer,
+        wallet: walletReducer,
+        vitalsIntel: vitalsIntelReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

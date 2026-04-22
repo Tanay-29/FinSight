@@ -7,6 +7,7 @@ import {
     getBudgets,
     updateBudgetSpend,
 } from '../../services/firestoreService';
+import { addRoundup } from '../../services/walletService';
 import { RootState } from '../store';
 import { format } from 'date-fns';
 
@@ -70,6 +71,13 @@ export const addTransaction = createAsyncThunk(
                 if (budget && budget.id) {
                     const newSpend = budget.currentSpend + transaction.amount;
                     await updateBudgetSpend(userId, budget.id, newSpend);
+                }
+
+                // 3. Record Round-Up for Execution Layer
+                try {
+                    await addRoundup(userId, transaction.amount);
+                } catch (err) {
+                    console.log('Failed to record round-up:', err);
                 }
             }
 

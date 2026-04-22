@@ -5,12 +5,35 @@ import yfinance as yf
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from google import genai
+from apscheduler.schedulers.background import BackgroundScheduler
+
+# ── Phase 1: Execution Layer imports ────────────────────────────────────────
+from database import init_db
+from blueprints.brokerage import brokerage_bp, tick_prices
+from blueprints.wallet import wallet_bp
+from blueprints.roundup import roundup_bp
+from blueprints.vitals_intel import vitals_intel_bp
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 client = genai.Client()
+
+# ── Register Blueprints ──────────────────────────────────────────────────────
+app.register_blueprint(brokerage_bp)
+app.register_blueprint(wallet_bp)
+app.register_blueprint(roundup_bp)
+app.register_blueprint(vitals_intel_bp)
+
+# ── Initialise SQLite DB ─────────────────────────────────────────────────────
+init_db()
+
+# ── Start Price Tick Scheduler (every 60 seconds) ────────────────────────────
+scheduler = BackgroundScheduler()
+scheduler.add_job(tick_prices, 'interval', seconds=60, id='price_tick')
+scheduler.start()
+print("[Scheduler] Price tick job started (every 60s)")
 
 TICKERS = {
     "^NSEI": "NIFTY 50",
@@ -80,7 +103,6 @@ Rules:
 
     except Exception as e:
         print(f"[flashcards] Error: {e}")
-        # Fallback: return 3 generic cards for the topic
         title_safe = body.get('title', 'Finance') if 'body' in dir() else 'Finance'
         return jsonify([
             {"question": f"What is the main concept covered in '{title_safe}'?",
