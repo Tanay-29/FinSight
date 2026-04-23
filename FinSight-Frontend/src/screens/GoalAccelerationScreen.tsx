@@ -14,8 +14,9 @@
 import React, { useState, useMemo } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    SafeAreaView, Animated, Platform,
+    Animated, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ChevronLeft, Clock, TrendingUp, ShieldCheck, Zap,
     PiggyBank, Calendar, Minus, Plus, AlertCircle,
@@ -149,7 +150,7 @@ const GoalAccelerationScreen: React.FC = () => {
     // ── Empty state ───────────────────────────────────────────
     if (!goal) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top']}>
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
                     <PiggyBank size={56} color="#C7D2FE" />
                     <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginTop: 16, textAlign: 'center' }}>
@@ -170,7 +171,7 @@ const GoalAccelerationScreen: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top']}>
 
             {/* ── Header ─────────────────────────────────────── */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
