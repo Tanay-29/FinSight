@@ -1,0 +1,290 @@
+rules_version = '2';
+
+// FinSight Firestore security rules.
+//
+// Model:
+//   users/{uid}                        private profile, owner only
+//   users/{uid}/transactions/{id}      private, owner only
+//   users/{uid}/budgets/{id}           private, owner only
+//   users/{uid}/goals/{id}             private, owner only
+//   users/{uid}/learning_progress/{id} private, owner only
+//   leagues/{week}/entries/{uid}       alias and weekly gain, readable by all
+//   squads/{code}                      shared savings goal, members only
+//   squads/{code}/contributions/{uid}  one row per member, members only
+//
+// Course content (learning paths, glossary) is static and ships with the app
+// in mockData.ts, so it has no collection here at all.
+//
+// Anything not matched below is denied. New collections must be added here
+// explicitly before the client can touch them.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ── Squad membership helpers ─────────────────────────────────────────
+    //
+    // Squad membership is a list on the parent document, so a contribution
+    // rule has to fetch the parent to check it. That get() is billed and is
+    // capped at 20 document reads per query, which is one more reason
+    // MAX_MEMBERS in utils/squad.ts is small: reading an 8 member squad's
+    // contributions costs 8 evaluations and stays comfortably under.
+
+    function squadMembers(code) {
+      return get(/databases/$(database)/documents/squads/$(code)).data.memberUids;
+    }
+
+    function isSquadMember(code) {
+      return isSignedIn() && request.auth.uid in squadMembers(code);
+    }
+
+    function isSquadOwner(code) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/squads/$(code)).data.ownerUid == request.auth.uid;
+    }
+
+    // A non-owner may only ever change one thing about a squad: whether they
+    // personally are in it. These two say exactly that, and nothing wider.
+
+    function joiningSelf() {
+      let before = resource.data.memberUids;
+      let after = request.resource.data.memberUids;
+      return !(request.auth.uid in before)
+          && request.auth.uid in after
+          && after.size() == before.size() + 1
+          && after.size() <= 8
+          // Nobody else was dropped on the way in.
+          && before.toSet().difference(after.toSet()).size() == 0;
+    }
+
+    function leavingSelf() {
+      let before = resource.data.memberUids;
+      let after = request.resource.data.memberUids;
+      return request.auth.uid in before
+          && !(request.auth.uid in after)
+          && after.size() == before.size() - 1
+          // Exactly one uid left, and it was this caller's.
+          && after.toSet().difference(before.toSet()).size() == 0
+          // The owner cannot walk out and strand a squad nobody can delete.
+          && resource.data.ownerUid != request.auth.uid;
+    }
+
+    // ── Field validation ─────────────────────────────────────────────────
+    // On update, request.resource.data is the full merged document, so these
+    // hold for partial updates too.
+
+    function validTransaction() {
+      let d = request.resource.data;
+      return d.amount is number
+          && d.amount >= 0
+          && d.type in ['debit', 'credit']
+          && d.category is string
+          && d.merchant is string
+          && d.date is string;
+    }
+
+    function validBudget() {
+      let d = request.resource.data;
+      return d.category is string
+          && d.monthlyLimit is number
+          && d.monthlyLimit >= 0
+          && d.currentSpend is number
+          && d.month is string;
+    }
+
+    function validGoal() {
+      let d = request.resource.data;
+      return d.title is string
+          && d.title.size() > 0
+          && d.title.size() <= 100
+          && d.targetAmount is number
+          && d.targetAmount > 0
+          && d.savedAmount is number
+          && d.savedAmount >= 0;
+    }
+
+    function validProgress() {
+      let d = request.resource.data;
+      return d.completedModules is list
+          && d.percentage is number
+          && d.percentage >= 0
+          && d.percentage <= 100
+          && d.badgeEarned is bool;
+    }
+
+    function validReviewCard() {
+      let d = request.resource.data;
+      return d.box is int
+          && d.box >= 1
+          && d.box <= 5
+          && d.dueDate is string
+          && d.question is string
+          && d.answer is string;
+    }
+
+    // ── Private user data ────────────────────────────────────────────────
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /transactions/{transactionId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validTransaction();
+      }
+
+      match /budgets/{budgetId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validBudget();
+      }
+
+      match /goals/{goalId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validGoal();
+      }
+
+      match /learning_progress/{pathId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validProgress();
+      }
+
+      // Spaced repetition schedule, one document per flashcard.
+      match /flashcard_reviews/{cardId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validReviewCard();
+      }
+
+      // Split and Settle ledger. One document, owner only. Friends here are
+      // names the owner typed, not accounts, so nothing crosses users.
+      match /split/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Merchant-to-category fixes the user made by hand, from Tidy Up.
+      match /category_corrections/{transactionId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.merchant is string
+          && request.resource.data.category is string;
+      }
+    }
+
+    // ── Improvement League ───────────────────────────────────────────────
+    //
+    // The one collection in this project readable across users. It is kept
+    // deliberately minimal: an alias derived from the uid, and a weekly IQ
+    // gain. Nothing else is allowed in, so a later code change cannot start
+    // leaking names, balances or transactions through this door.
+    //
+    // Entries are keyed by uid so ownership can be checked here. Every
+    // signed-in user can therefore see participating uids alongside aliases
+    // and gains. No personal or financial data is exposed and a uid cannot be
+    // used to authenticate, but it is a deliberate trade and worth knowing.
+    //
+    // Gains are self-reported by the client. The cap below bounds how absurd a
+    // forged entry can be; it cannot make the board trustworthy. Verifying
+    // gains would need a server recomputing the score, which this project
+    // does not have.
+
+    match /leagues/{week}/entries/{userId} {
+      allow read: if isSignedIn();
+
+      allow create, update: if isOwner(userId)
+        // Exactly these three fields, nothing more.
+        && request.resource.data.keys().hasOnly(['alias', 'gain', 'updatedAt'])
+        && request.resource.data.alias is string
+        && request.resource.data.alias.size() <= 40
+        && request.resource.data.gain is int
+        && request.resource.data.gain >= 0
+        && request.resource.data.gain <= 1000
+        && request.resource.data.updatedAt is string;
+
+      allow delete: if isOwner(userId);
+    }
+
+
+    // ── Squad Goals ──────────────────────────────────────────────────────
+    //
+    // The only document tree in this project that several users write to.
+    //
+    // The document id is the invite code. That is what makes the read rule
+    // below safe to keep strictly members-only: joining is a blind update to
+    // a path the joiner already knows, so nobody ever needs read access to a
+    // squad in order to get into it. The code is long enough that guessing
+    // one is not a practical route in (see utils/squad.ts).
+    //
+    // Contribution amounts are self-reported, exactly like league gains. The
+    // cap bounds how absurd a forged figure can be; it does not make one
+    // trustworthy. No real money moves here.
+
+    match /squads/{code} {
+      // Members only, and this governs queries too: a query is allowed only
+      // if every document it could return passes, which is why the client
+      // filters on array-contains its own uid rather than reading the lot.
+      allow read: if isSignedIn() && request.auth.uid in resource.data.memberUids;
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(
+             ['name', 'targetAmount', 'deadline', 'ownerUid', 'memberUids', 'createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        // A squad starts with exactly its creator in it, so nobody can
+        // conjure one with other people already enrolled.
+        && request.resource.data.memberUids == [request.auth.uid]
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.targetAmount is number
+        && request.resource.data.targetAmount > 0
+        && request.resource.data.targetAmount <= 10000000
+        && request.resource.data.deadline is string
+        && request.resource.data.createdAt is string;
+
+      // Joining and leaving, and nothing else. No path here can touch the
+      // name, the target, the deadline or the owner, so a squad's terms
+      // cannot be rewritten under the people who joined it.
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
+        && (joiningSelf() || leavingSelf());
+
+      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+
+      match /contributions/{userId} {
+        allow read: if isSquadMember(code);
+
+        // Write your own row, and only while you are actually in the squad.
+        allow create, update: if isOwner(userId)
+          && isSquadMember(code)
+          && request.resource.data.keys().hasOnly(['alias', 'amount', 'updatedAt'])
+          && request.resource.data.alias is string
+          && request.resource.data.alias.size() <= 40
+          && request.resource.data.amount is number
+          && request.resource.data.amount >= 0
+          && request.resource.data.amount <= 1000000
+          && request.resource.data.updatedAt is string;
+
+        // Your own row, with no membership check: leaving deletes it on the
+        // way out, after which you are no longer a member.
+        //
+        // The squad's owner may also delete any row, which is not a courtesy
+        // but a requirement: deleting a squad has to clear the subcollection
+        // first, because Firestore does not cascade from a client and once
+        // the parent is gone nothing can prove membership to reach the rows.
+        allow delete: if isOwner(userId) || isSquadOwner(code);
+      }
+    }
+
+    // ── Default deny ─────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
