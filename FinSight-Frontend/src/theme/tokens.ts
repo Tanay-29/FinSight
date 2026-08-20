@@ -1,55 +1,34 @@
+// Colour values live in palette.js, which tailwind.config.js also reads, so
+// class names and these JS tokens always resolve to the same hex.
+import { PALETTE } from './palette';
+
 export const COLORS = {
-    brand: {
-        primary: '#6366F1',
-        primaryDark: '#4F46E5',
-        primaryLight: '#818CF8',
-    },
+    brand: PALETTE.brand,
     semantic: {
-        profit: '#10B981',
-        profitBg: '#D1FAE5',
-        loss: '#EF4444',
-        lossBg: '#FEE2E2',
-        alertAmber: '#F59E0B',
-        alertCritical: '#DC2626',
-        alertBg: '#FEF3C7',
+        profit: PALETTE.profit.base,
+        profitBg: PALETTE.profit.bg,
+        loss: PALETTE.loss.base,
+        lossBg: PALETTE.loss.bg,
+        alertAmber: PALETTE.alert.amber,
+        alertCritical: PALETTE.alert.critical,
+        alertBg: PALETTE.alert.bg,
     },
     ai: {
-        border: '#A78BFA',
-        background: '#F5F3FF',
+        border: PALETTE.ai.border,
+        background: PALETTE.ai.bg,
     },
-    text: {
-        primary: '#1F2937',
-        secondary: '#6B7280',
-        tertiary: '#9CA3AF',
-        inverse: '#FFFFFF',
-    },
-    background: {
-        primary: '#FFFFFF',
-        secondary: '#F9FAFB',
-        tertiary: '#F3F4F6',
-    },
+    text: PALETTE.text,
+    surface: PALETTE.surface,
     border: {
-        default: '#E5E7EB',
-        focus: '#6366F1',
+        default: PALETTE.border.base,
+        focus: PALETTE.border.focus,
     },
     pii: {
-        maskText: '#9CA3AF',
-        maskBg: '#F3F4F6',
-        highlight: '#DBEAFE',
+        maskText: PALETTE.pii.mask,
+        maskBg: PALETTE.pii.maskBg,
+        highlight: PALETTE.pii.highlight,
     },
-    category: {
-        dining: '#F97316',
-        shopping: '#EC4899',
-        transport: '#3B82F6',
-        groceries: '#10B981',
-        utilities: '#EAB308',
-        entertainment: '#8B5CF6',
-        healthcare: '#14B8A6',
-        rent: '#6366F1',
-        investments: '#10B981',
-        education: '#3B82F6',
-        miscellaneous: '#9CA3AF',
-    },
+    category: PALETTE.category,
 } as const;
 
 export const TYPOGRAPHY = {
@@ -129,17 +108,3 @@ export const Z_INDEX = {
     toast: 500,
     overlay: 1000,
 } as const;
-
-export const CATEGORY_ICONS: Record<string, string> = {
-    dining: '🍽️',
-    shopping: '🛍️',
-    transport: '🚗',
-    groceries: '🛒',
-    utilities: '⚡',
-    entertainment: '🎬',
-    healthcare: '🏥',
-    rent: '🏠',
-    investments: '📈',
-    education: '📚',
-    miscellaneous: '📦',
-};

@@ -1,57 +1,48 @@
 /** @type {import('tailwindcss').Config} */
+const { PALETTE } = require('./src/theme/palette');
+
 module.exports = {
     content: ['./App.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
     presets: [require('nativewind/preset')],
     theme: {
         extend: {
+            // Colours come from src/theme/palette.js so class names and the JS
+            // tokens in src/theme/tokens.ts can never drift apart again.
             colors: {
                 brand: {
-                    primary: '#6366F1',
-                    'primary-dark': '#4F46E5',
-                    'primary-light': '#818CF8',
+                    primary: PALETTE.brand.primary,
+                    'primary-dark': PALETTE.brand.primaryDark,
+                    'primary-light': PALETTE.brand.primaryLight,
                 },
                 profit: {
-                    DEFAULT: '#10B981',
-                    bg: '#D1FAE5',
+                    DEFAULT: PALETTE.profit.base,
+                    bg: PALETTE.profit.bg,
                 },
                 loss: {
-                    DEFAULT: '#EF4444',
-                    bg: '#FEE2E2',
+                    DEFAULT: PALETTE.loss.base,
+                    bg: PALETTE.loss.bg,
                 },
                 alert: {
-                    amber: '#F59E0B',
-                    critical: '#DC2626',
-                    bg: '#FEF3C7',
+                    amber: PALETTE.alert.amber,
+                    critical: PALETTE.alert.critical,
+                    bg: PALETTE.alert.bg,
                 },
                 ai: {
-                    border: '#A78BFA',
-                    bg: '#F5F3FF',
+                    border: PALETTE.ai.border,
+                    bg: PALETTE.ai.bg,
                 },
-                text: {
-                    primary: '#1F2937',
-                    secondary: '#6B7280',
-                    tertiary: '#9CA3AF',
-                },
-                surface: {
-                    primary: '#FFFFFF',
-                    secondary: '#F9FAFB',
-                    tertiary: '#F3F4F6',
-                },
+                text: PALETTE.text,
+                surface: PALETTE.surface,
                 border: {
-                    DEFAULT: '#E5E7EB',
-                    focus: '#6366F1',
+                    DEFAULT: PALETTE.border.base,
+                    focus: PALETTE.border.focus,
                 },
                 pii: {
-                    mask: '#9CA3AF',
-                    'mask-bg': '#F3F4F6',
+                    mask: PALETTE.pii.mask,
+                    'mask-bg': PALETTE.pii.maskBg,
+                    highlight: PALETTE.pii.highlight,
                 },
-                category: {
-                    dining: '#F97316',
-                    shopping: '#EC4899',
-                    transport: '#3B82F6',
-                    groceries: '#10B981',
-                    utilities: '#EAB308',
-                },
+                category: PALETTE.category,
             },
             fontFamily: {
                 inter: ['Inter'],
