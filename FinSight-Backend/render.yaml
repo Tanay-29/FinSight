@@ -3,7 +3,11 @@ services:
     name: finsight-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app
+    # One worker on purpose. The response cache and the mock price engine both
+    # live in process memory, so extra workers would each keep their own copy:
+    # the cache would miss more often and prices would differ between requests.
+    # Threads give concurrency instead, and share that memory.
+    startCommand: gunicorn -w 1 --threads 4 --timeout 60 main:app
     envVars:
       - key: GEMINI_API_KEY
         sync: false   # You will paste this manually in the Render dashboard

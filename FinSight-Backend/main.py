@@ -13,6 +13,10 @@ from blueprints.brokerage import brokerage_bp, tick_prices
 from blueprints.wallet import wallet_bp
 from blueprints.roundup import roundup_bp
 from blueprints.vitals_intel import vitals_intel_bp
+from cache import (
+    cache, make_key,
+    TTL_MARKET_PULSE, TTL_MARKET_INSIGHT, TTL_FLASHCARDS, TTL_AI_ADVISOR,
+)
 
 load_dotenv()
 
@@ -43,6 +47,49 @@ TICKERS = {
 }
 
 
+def cached_json(payload, hit: bool):
+    """Return a JSON response tagged so you can see whether it was cached."""
+    response = jsonify(payload)
+    response.headers["X-Cache"] = "HIT" if hit else "MISS"
+    return response
+
+
+def _fetch_market_quotes():
+    """
+    Live quotes for every ticker, cached briefly.
+
+    Both /api/market-pulse and /api/market-insight need this, so sharing it
+    halves the number of Yahoo requests.
+    """
+    cached = cache.get("market:quotes")
+    if cached is not None:
+        return cached, True
+
+    data = yf.Tickers(" ".join(TICKERS.keys()))
+    quotes = []
+    for symbol, name in TICKERS.items():
+        info = data.tickers[symbol].fast_info
+        current_price = info.last_price
+        prev_close = info.previous_close
+        quotes.append({
+            "symbol": symbol,
+            "name": name,
+            "price": current_price,
+            "prev_close": prev_close,
+            "change_percent": ((current_price - prev_close) / prev_close) * 100,
+        })
+
+    cache.set("market:quotes", quotes, TTL_MARKET_PULSE)
+    return quotes, False
+
+# Appended to every Gemini prompt. The app renders icons, not glyphs, and its
+# copy uses no em dashes, so generated text must not reintroduce either.
+STYLE_RULES = """
+- Write in English only. No Hindi, no Hinglish.
+- Do NOT use emojis or any pictographic characters.
+- Do NOT use em dashes. Use a comma, colon, or semicolon instead."""
+
+
 # --- 0. FLASHCARD GENERATOR ROUTE (POST) ---
 @app.route('/api/generate-flashcards', methods=['POST'])
 def generate_flashcards():
@@ -51,6 +98,13 @@ def generate_flashcards():
         title      = body.get('title', 'Finance Module')
         content    = body.get('content', '')
         key_points = body.get('keyPoints', [])
+
+        # Cards are a pure function of the module text, so the same module
+        # serves every user from one generation.
+        cache_key = make_key("flashcards", title, content, key_points)
+        hit = cache.get(cache_key)
+        if hit is not None:
+            return cached_json(hit, True)
 
         key_points_str = "\n".join(f"- {p}" for p in key_points) if key_points else "None provided."
 
@@ -71,8 +125,7 @@ Each object must have exactly these two string keys:
 - "question": A clear, specific question about a concept from this module (max 15 words)
 - "answer": A concise but complete answer (2-3 sentences max, use Indian rupee examples where relevant)
 
-Rules:
-- All text must be in English only.
+Rules:{STYLE_RULES}
 - Questions must test understanding, not just recall (e.g., "Why does..." "What happens when..." "How would you...")
 - Answers must be simple enough for a college student with no finance background.
 - Use Indian financial context where possible (SIP, NIFTY, EPF, etc.).
@@ -99,9 +152,12 @@ Rules:
         if len(cards) < 3:
             raise ValueError("Not enough valid cards")
 
-        return jsonify(cards)
+        cache.set(cache_key, cards, TTL_FLASHCARDS)
+        return cached_json(cards, False)
 
     except Exception as e:
+        # Deliberately not cached: a transient failure must not serve generic
+        # cards for the next day.
         print(f"[flashcards] Error: {e}")
         title_safe = body.get('title', 'Finance') if 'body' in dir() else 'Finance'
         return jsonify([
@@ -118,28 +174,20 @@ Rules:
 @app.route('/api/market-pulse', methods=['GET'])
 def get_market_pulse():
     try:
-        tickers_str = " ".join(TICKERS.keys())
-        data = yf.Tickers(tickers_str)
-        
-        market_data = []
-        id_counter = 1
-        
-        for symbol, name in TICKERS.items():
-            info = data.tickers[symbol].fast_info
-            current_price = info.last_price
-            prev_close = info.previous_close
-            change_percent = ((current_price - prev_close) / prev_close) * 100
-            
-            market_data.append({
-                "id": str(id_counter),
-                "name": name,
-                "price": f"{current_price:,.2f}",
-                "change": f"{abs(change_percent):.2f}",
-                "isUp": change_percent >= 0
-            })
-            id_counter += 1
-            
-        return jsonify(market_data)
+        quotes, hit = _fetch_market_quotes()
+
+        market_data = [
+            {
+                "id": str(i),
+                "name": q["name"],
+                "price": f"{q['price']:,.2f}",
+                "change": f"{abs(q['change_percent']):.2f}",
+                "isUp": q["change_percent"] >= 0,
+            }
+            for i, q in enumerate(quotes, start=1)
+        ]
+
+        return cached_json(market_data, hit)
 
     except Exception as e:
         return jsonify({"error": f"Failed to fetch market data: {str(e)}"}), 500
@@ -149,16 +197,19 @@ def get_market_pulse():
 @app.route('/api/market-insight', methods=['GET'])
 def get_market_insight():
     try:
-        tickers_str = " ".join(TICKERS.keys())
-        data = yf.Tickers(tickers_str)
-        
-        market_summary = []
-        for symbol, name in TICKERS.items():
-            info = data.tickers[symbol].fast_info
-            change_percent = ((info.last_price - info.previous_close) / info.previous_close) * 100
-            direction = "up" if change_percent >= 0 else "down"
-            market_summary.append(f"{name} is {direction} by {abs(change_percent):.2f}%")
-            
+        # This commentary is identical for every user, so it is cached globally.
+        # Without this, every Feed open by every user is one Gemini call.
+        cached_insight = cache.get("market:insight")
+        if cached_insight is not None:
+            return cached_json(cached_insight, True)
+
+        quotes, _ = _fetch_market_quotes()
+
+        market_summary = [
+            f"{q['name']} is {'up' if q['change_percent'] >= 0 else 'down'} "
+            f"by {abs(q['change_percent']):.2f}%"
+            for q in quotes
+        ]
         summary_str = ", ".join(market_summary)
 
         prompt = f"""
@@ -171,8 +222,8 @@ def get_market_insight():
         1. "title": A short question or statement (e.g., "Why is NIFTY 50 up today?")
         2. "text": 2-3 sentences explaining the movement in simple English, plus a quick takeaway for a beginner investor.
 
-        Do NOT use Hindi or Hinglish. Write in English only.
-        Do NOT wrap the output in ```json markdown blocks. Return only the raw JSON array.
+        Rules:{STYLE_RULES}
+        - Do NOT wrap the output in ```json markdown blocks. Return only the raw JSON array.
         """
 
         response = client.models.generate_content(
@@ -187,9 +238,12 @@ def get_market_insight():
             ai_response_text = ai_response_text[3:-3].strip()
 
         insight_data = json.loads(ai_response_text)
-        return jsonify(insight_data)
+        cache.set("market:insight", insight_data, TTL_MARKET_INSIGHT)
+        return cached_json(insight_data, False)
 
     except Exception as e:
+        # Not cached, so the next request retries rather than serving this
+        # placeholder for the next 15 minutes.
         print(f"Error generating AI insight: {e}")
         return jsonify([{
             "title": "AI is taking a break",
@@ -232,14 +286,22 @@ def get_ai_advisor():
         for g in goals[:3]:
             pct = round((g.get('savedAmount', 0) / max(g.get('targetAmount', 1), 1)) * 100)
             goal_lines.append(
-                f"  - {g.get('title','?')} {g.get('emoji','')} - "
+                f"  - {g.get('title','?')}: "
                 f"{pct}% saved (Rs{g.get('savedAmount',0)} of Rs{g.get('targetAmount',0)})"
             )
         goal_summary = "\n".join(goal_lines) if goal_lines else "  No goals set."
 
+        # These summaries plus the score fully determine the prompt, so they
+        # make the cache key. Advice is regenerated when the user's finances
+        # actually change, and not when they simply reopen the app.
+        cache_key = make_key("advisor", score, streak, tx_summary, budget_summary, goal_summary)
+        hit = cache.get(cache_key)
+        if hit is not None:
+            return cached_json(hit, True)
+
         prompt = f"""You are 'FinSight Sensei', a sharp, encouraging financial coach for Indian students and young professionals.
 You speak ONLY in English. Do not use any Hindi or Hinglish words whatsoever.
-Your tone is direct, motivating, and data-driven — like a personal CFO.
+Your tone is direct, motivating, and data-driven - like a personal CFO.
 
 FINSIGHT IQ SCORE: {score} / 1000
 LEARNING STREAK: {streak} days
@@ -264,8 +326,7 @@ Respond with ONLY a valid raw JSON object (no markdown, no code blocks) with exa
   ]
 }}
 
-Rules:
-- All text MUST be English only. No Hindi, no Hinglish.
+Rules:{STYLE_RULES}
 - Quests must target REAL weaknesses visible in the user data (e.g., over-budget category, missing goals, broken streak).
 - If finances look healthy, quests should focus on wealth growth (investing, increasing goals, completing modules).
 - Return ONLY the raw JSON. No extra text, no markdown."""
@@ -279,12 +340,14 @@ Rules:
         if raw.startswith("```"): raw = raw[3:]
         if raw.endswith("```"): raw = raw[:-3]
         advice = json.loads(raw.strip())
-        return jsonify(advice)
+        cache.set(cache_key, advice, TTL_AI_ADVISOR)
+        return cached_json(advice, False)
 
     except Exception as e:
+        # Not cached: the fallback is a placeholder, not real coaching.
         print(f"[ai-advisor] Error: {e}")
         return jsonify({
-            "mood": "Your finances are a work in progress — and that is perfectly fine.",
+            "mood": "Your finances are a work in progress - and that is perfectly fine.",
             "explanation": "We could not analyze your data right now. Keep tracking your transactions and check back shortly.",
             "quests": [
                 {"title": "Track a Transaction", "description": "Add at least one transaction today to help personalize your coaching and earn +10 IQ.", "points": 10},
@@ -292,6 +355,12 @@ Rules:
                 {"title": "Complete a Module", "description": "Finish any learning module in the Learn tab to boost your financial knowledge and earn +20 IQ.", "points": 20}
             ]
         })
+
+
+# --- 4. CACHE STATS (for checking the cache is doing its job) ---
+@app.route('/api/cache-stats', methods=['GET'])
+def get_cache_stats():
+    return jsonify(cache.stats())
 
 
 if __name__ == '__main__':
