@@ -24,6 +24,8 @@ import InvestScreen from '../screens/InvestScreen';
 import PortfolioScreen from '../screens/PortfolioScreen';
 import RoundUpScreen from '../screens/RoundUpScreen';
 import BurnRateScreen from '../screens/BurnRateScreen';
+// Social and shared
+import SquadGoalsScreen from '../screens/SquadGoalsScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -80,6 +82,7 @@ export const RootNavigator = () => {
                     <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="RoundUp" component={RoundUpScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="BurnRate" component={BurnRateScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="SquadGoals" component={SquadGoalsScreen} options={{ headerShown: false }} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}
