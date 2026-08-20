@@ -1,0 +1,26 @@
+# Repo-wide ignores. The frontend and backend keep their own .gitignore for
+# things specific to each; this file covers the root and anything shared.
+
+# Assistant and editor working directories, never part of the project.
+.claude/
+.vscode/
+.idea/
+
+# Firebase CLI and emulator output.
+.firebase/
+firebase-debug.log
+firestore-debug.log
+database-debug.log
+pubsub-debug.log
+ui-debug.log
+firebase-debug.*.log
+
+# Local SQLite for the backend. Render's disk is ephemeral and this file is
+# recreated on boot, so a committed copy is only ever stale.
+*.db
+*.sqlite
+*.sqlite3
+
+# OS noise
+.DS_Store
+Thumbs.db
