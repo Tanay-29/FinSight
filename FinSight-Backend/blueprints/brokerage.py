@@ -1,7 +1,7 @@
 """
 blueprints/brokerage.py
 ─────────────────────────────────────────────────────────────────────────────
-Mock Brokerage Engine — OMS, Portfolio Service, Price Engine, Transaction Ledger
+Mock Brokerage Engine - OMS, Portfolio Service, Price Engine, Transaction Ledger
 
 Endpoints:
   GET  /api/prices          → All mock asset prices
@@ -14,7 +14,7 @@ import uuid
 import random
 import threading
 from datetime import datetime, timezone
-from math import ceil
+from math import ceil, exp, sqrt
 
 from flask import Blueprint, jsonify, request
 from database import get_connection
@@ -49,13 +49,80 @@ def _init_prices():
             }
 
 
+# ── Price process parameters ───────────────────────────────────────────────
+#
+# Annualised drift (mu) and volatility (sigma) per asset class, used by the
+# geometric Brownian motion in tick_prices().
+#
+# These are ILLUSTRATIVE TEACHING VALUES, not forecasts and not advice. Their
+# job is to make the simulation show that a single stock swings more than a
+# broad index fund, which the previous process could not do because it applied
+# identical noise to every asset.
+
+CLASS_PARAMS = {
+    "ETF":   {"mu": 0.10, "sigma": 0.15},   # broad equity index
+    "MF":    {"mu": 0.10, "sigma": 0.18},   # actively managed equity fund
+    "Stock": {"mu": 0.12, "sigma": 0.28},   # single company, higher both ways
+}
+
+# Gold is not equity and should not move like it, but its listed type is "ETF"
+# and that string is part of the API response, so it is overridden by symbol
+# rather than by retyping the asset.
+SYMBOL_PARAMS = {
+    "GOLDBEES": {"mu": 0.06, "sigma": 0.13},
+}
+
+# One tick a minute, so a simulated year is 60 * 24 * 365 ticks.
+TICKS_PER_YEAR = 525_600
+_DT = 1.0 / TICKS_PER_YEAR
+
+
+def _params_for(symbol: str) -> dict:
+    if symbol in SYMBOL_PARAMS:
+        return SYMBOL_PARAMS[symbol]
+    return CLASS_PARAMS.get(ASSETS[symbol]["type"], CLASS_PARAMS["ETF"])
+
+
 def tick_prices():
-    """Random-walk: each asset moves ±2% per tick. Called by APScheduler."""
+    """
+    Advance every asset one tick of geometric Brownian motion.
+
+        P(t+1) = P(t) * exp( (mu - sigma^2/2) * dt + sigma * sqrt(dt) * Z )
+
+    This replaces an earlier multiplicative walk, P * (1 + U(-0.02, 0.02)),
+    which was wrong in two ways that mattered.
+
+    It drifted downwards. For noise symmetric about zero, E[ln(1+e)] < 0 by
+    Jensen's inequality because ln is concave, giving -6.667e-5 per tick at
+    a = 0.02. Over 1,440 ticks a simulated day that compounds to a median price
+    ratio of 0.909, and 0.511 over a week. Portfolios halved weekly no matter
+    what the learner did.
+
+    And it was far too volatile: 1.1547% per tick annualises to roughly 837%,
+    about two orders of magnitude above a real broad equity index.
+
+    That combination taught three false lessons: that holdings decay on their
+    own, that diversification is pointless because everything falls together,
+    and that rounding spare change into investments destroys it. A learner
+    reasoning correctly from that environment would conclude investing is a
+    losing game.
+
+    The Ito term -sigma^2/2 removes the bias by construction, so E[P_T] =
+    P_0 * exp(mu * T). Because exp() is always positive, a price can also no
+    longer be driven to zero or below.
+
+    Known simplification: assets are drawn independently, so this still does not
+    model correlation. Diversification therefore looks better here than it is.
+    """
     with _price_lock:
         for symbol in _prices:
-            change_pct = random.uniform(-0.02, 0.02)
+            p = _params_for(symbol)
+            mu, sigma = p["mu"], p["sigma"]
+            drift = (mu - 0.5 * sigma * sigma) * _DT
+            shock = sigma * sqrt(_DT) * random.gauss(0.0, 1.0)
+
             prev = _prices[symbol]["current"]
-            new_price = round(prev * (1 + change_pct), 2)
+            new_price = round(prev * exp(drift + shock), 2)
             _prices[symbol]["prev"]    = prev
             _prices[symbol]["current"] = new_price
 
