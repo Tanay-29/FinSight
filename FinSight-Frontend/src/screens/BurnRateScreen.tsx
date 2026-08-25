@@ -16,7 +16,15 @@ import { useNavigation } from '@react-navigation/native';
 import {
     ChevronLeft, Flame, TrendingDown, TrendingUp, Zap,
     CheckCircle, AlertTriangle, XCircle, Target, PiggyBank, RefreshCw,
+    Lightbulb, Home, Coffee, Wallet,
 } from 'lucide-react-native';
+
+/** Icon shown beside each 50/30/20 bucket. */
+const BUCKET_ICONS = {
+    needs: Home,
+    wants: Coffee,
+    savings: Wallet,
+} as const;
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadBurnRate, loadSavingsEngine, loadRule503020 } from '../store/slices/vitalsIntelSlice';
 
@@ -318,9 +326,12 @@ const BurnRateScreen: React.FC = () => {
                                                 </View>
                                             </View>
                                             <GaugeBar value={event.actual_spend} max={event.planned_budget} color="#10B981" />
-                                            <Text style={{ fontSize: 13, color: recStyle.text, fontWeight: '600', marginTop: 10, lineHeight: 18 }}>
-                                                💡 {event.action_text}
-                                            </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10 }}>
+                                                <Lightbulb size={14} color={recStyle.text} style={{ marginTop: 2 }} />
+                                                <Text style={{ flex: 1, fontSize: 13, color: recStyle.text, fontWeight: '600', lineHeight: 18 }}>
+                                                    {event.action_text}
+                                                </Text>
+                                            </View>
                                             <Text style={{ fontSize: 12, color: '#10B981', fontWeight: '700', marginTop: 6 }}>
                                                 Surplus: ₹{event.surplus.toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({event.surplus_pct.toFixed(0)}% unspent)
                                             </Text>
@@ -370,7 +381,7 @@ const BurnRateScreen: React.FC = () => {
                                 <View style={{ backgroundColor: '#ECFDF5', borderRadius: 14, padding: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: '#BBF7D0' }}>
                                     <CheckCircle size={18} color="#10B981" />
                                     <Text style={{ fontSize: 13, color: '#065F46', fontWeight: '700' }}>
-                                        🎯 Golden Ratio! You're within the 50/30/20 target.
+                                        Golden Ratio. You're within the 50/30/20 target.
                                     </Text>
                                 </View>
                             )}
@@ -389,9 +400,7 @@ const BurnRateScreen: React.FC = () => {
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                                 <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: color + '20', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <Text style={{ fontSize: 18 }}>
-                                                        {bucket === 'needs' ? '🏠' : bucket === 'wants' ? '☕' : '💰'}
-                                                    </Text>
+                                                    {React.createElement(BUCKET_ICONS[bucket], { size: 18, color })}
                                                 </View>
                                                 <View>
                                                     <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', textTransform: 'capitalize' }}>{bucket}</Text>
