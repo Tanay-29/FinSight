@@ -9,6 +9,8 @@
  * This module handles the parsing logic only.
  */
 
+import { matchMerchant } from '../utils/merchantRules';
+
 export interface ParsedTransaction {
     amount: number;
     type: 'debit' | 'credit';
@@ -49,45 +51,6 @@ const PATTERNS = {
 };
 
 /** Merchant-to-category mapping */
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-    dining: [
-        'swiggy', 'zomato', 'starbucks', 'mcdonald', 'domino', 'kfc',
-        'subway', 'pizza', 'burger', 'cafe', 'restaurant', 'food',
-        'biryani', 'chai', 'dunkin',
-    ],
-    transport: [
-        'uber', 'ola', 'rapido', 'metro', 'irctc', 'redbus',
-        'makemytrip', 'petrol', 'fuel', 'parking', 'toll',
-    ],
-    shopping: [
-        'amazon', 'flipkart', 'myntra', 'ajio', 'meesho', 'nykaa',
-        'tatacliq', 'shoppers', 'decathlon', 'h&m', 'zara',
-    ],
-    groceries: [
-        'blinkit', 'bigbasket', 'zepto', 'instamart', 'jiomart',
-        'dmart', 'reliance', 'nature', 'basket', 'grofers',
-    ],
-    utilities: [
-        'jio', 'airtel', 'vi', 'bsnl', 'electricity', 'water',
-        'gas', 'broadband', 'wifi', 'internet', 'bill',
-    ],
-    entertainment: [
-        'netflix', 'spotify', 'hotstar', 'prime video', 'youtube',
-        'zee5', 'sony', 'gaana', 'pvr', 'inox', 'bookmyshow',
-    ],
-    healthcare: [
-        'apollo', 'pharmeasy', 'netmeds', 'medplus', '1mg',
-        'practo', 'hospital', 'doctor', 'clinic', 'dental',
-    ],
-    investments: [
-        'groww', 'zerodha', 'kuvera', 'coin', 'sip', 'mutual fund',
-        'nps', 'ppf', 'fd', 'stock',
-    ],
-    education: [
-        'udemy', 'coursera', 'unacademy', 'byjus', 'physicswallah',
-        'linkedin learning', 'skillshare',
-    ],
-};
 
 /**
  * Parse a notification body to extract transaction data.
@@ -149,15 +112,8 @@ export function categorizeMerchant(
     merchant: string,
     fullText: string = ''
 ): string {
-    const searchText = `${merchant} ${fullText}`.toLowerCase();
-
-    for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-        for (const keyword of keywords) {
-            if (searchText.includes(keyword.toLowerCase())) {
-                return category;
-            }
-        }
-    }
-
-    return 'miscellaneous';
+    // Longest match first, on word boundaries, against the table shared with
+    // the clipboard parser. See utils/merchantRules.
+    const match = matchMerchant(`${merchant} ${fullText}`);
+    return match ? match.category : 'miscellaneous';
 }

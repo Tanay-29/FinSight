@@ -1,12 +1,12 @@
-// Define our keyword rules
-const CATEGORY_RULES = {
-    dining: ['zomato', 'swiggy', 'mcdonalds', 'starbucks', 'cafe', 'restaurant', 'kfc', 'dominos'],
-    transport: ['irctc', 'uber', 'ola', 'rapido', 'makemytrip', 'indigo', 'metro', 'petrol', 'hpcl', 'bpcl'],
-    shopping: ['amazon', 'flipkart', 'myntra', 'zara', 'h&m', 'reliance', 'd-mart'],
-    groceries: ['blinkit', 'zepto', 'swiggy instamart', 'bigbasket', 'milk', 'grocery'],
-    utilities: ['bescom', 'electricity', 'jio', 'airtel', 'vi', 'broadband', 'gas'],
-    entertainment: ['netflix', 'spotify', 'bookmyshow', 'pvr', 'prime video'],
-};
+/**
+ * Clipboard parser for bank SMS.
+ *
+ * Keyword rules moved to utils/merchantRules, which both this and the
+ * notification parser now share. They previously kept separate tables that
+ * disagreed with each other, so the same transaction could be categorised
+ * differently depending on whether it arrived by paste or by notification.
+ */
+import { matchMerchant } from './merchantRules';
 
 export const parseBankSMS = (smsText: string) => {
     const lowerText = smsText.toLowerCase();
@@ -20,14 +20,13 @@ export const parseBankSMS = (smsText: string) => {
     let detectedCategory = 'other';
     let detectedMerchant = 'Unknown Merchant';
 
-    for (const [category, keywords] of Object.entries(CATEGORY_RULES)) {
-        const foundKeyword = keywords.find(keyword => lowerText.includes(keyword));
-        if (foundKeyword) {
-            detectedCategory = category;
-            // Capitalize the first letter for a clean merchant name
-            detectedMerchant = foundKeyword.charAt(0).toUpperCase() + foundKeyword.slice(1);
-            break;
-        }
+    // Longest match first, on word boundaries. See utils/merchantRules for why
+    // both of those matter more than they look.
+    const match = matchMerchant(lowerText);
+    if (match) {
+        detectedCategory = match.category;
+        // Capitalize the first letter for a clean merchant name
+        detectedMerchant = match.keyword.charAt(0).toUpperCase() + match.keyword.slice(1);
     }
 
     // 3. Determine if it's a debit or credit
