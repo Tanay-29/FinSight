@@ -12,7 +12,6 @@ from database import init_db
 from blueprints.brokerage import brokerage_bp, tick_prices
 from blueprints.wallet import wallet_bp
 from blueprints.roundup import roundup_bp
-from blueprints.vitals_intel import vitals_intel_bp
 from cache import (
     cache, make_key,
     TTL_MARKET_PULSE, TTL_MARKET_INSIGHT, TTL_FLASHCARDS, TTL_AI_ADVISOR,
@@ -28,7 +27,6 @@ client = genai.Client()
 app.register_blueprint(brokerage_bp)
 app.register_blueprint(wallet_bp)
 app.register_blueprint(roundup_bp)
-app.register_blueprint(vitals_intel_bp)
 
 # ── Initialise SQLite DB ─────────────────────────────────────────────────────
 init_db()

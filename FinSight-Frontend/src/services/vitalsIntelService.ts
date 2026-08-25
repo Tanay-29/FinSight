@@ -1,101 +1,39 @@
 /**
  * vitalsIntelService.ts
- * Communicates with the Flask Vitals Intelligence Layer
+ *
+ * These three used to POST to the Flask vitals routes. They now compute
+ * locally: the server held no secret and read no database, it just did
+ * arithmetic on transactions the app had already loaded. The Vitals screen is
+ * now instant, works offline, and no longer depends on the backend being
+ * awake.
+ *
+ * The functions stay async and keep their signatures so the thunks in
+ * vitalsIntelSlice are unchanged. The maths lives in utils/vitals.
  */
-import { BACKEND_URL } from '../config/api';
+import {
+    computeBurnRate, computeSavingsEngine, computeRule503020,
+    VitalsTransaction, VitalsBudget,
+    BurnRateResult, SavingsEngineResult, Rule503020Result,
+} from '../utils/vitals';
 
-export interface BurnRateResult {
-    current_month_spend: number;
-    days_elapsed: number;
-    days_remaining: number;
-    days_in_month: number;
-    daily_avg: number;
-    projected_monthly: number;
-    total_budget: number;
-    budget_variance: number | null;
-    status: 'ON_TRACK' | 'WARNING' | 'OVER_BUDGET';
-    alert: string;
-    top_categories: { category: string; amount: number }[];
-}
-
-export interface SavingsEvent {
-    event: 'SAVINGS_DETECTED';
-    category: string;
-    planned_budget: number;
-    actual_spend: number;
-    surplus: number;
-    surplus_pct: number;
-    recommendation: 'INVEST' | 'SAVE' | 'REALLOCATE';
-    action_text: string;
-}
-
-export interface SavingsEngineResult {
-    total_spend: number;
-    total_surplus: number;
-    events: SavingsEvent[];
-    income: number;
-    savings_rate: number | null;
-}
-
-export interface BucketDetail {
-    amount: number;
-    pct_of_spend: number;
-    pct_of_income: number;
-    target_pct: number;
-    delta: number;
-    status: 'ON_TRACK' | 'OVER' | 'UNDER';
-    categories: Record<string, number>;
-}
-
-export interface Rule503020Result {
-    total_spend: number;
-    income: number;
-    implicit_savings: number | null;
-    buckets: {
-        needs: BucketDetail;
-        wants: BucketDetail;
-        savings: BucketDetail;
-    };
-    alerts: { type: string; bucket: string; message: string }[];
-    is_golden_ratio: boolean;
-}
+// Re-exported so existing importers of this module keep working unchanged.
+export type {
+    BurnRateResult, SavingsEvent, SavingsEngineResult,
+    BucketDetail, Rule503020Result,
+} from '../utils/vitals';
 
 export const fetchBurnRate = async (
-    transactions: any[],
+    transactions: VitalsTransaction[],
     total_budget: number
-): Promise<BurnRateResult> => {
-    const res = await fetch(`${BACKEND_URL}/api/vitals/burn-rate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions, total_budget }),
-    });
-    if (!res.ok) throw new Error('Failed to fetch burn rate');
-    return res.json();
-};
+): Promise<BurnRateResult> => computeBurnRate(transactions, total_budget);
 
 export const fetchSavingsEngine = async (
-    transactions: any[],
-    budgets: any[],
+    transactions: VitalsTransaction[],
+    budgets: VitalsBudget[],
     income: number
-): Promise<SavingsEngineResult> => {
-    const res = await fetch(`${BACKEND_URL}/api/vitals/savings-engine`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions, budgets, income }),
-    });
-    if (!res.ok) throw new Error('Failed to fetch savings engine');
-    return res.json();
-};
+): Promise<SavingsEngineResult> => computeSavingsEngine(transactions, budgets, income);
 
 export const fetchRule503020 = async (
-    transactions: any[],
+    transactions: VitalsTransaction[],
     income: number
-): Promise<Rule503020Result> => {
-    const res = await fetch(`${BACKEND_URL}/api/vitals/503020`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions, income }),
-    });
-    if (!res.ok) throw new Error('Failed to fetch 50/30/20 data');
-    return res.json();
-};
+): Promise<Rule503020Result> => computeRule503020(transactions, income);
