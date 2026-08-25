@@ -282,17 +282,33 @@ export interface Rule503020Result {
     buckets: { needs: BucketDetail; wants: BucketDetail; savings: BucketDetail };
     alerts: { type: string; bucket: string; message: string }[];
     is_golden_ratio: boolean;
+    /**
+     * False when income is unknown, in which case the rule cannot be evaluated
+     * and no judgement is made. Deltas are zero, statuses read ON_TRACK and no
+     * alerts are raised. Consumers should show shares of spending instead.
+     */
+    rule_evaluated: boolean;
 }
 
 const TARGETS: Record<Bucket, number> = { needs: 50, wants: 30, savings: 20 };
 
 /**
- * Split this month's spending into needs, wants and savings, and say how far
- * each sits from its target share.
+ * Split this month's money into needs, wants and savings against income.
  *
- * Shares are measured against total spend rather than income, so the figures
- * still mean something for a student with no steady income. Income is reported
- * alongside when it is known.
+ * The rule is defined against income, and an earlier version of this code
+ * divided by total spending instead. That inverted the advice: a learner who
+ * spends little, and therefore saves by not spending, recorded zero in the
+ * savings bucket and was told at CRITICAL severity that they were not saving.
+ * The system criticised precisely the behaviour it exists to encourage.
+ *
+ * Two changes fix it. All three buckets are normalised by income, and the
+ * residual, income minus what actually went out, is credited to savings, since
+ * money you did not spend is money you saved whether or not you happened to
+ * tag a transaction as an investment.
+ *
+ * When income is unknown the rule is not evaluated at all: no deltas, no
+ * statuses, no alerts. A rule with no denominator should stay quiet rather
+ * than guess, which is what the previous version effectively did.
  */
 export function computeRule503020(
     transactions: VitalsTransaction[],
@@ -312,22 +328,39 @@ export function computeRule503020(
         detail[bucket][cat] = (detail[bucket][cat] ?? 0) + amount;
     }
 
+    // What actually left the account. The residual below is credited to savings
+    // afterwards, so it must not be counted as an outflow here.
     const totalSpend = spend.needs + spend.wants + spend.savings;
+
+    const ruleEvaluated = inc > 0;
+
+    // Money earned and not spent is saved. This is the half of the fix that
+    // stops a frugal learner reading as having saved nothing.
+    const residual = ruleEvaluated ? inc - totalSpend : 0;
+
+    const amounts: Record<Bucket, number> = {
+        needs: spend.needs,
+        wants: spend.wants,
+        savings: spend.savings + residual,
+    };
 
     const buckets = {} as Rule503020Result['buckets'];
     const alerts: Rule503020Result['alerts'] = [];
 
     // Order matters: it decides the order alerts come out in.
     for (const bucket of ['needs', 'wants', 'savings'] as Bucket[]) {
-        const amount = spend[bucket];
-        const pctOfSpend = totalSpend ? round((amount / totalSpend) * 100, 1) : 0;
+        const amount = amounts[bucket];
+        const pctOfIncome = ruleEvaluated ? round((amount / inc) * 100, 1) : 0;
         const target = TARGETS[bucket];
-        const delta = round(pctOfSpend - target, 1);
+
+        // Only the income share drives the verdict. Share of spending is kept
+        // alongside because it is still informative, but it decides nothing.
+        const delta = ruleEvaluated ? round(pctOfIncome - target, 1) : 0;
 
         buckets[bucket] = {
             amount: round(amount, 2),
-            pct_of_spend: pctOfSpend,
-            pct_of_income: inc ? round((amount / inc) * 100, 1) : 0,
+            pct_of_spend: totalSpend ? round((amount / totalSpend) * 100, 1) : 0,
+            pct_of_income: pctOfIncome,
             target_pct: target,
             delta,
             status: Math.abs(delta) <= 5 ? 'ON_TRACK' : delta > 0 ? 'OVER' : 'UNDER',
@@ -335,6 +368,8 @@ export function computeRule503020(
                 Object.entries(detail[bucket]).map(([k, v]) => [k, round(v, 2)])
             ),
         };
+
+        if (!ruleEvaluated) continue;
 
         if (Math.abs(delta) > 5) {
             if (bucket === 'wants' && delta > 0) {
@@ -344,13 +379,7 @@ export function computeRule503020(
                     message: `Wants spending is ${delta.toFixed(1)}% above the 30% target.`,
                 });
             }
-            if (bucket === 'savings' && amount === 0) {
-                alerts.push({
-                    type: 'CRITICAL',
-                    bucket: 'savings',
-                    message: 'No savings recorded this month. Start a SIP today!',
-                });
-            } else if (bucket === 'savings' && delta < -5) {
+            if (bucket === 'savings' && delta < -5) {
                 alerts.push({
                     type: 'INFO',
                     bucket: 'savings',
@@ -358,16 +387,31 @@ export function computeRule503020(
                 });
             }
         }
+
+        // Spending more than you earned is the case worth raising loudly, and
+        // it is a fact about the month rather than a verdict on the learner.
+        // The previous version fired this whenever the savings bucket was zero,
+        // which punished anyone who saved by not spending.
+        if (bucket === 'savings' && amount < 0) {
+            alerts.push({
+                type: 'CRITICAL',
+                bucket: 'savings',
+                message: 'Spending is above income this month.',
+            });
+        }
     }
 
     return {
         total_spend: round(totalSpend, 2),
         income: inc,
-        implicit_savings: inc ? round(inc - totalSpend, 2) : null,
+        implicit_savings: ruleEvaluated ? round(inc - totalSpend, 2) : null,
         buckets,
         alerts,
-        is_golden_ratio: (['needs', 'wants', 'savings'] as Bucket[]).every(
-            (b) => Math.abs(buckets[b].delta) <= 5
-        ),
+        is_golden_ratio:
+            ruleEvaluated &&
+            (['needs', 'wants', 'savings'] as Bucket[]).every(
+                (b) => Math.abs(buckets[b].delta) <= 5
+            ),
+        rule_evaluated: ruleEvaluated,
     };
 }

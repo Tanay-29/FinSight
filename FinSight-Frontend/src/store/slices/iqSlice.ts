@@ -1,17 +1,25 @@
 /**
  * iqSlice.ts
  *
- * FinSight IQ — Behavioral Financial Score (0–1000) + AI Advisor state.
+ * FinSight IQ - Behavioral Financial Score (0–1000) + AI Advisor state.
  *
  * Score Algorithm (base 400):
- *   +5  per transaction tracked (max +100 — up to 20 transactions)
+ *   +5  per transaction tracked (max +100 - up to 20 transactions)
  *   +10 per budget category that is under 80% used this month
- *   -20 per budget category that is over 100% (busted)
- *   +50 for every 25% milestone hit on any goal (25/50/75/100%)
+ *   -20 per budget category that is over 100% (busted), net clamped to +/-100
+ *   +50 for every 25% milestone hit on any goal, total capped at +200
  *   +20 per learning module completed (capped at +200)
  *   +5  per learning streak day (capped at +100)
  *
  * The score is clamped between 0 and 1000.
+ *
+ * Every term is bounded, and that is deliberate. The budget and goal terms
+ * used to sum without limit, which made the score payable by declaring
+ * intentions rather than by acting on them: opening ten generous budget
+ * categories collected +100 for no restraint at all, and two completed goals
+ * contributed +400, on their own enough to saturate the scale. Both rewarded
+ * exactly the behaviour the score exists to discourage. With the caps below,
+ * no single dimension can saturate it.
  */
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
@@ -36,7 +44,7 @@ interface IQState {
     advice: AIAdvice | null;
     adviceLoading: boolean;
     adviceError: string | null;
-    lastFetchedAt: string | null; // ISO string — throttle to once per session
+    lastFetchedAt: string | null; // ISO string - throttle to once per session
 }
 
 const initialState: IQState = {
@@ -67,22 +75,33 @@ export function calculateIQScore(
     );
     score += Math.min(monthlyTx.length * 5, 100);
 
-    // Budget discipline: +10 for under 80%, -20 for over 100%
+    // Budget discipline: +10 for under 80%, -20 for over 100%.
+    //
+    // Clamped to +/-100 net. Without the clamp the term summed over however
+    // many categories existed, so creating ten roomy budgets bought +100 while
+    // restraining nothing.
     const monthBudgets = budgets.filter((b) => b.month === thisMonth);
+    let budgetPoints = 0;
     monthBudgets.forEach((b) => {
         const pct = b.monthlyLimit > 0 ? b.currentSpend / b.monthlyLimit : 0;
-        if (pct <= 0.8) score += 10;
-        else if (pct > 1.0) score -= 20;
+        if (pct <= 0.8) budgetPoints += 10;
+        else if (pct > 1.0) budgetPoints -= 20;
     });
+    score += Math.max(-100, Math.min(100, budgetPoints));
 
-    // Goal milestones: +50 per 25% milestone reached across ALL goals
+    // Goal milestones: +50 per 25% milestone reached across ALL goals.
+    //
+    // Capped at +200 in total. Uncapped, two finished goals contributed +400,
+    // which alone saturated the scale and made every other dimension moot.
+    let goalPoints = 0;
     goals.forEach((g) => {
         const pct = g.targetAmount > 0 ? g.savedAmount / g.targetAmount : 0;
-        if (pct >= 1.0) score += 200;       // 100% done: +50×4
-        else if (pct >= 0.75) score += 150;  // 75%+: +50×3
-        else if (pct >= 0.50) score += 100;  // 50%+: +50×2
-        else if (pct >= 0.25) score += 50;   // 25%+: +50×1
+        if (pct >= 1.0) goalPoints += 200;       // 100% done: +50×4
+        else if (pct >= 0.75) goalPoints += 150;  // 75%+: +50×3
+        else if (pct >= 0.50) goalPoints += 100;  // 50%+: +50×2
+        else if (pct >= 0.25) goalPoints += 50;   // 25%+: +50×1
     });
+    score += Math.min(goalPoints, 200);
 
     // Learning: +20 per module completed (max +200)
     score += Math.min(completedModulesCount * 20, 200);
@@ -133,7 +152,6 @@ export const fetchAIAdvice = createAsyncThunk(
                 })),
                 goals: goals.slice(0, 3).map((g: any) => ({
                     title: g.title,
-                    emoji: g.emoji,
                     targetAmount: g.targetAmount,
                     savedAmount: g.savedAmount,
                 })),

@@ -393,6 +393,12 @@ const BurnRateScreen: React.FC = () => {
                                 const color  = BUCKET_COLORS[bucket];
                                 const target = BUCKET_TARGETS[bucket];
                                 const isOver = data.status === 'OVER';
+                                // The rule is judged against income, so that is
+                                // the share to show. Without income there is no
+                                // rule, and share of spending is all we have.
+                                const shown = rule503020.rule_evaluated
+                                    ? data.pct_of_income
+                                    : data.pct_of_spend;
                                 const isGood = data.status === 'ON_TRACK';
 
                                 return (
@@ -409,14 +415,14 @@ const BurnRateScreen: React.FC = () => {
                                             </View>
                                             <View style={{ alignItems: 'flex-end' }}>
                                                 <Text style={{ fontSize: 20, fontWeight: '800', color: isOver ? '#EF4444' : isGood ? '#10B981' : color }}>
-                                                    {data.pct_of_spend.toFixed(1)}%
+                                                    {shown.toFixed(1)}%
                                                 </Text>
                                                 <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
                                                     ₹{data.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                                 </Text>
                                             </View>
                                         </View>
-                                        <GaugeBar value={data.pct_of_spend} max={100} color={isOver ? '#EF4444' : color} targetPct={target} />
+                                        <GaugeBar value={Math.max(0, shown)} max={100} color={isOver ? '#EF4444' : color} targetPct={target} />
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                 {isGood
