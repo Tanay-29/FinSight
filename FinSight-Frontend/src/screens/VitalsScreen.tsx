@@ -9,8 +9,9 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, PieChart, Repeat, Flame, Briefcase, PiggyBank,
+    ChevronRight, PieChart, Repeat, Flame, Briefcase, PiggyBank, Leaf,
 } from 'lucide-react-native';
+import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -209,6 +210,9 @@ export const VitalsScreen: React.FC = () => {
     const { items: budgets, loading: budgetsLoading } = useAppSelector((state) => state.budgets);
     const transactions = useAppSelector((state) => state.transactions.items);
     const goals = useAppSelector((state: any) => state.goals?.items || []);
+
+    // Days nothing went out. Counted as wins; see utils/noSpendDays.
+    const noSpend = React.useMemo(() => summariseNoSpendDays(transactions), [transactions]);
     const { user } = useAppSelector((state) => state.auth);
     const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
     // userId for non-hook usage (safe — read at component top level via selector)
@@ -322,6 +326,32 @@ export const VitalsScreen: React.FC = () => {
                         >
                             <Text className="text-white font-bold text-base">{userInitial}</Text>
                         </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* No-spend days. Deliberately the first thing on the screen:
+                    it is the one panel that has something good to say on a day
+                    with no money in it. */}
+                <View className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mr-3">
+                            <Leaf color="#10B981" size={18} />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-sm font-bold text-text-primary">
+                                {noSpend.thisMonth} clear day{noSpend.thisMonth === 1 ? '' : 's'} this month
+                            </Text>
+                            <Text className="text-xs text-text-secondary mt-0.5">
+                                {noSpendMessage(noSpend)}
+                            </Text>
+                        </View>
+                        {noSpend.currentRun > 0 && (
+                            <View className="bg-emerald-50 rounded-full px-3 py-1.5 ml-2">
+                                <Text className="text-xs font-extrabold text-emerald-700">
+                                    {noSpend.currentRun} in a row
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
