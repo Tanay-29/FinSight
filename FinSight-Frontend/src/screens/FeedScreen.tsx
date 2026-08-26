@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Bot } from 'lucide-react-native';
+import { Plus, Bot, ArrowRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -169,17 +169,17 @@ return (
                 >
                     <View className="flex-1 mr-4">
                         <Text className="text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">
-                            Build Wealth
+                            Lesson
                         </Text>
                         <Text className="text-white text-lg font-bold mb-1">
-                            Get Your Curated Basket
+                            How a diversified portfolio works
                         </Text>
                         <Text className="text-indigo-200 text-sm">
-                            Based on your risk profile.
+                            Three asset classes, and what compounding does to a monthly habit.
                         </Text>
                     </View>
                     <View className="w-12 h-12 bg-indigo-500 rounded-full items-center justify-center">
-                        <Text className="text-white text-xl">→</Text>
+                        <ArrowRight color="#FFFFFF" size={20} />
                     </View>
                 </TouchableOpacity>
 
