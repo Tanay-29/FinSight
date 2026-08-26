@@ -26,6 +26,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as haptics from '../utils/haptics';
+import { futureValueOfSeries, totalContributed } from '../utils/projections';
 
 /**
  * A conventional three-way split, the kind any introductory text on asset
@@ -74,18 +75,6 @@ const formatCurrency = (val: number) => {
     return `₹${Math.round(val).toLocaleString('en-IN')}`;
 };
 
-/**
- * Future value of a monthly contribution made at the start of each period,
- * the standard SIP formula. Nominal, so it ignores inflation, fees and tax.
- */
-const futureValue = (monthly: number, years: number, annualRatePct: number) => {
-    const i = annualRatePct / 100 / 12;
-    const n = years * 12;
-    const fv = monthly * ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
-    const invested = monthly * n;
-    return { fv, invested, gained: fv - invested };
-};
-
 export const CuratedBasketScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
@@ -94,10 +83,13 @@ export const CuratedBasketScreen = () => {
     const [years, setYears] = useState(10);
     const [ratePct, setRatePct] = useState(10);
 
-    const projection = useMemo(
-        () => futureValue(monthlySip, years, ratePct),
-        [monthlySip, years, ratePct],
-    );
+    // Shared with the Time Machine and the leak projection. This screen used to
+    // carry its own copy of the same formula.
+    const projection = useMemo(() => {
+        const fv = futureValueOfSeries(monthlySip, 'monthly', ratePct, years);
+        const invested = totalContributed(monthlySip, 'monthly', years);
+        return { fv, invested, gained: fv - invested };
+    }, [monthlySip, years, ratePct]);
 
     const adjustSip = (delta: number) => {
         haptics.select();

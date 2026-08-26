@@ -367,16 +367,39 @@ the Time Machine uses, rather than growing a second copy. Verified against an
 independently computed closed form: 5 assertions covering the reference case,
 the zero-rate branch that would otherwise divide by zero, zero years, zero
 amount, and growth exceeding contributions. Rs 1,200 a month at 10% is
-Rs 2.46 L over ten years and Rs 9.11 L over twenty.
+Rs 2.48 L over ten years and Rs 9.19 L over twenty.
 
-**Note there are two future-value implementations in the codebase and they
-disagree.** `utils/projections.ts` uses an ordinary annuity, contributions at
-the end of each period. `CuratedBasketScreen` has its own local `futureValue`
-using an annuity due, contributions at the start, which is arguably the better
-model for a SIP. The gap is a factor of (1 + monthly rate), about 0.8% a year.
-Nothing was changed, because picking one alters numbers already committed, but
-this is the same duplication pattern as the two categorisers and should be
-settled deliberately.
+**The two future-value implementations are now one.** `utils/projections.ts`
+used an ordinary annuity, contributions at the end of each period, while
+`CuratedBasketScreen` carried its own local copy using an annuity due,
+contributions at the start. They disagreed by a factor of (1 + monthly rate),
+about 0.8% a year, which is the same duplication pattern as the two
+categorisers.
+
+Annuity due won, and `projections.ts` was corrected to it. A SIP invests on a
+chosen date and the money starts earning immediately, which is the formula AMFI
+and the fund houses publish, and it is equally right for the question this file
+exists to answer: money you did not spend becomes available when you would have
+spent it, not a month later. The screen-local copy is deleted and all three
+callers, Time Machine, Curated Basket and the leak projection, share one
+function.
+
+Figures moved up by that factor. Rs 1,200 a month at 10% over ten years went
+from Rs 2.46 L to Rs 2.48 L, and over twenty from Rs 9.11 L to Rs 9.19 L.
+
+Verified with 18 assertions across two runs: the shared function now equals the
+screen-local one it replaced to within 1e-6 across four amount, rate and
+horizon combinations; the ratio to the old ordinary annuity is exactly
+(1 + monthly rate); the zero-rate, zero-year and zero-amount guards still hold;
+daily, weekly and monthly all follow the same convention; and `projectionSeries`,
+which draws the Time Machine chart, agrees with a direct call rather than
+carrying a stale copy of the maths.
+
+Not unified, deliberately: `formatCompactINR` in `projections.ts` and
+`formatCurrency` in `CuratedBasketScreen` look like duplicates but differ for
+figures between a thousand and a lakh. The shared one renders Rs 24,000 as
+"Rs 24.0K", which is right for a projected total and wrong for a monthly amount
+the user just typed.
 
 **Merchant grouping, fixed.** The detector keyed on the first word of the
 merchant name, so "Amazon Prime" and "Amazon" collapsed into a single group, as

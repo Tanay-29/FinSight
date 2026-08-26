@@ -1,9 +1,9 @@
 /**
  * Projections
  *
- * The maths behind the Time Machine: what a recurring spend would be worth if
- * it were invested instead. Standard future value of an ordinary annuity, kept
- * pure and separate from the UI so the numbers can be checked.
+ * The maths behind the Time Machine and the leak projection: what a recurring
+ * spend would be worth if it were invested instead. Kept pure and separate
+ * from the UI so the numbers can be checked.
  *
  * Every figure produced here is nominal, before inflation and tax. That is a
  * real limitation and the screen says so rather than hiding it.
@@ -32,10 +32,22 @@ export function toMonthly(amount: number, frequency: Frequency): number {
 /**
  * Future value of a regular contribution, compounded at the period rate.
  *
- * FV = P * (((1 + r)^n - 1) / r)
+ * FV = P * (((1 + r)^n - 1) / r) * (1 + r)
  *
- * where r is the rate per period and n is the number of periods. The zero-rate
- * case is handled separately because the formula divides by r.
+ * where r is the rate per period and n is the number of periods.
+ *
+ * The trailing (1 + r) makes this an annuity due: the contribution lands at
+ * the start of each period and earns for the whole of it. That is how a SIP
+ * works, it is the formula AMFI and the fund houses publish, and it is also
+ * right for the question this file exists to answer. Money you did not spend
+ * becomes available at the moment you would have spent it, not a month later.
+ *
+ * This was an ordinary annuity until now, which assumes the money arrives at
+ * the end of each period and understates the result by exactly that factor.
+ * CuratedBasketScreen carried its own annuity due copy, so the two disagreed
+ * by about 0.8% a year. There is one implementation again.
+ *
+ * The zero-rate case is handled separately because the formula divides by r.
  */
 export function futureValueOfSeries(
     amountPerPeriod: number,
@@ -50,7 +62,11 @@ export function futureValueOfSeries(
 
     if (ratePerPeriod === 0) return amountPerPeriod * periods;
 
-    return amountPerPeriod * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
+    return (
+        amountPerPeriod *
+        ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod) *
+        (1 + ratePerPeriod)
+    );
 }
 
 /** What the learner actually puts in, with no growth. */
