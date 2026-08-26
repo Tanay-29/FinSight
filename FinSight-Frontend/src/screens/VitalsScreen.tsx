@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-    Modal, TextInput, Alert,
+    Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Rect, Text as SvgText } from 'react-native-svg';
@@ -9,15 +9,13 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, PieChart, Repeat, Flame, Briefcase, PiggyBank,
-    Target, Sparkles, Clock, Users, Leaf,
+    ChevronRight, Leaf,
 } from 'lucide-react-native';
 import { goalIcon } from '../theme/icons';
 import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
-import { loadRoundupBalance } from '../store/slices/walletSlice';
 import { BudgetBar } from '../components/BudgetBar';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
@@ -217,20 +215,15 @@ export const VitalsScreen: React.FC = () => {
     const noSpend = React.useMemo(() => summariseNoSpendDays(transactions), [transactions]);
     const { user } = useAppSelector((state) => state.auth);
     const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
-    // userId for non-hook usage (safe - read at component top level via selector)
-    const userId = useAppSelector((state) => state.auth.user?.uid);
 
     const currentMonthKey = format(new Date(), 'yyyy-MM');
     const [selectedBudget, setSelectedBudget] = React.useState<any>(null);
     const [modalVisible, setModalVisible] = React.useState(false);
     const [createModalVisible, setCreateModalVisible] = React.useState(false);
 
-    const roundup = useAppSelector((s) => s.wallet.roundup);
-
     useEffect(() => {
         dispatch(fetchBudgets());
         dispatch(fetchTransactions());
-        dispatch(loadRoundupBalance());
     }, [dispatch]);
 
     const recentSpending = React.useMemo(() => {
@@ -357,8 +350,16 @@ export const VitalsScreen: React.FC = () => {
                     </View>
                 </View>
 
-                {/* Daily/Weekly Spending Pulse */}
-                <View className="mx-4 mt-3 flex-row justify-between gap-3">
+                {/* Daily/Weekly Spending Pulse. Tapping through goes to the
+                    burn rate, which is the same question asked over a longer
+                    window. */}
+                <TouchableOpacity
+                    className="mx-4 mt-3 flex-row justify-between gap-3"
+                    activeOpacity={0.85}
+                    onPress={() => navigation.navigate('BurnRate' as never)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Spending today and this week. Open burn rate."
+                >
                     <View className="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
                         <Text className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Spent Today</Text>
                         <Text className="text-xl font-bold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
@@ -371,10 +372,17 @@ export const VitalsScreen: React.FC = () => {
                             ₹{recentSpending.spentThisWeek.toLocaleString('en-IN')}
                         </Text>
                     </View>
-                </View>
+                </TouchableOpacity>
 
-                {/* Monthly Budget Summary */}
-                <View className="mx-4 mt-4 bg-white border border-border rounded-xl p-4">
+                {/* Monthly Budget Summary, and the 50/30/20 view of the same
+                    money. */}
+                <TouchableOpacity
+                    className="mx-4 mt-4 bg-white border border-border rounded-xl p-4"
+                    activeOpacity={0.85}
+                    onPress={() => navigation.navigate('MoneyManager' as never)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Monthly budget. Open the 50/30/20 breakdown."
+                >
                     <View className="flex-row justify-between items-center mb-2">
                         <Text className="text-sm text-text-secondary">Monthly Budget</Text>
                         <Text className="text-sm font-semibold text-text-primary">{overallPercentage}% used</Text>
@@ -389,12 +397,31 @@ export const VitalsScreen: React.FC = () => {
                             style={{ width: `${Math.min(overallPercentage, 100)}%` }}
                         />
                     </View>
-                </View>
+                    <View className="flex-row items-center justify-end mt-3">
+                        <Text className="text-xs font-semibold text-brand-primary mr-1">50/30/20 breakdown</Text>
+                        <ChevronRight size={14} color="#6366F1" />
+                    </View>
+                </TouchableOpacity>
 
-                {/* Category Spending Chart */}
+                {/* Category Spending, and the recurring charges hiding inside
+                    those categories. */}
                 <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4">
                     <Text className="text-lg font-semibold text-text-primary mb-3">Category Spending</Text>
                     <SpendingBarChart data={chartData} />
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('SubscriptionTracker' as never)}
+                        accessibilityRole="button"
+                    >
+                        <View className="flex-1 mr-3">
+                            <Text className="text-sm font-semibold text-text-primary">Find recurring charges</Text>
+                            <Text className="text-xs text-text-secondary mt-0.5">
+                                Subscriptions and bills hiding in these categories
+                            </Text>
+                        </View>
+                        <ChevronRight size={16} color="#9CA3AF" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Top Goal Progress */}
@@ -448,244 +475,6 @@ export const VitalsScreen: React.FC = () => {
                         </View>
                     )}
                 </View>
-
-                {/* ─── Feature Quick-Access Row ──────────────────── */}
-                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 20, marginBottom: 4 }}>
-
-                    {/* 50/30/20 Money Manager */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('MoneyManager' as never)}
-                        activeOpacity={0.85}
-                        style={{
-                            flex: 1, backgroundColor: '#6366F1',
-                            borderRadius: 18, padding: 16,
-                            shadowColor: '#6366F1', shadowOpacity: 0.3,
-                            shadowRadius: 8, elevation: 4,
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                <PieChart size={18} color="white" />
-                            </View>
-                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
-                        </View>
-                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>50/30/20</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Money Manager</Text>
-                    </TouchableOpacity>
-
-                    {/* Leaky Spend Tracker */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('SubscriptionTracker' as never)}
-                        activeOpacity={0.85}
-                        style={{
-                            flex: 1, backgroundColor: '#FFFFFF',
-                            borderRadius: 18, padding: 16,
-                            borderWidth: 1.5, borderColor: '#F3F4F6',
-                            shadowColor: '#000', shadowOpacity: 0.04,
-                            shadowRadius: 8, elevation: 2,
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' }}>
-                                <Repeat size={18} color="#D97706" />
-                            </View>
-                            <ChevronRight size={16} color="#D1D5DB" />
-                        </View>
-                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Leaky Spend</Text>
-                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Recurring charges</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* ─── Intelligence Quick-Access Row ─────────────── */}
-                <View style={{ marginHorizontal: 16, marginTop: 10, marginBottom: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Financial Intelligence</Text>
-                </View>
-                {/* Monthly recap and the group ledger */}
-                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Wrapped' as never)}
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        style={{ flex: 1, backgroundColor: '#5B21B6', borderRadius: 18, padding: 16 }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                <Sparkles size={18} color="white" />
-                            </View>
-                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
-                        </View>
-                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Wrapped</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Your month, recapped</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Split' as never)}
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#E5E7EB' }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
-                                <Users size={18} color="#10B981" />
-                            </View>
-                            <ChevronRight size={16} color="#D1D5DB" />
-                        </View>
-                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Split and Settle</Text>
-                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Who owes whom</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Guess Your Spend and Tidy Up: two quick games that both
-                    teach something and improve the data behind these charts. */}
-                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('GuessSpend' as never)}
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        style={{
-                            flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18,
-                            padding: 16, borderWidth: 1, borderColor: '#E5E7EB',
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' }}>
-                                <Target size={18} color="#6366F1" />
-                            </View>
-                            <ChevronRight size={16} color="#D1D5DB" />
-                        </View>
-                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Guess Your Spend</Text>
-                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Test your instincts</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('SwipeCategorise' as never)}
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        style={{
-                            flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18,
-                            padding: 16, borderWidth: 1, borderColor: '#E5E7EB',
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#F5F3FF', alignItems: 'center', justifyContent: 'center' }}>
-                                <Sparkles size={18} color="#8B5CF6" />
-                            </View>
-                            <ChevronRight size={16} color="#D1D5DB" />
-                        </View>
-                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Tidy Up</Text>
-                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Fix miscategorised spends</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('TimeMachine' as never)}
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        style={{
-                            flex: 1, backgroundColor: '#4338CA', borderRadius: 18, padding: 16,
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Clock size={18} color="white" />
-                                </View>
-                                <View style={{ marginLeft: 12, flex: 1 }}>
-                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Time Machine</Text>
-                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>
-                                        What that habit is really costing you
-                                    </Text>
-                                </View>
-                            </View>
-                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 4 }}>
-
-                    {/* Burn Rate */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('BurnRate' as never)}
-                        activeOpacity={0.85}
-                        style={{
-                            flex: 1, backgroundColor: '#EF4444',
-                            borderRadius: 18, padding: 16,
-                            shadowColor: '#EF4444', shadowOpacity: 0.3,
-                            shadowRadius: 8, elevation: 4,
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                <Flame size={18} color="white" />
-                            </View>
-                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
-                        </View>
-                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Burn Rate</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Spend projection</Text>
-                    </TouchableOpacity>
-
-                    {/* Invest & Portfolio */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Invest' as never)}
-                        activeOpacity={0.85}
-                        style={{
-                            flex: 1, backgroundColor: '#0F766E',
-                            borderRadius: 18, padding: 16,
-                            shadowColor: '#0F766E', shadowOpacity: 0.3,
-                            shadowRadius: 8, elevation: 4,
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                <Briefcase size={18} color="white" />
-                            </View>
-                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
-                        </View>
-                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Invest</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Mock brokerage</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Round-Up Wallet mini-card */}
-                {roundup !== null && (
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('RoundUp' as never)}
-                        activeOpacity={0.85}
-                        style={{
-                            marginHorizontal: 16, marginTop: 10, marginBottom: 4,
-                            backgroundColor: '#FFFBEB',
-                            borderWidth: 1.5, borderColor: '#FDE68A',
-                            borderRadius: 18, padding: 16,
-                            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' }}>
-                                <PiggyBank size={20} color="#D97706" />
-                            </View>
-                            <View>
-                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400E' }}>Round-Up Wallet</Text>
-                                <Text style={{ fontSize: 18, fontWeight: '900', color: '#111827', marginTop: 1 }}>
-                                    ₹{(roundup?.roundup_balance || 0).toFixed(2)}
-                                </Text>
-                            </View>
-                        </View>
-                        <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                            {roundup?.ready_to_invest ? (
-                                <View style={{ backgroundColor: '#D97706', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-                                    <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 11 }}>Invest Now!</Text>
-                                </View>
-                            ) : (
-                                <Text style={{ fontSize: 12, color: '#B45309', fontWeight: '600' }}>
-                                    {(roundup?.progress_pct || 0).toFixed(0)}% to ₹500
-                                </Text>
-                            )}
-                            <ChevronRight size={14} color="#D97706" />
-                        </View>
-                    </TouchableOpacity>
-                )}
 
                 {/* Budget Breakdown */}
                 <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4 mb-8">

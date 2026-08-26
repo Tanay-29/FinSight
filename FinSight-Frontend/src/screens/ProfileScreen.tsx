@@ -8,9 +8,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
+import { useNavigation } from '@react-navigation/native';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight,
+    Trash2, Flame, ChevronRight, Sparkles,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
@@ -51,6 +52,7 @@ const SettingsRow: React.FC<{
 );
 
 export const ProfileScreen: React.FC = () => {
+    const navigation = useNavigation();
     const { user, profile } = useAppSelector((state) => state.auth);
     const goals = useAppSelector((state) => state.goals.items);
     const dispatch = useAppDispatch();
@@ -231,6 +233,27 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                     )}
                 </View>
+
+                {/* Year in review. A look back at the account belongs beside
+                    the account, not in the middle of this month's numbers. */}
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('Wrapped' as never)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open your year in review"
+                    className="mx-4 mt-4 flex-row items-center bg-white border border-border rounded-xl px-4 py-3.5"
+                >
+                    <View className="w-10 h-10 rounded-full bg-violet-50 items-center justify-center mr-3">
+                        <Sparkles color="#8B5CF6" size={18} />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-sm font-semibold text-text-primary">Your Year in Review</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5">
+                            What your money did over the last twelve months
+                        </Text>
+                    </View>
+                    <ChevronRight color="#D1D5DB" size={18} />
+                </TouchableOpacity>
 
                 {/* Settings */}
                 <View className="mx-4 mt-4 bg-white border border-border rounded-xl overflow-hidden">

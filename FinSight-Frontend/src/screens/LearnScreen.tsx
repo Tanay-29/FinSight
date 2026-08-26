@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Award, Flame, Search, HelpCircle, GraduationCap,
     ChevronRight, Trophy, Target, Sparkles, BrainCircuit, Snowflake, Compass,
+    Layers, Hourglass, TrendingUp,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
@@ -303,6 +304,86 @@ export const LearnScreen: React.FC = () => {
                         </Text>
                     </View>
                     <ChevronRight size={18} color="#F59E0B" />
+                </TouchableOpacity>
+
+                {/* ── Practise ────────────────────────────────────
+                    Three tools that teach by doing. They used to sit in a grid
+                    of tiles on the Vitals screen, which is where you go to see
+                    how the month is going, not to learn something. */}
+                <Text className="mx-4 mt-6 mb-1 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    Practise
+                </Text>
+
+                <TouchableOpacity
+                    onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    className="mx-4 mt-2 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-rose-50 items-center justify-center mr-3">
+                        <Target size={20} color="#F43F5E" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-bold text-gray-900">Guess Your Spend</Text>
+                        <Text className="text-xs text-gray-500 mt-0.5">
+                            How closely do you actually know your own spending?
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color="#F43F5E" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => { haptics.tap(); navigation.navigate('SwipeCategorise'); }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-sky-50 items-center justify-center mr-3">
+                        <Layers size={20} color="#0EA5E9" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-bold text-gray-900">Tidy Up</Text>
+                        <Text className="text-xs text-gray-500 mt-0.5">
+                            Sort miscategorised transactions and teach the app as you go
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color="#0EA5E9" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => { haptics.tap(); navigation.navigate('TimeMachine'); }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-emerald-50 items-center justify-center mr-3">
+                        <Hourglass size={20} color="#10B981" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-bold text-gray-900">Time Machine</Text>
+                        <Text className="text-xs text-gray-500 mt-0.5">
+                            What a small regular spend is worth decades from now
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color="#10B981" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => { haptics.tap(); navigation.navigate('Invest'); }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-indigo-50 items-center justify-center mr-3">
+                        <TrendingUp size={20} color="#6366F1" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-bold text-gray-900">Practice Simulator</Text>
+                        <Text className="text-xs text-gray-500 mt-0.5">
+                            Buy and sell with simulated money and real market mechanics
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color="#6366F1" />
                 </TouchableOpacity>
 
                 {/* ── Personalised Banner ─────────────────────── */}

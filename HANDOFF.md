@@ -436,6 +436,54 @@ does and has been corrected.
 
 ---
 
+## 5d. The Vitals restructure
+
+`VitalsScreen` had become a directory rather than a screen: 734 lines, roughly
+fourteen sections and **twelve exits**, under headings its own source called
+"Feature Quick-Access Row" and "Intelligence Quick-Access Row". Feed rendered
+`<FinancialVitals />` while Vitals rendered its own spending pulse, budget
+summary and category chart, so two screens answered "how am I doing" and a
+reader could not tell which to open.
+
+The rule applied: **a feature hangs off the number it explains, or moves to the
+tab whose question it answers.** Nothing was deleted.
+
+Vitals keeps no-spend days, the spending pulse, the budget summary, the
+category chart, top goal progress and the budget breakdown. Three tools became
+drill-downs rather than tiles: the spending pulse opens Burn Rate, which is the
+same question over a longer window; the budget summary opens the 50/30/20 view
+of the same money; the category chart opens the recurring charge detector,
+which finds what is hiding inside those categories. **Twelve exits down to
+five**, 734 lines down to 523.
+
+Moved out: Guess Your Spend, Tidy Up and Time Machine to Learn, under a
+labelled Practise group, because they teach by doing and Vitals is where you go
+to see how the month is going. Round-Up and Split to Goals, since both are ways
+money moves towards or between people's savings. Wrapped to Profile, because a
+look back at the account belongs beside the account.
+
+The simulated brokerage was left two hops from any tab once its Vitals tile
+went, reachable only through the Curated Basket lesson, so it was added to the
+Practise group as well.
+
+**Learn is now the screen with the most exits, nine.** That is worth watching.
+The difference from what Vitals was is that they are grouped under a visible
+heading and every one of them answers the same question, rather than sitting in
+an unlabelled grid of unrelated tiles. If it starts to feel heavy, the Practise
+group is the natural thing to split out.
+
+Also corrected: Feed's investing entry still read "Get Your Curated Basket,
+based on your risk profile", the same false personalisation removed from the
+destination screen itself, and a raw arrow glyph where a Lucide icon belongs.
+
+Verified by auditing every stack destination for reachability, not just the
+ones that moved: all 23 reach a tab, and Login and Onboarding are auth-gated in
+the navigator rather than navigated to. `npm run check` went from 131 warnings
+to 127, because removing the tiles orphaned imports that were already warning.
+The two warnings left in `VitalsScreen` were there at HEAD; it had five.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to
