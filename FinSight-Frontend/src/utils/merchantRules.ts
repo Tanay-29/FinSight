@@ -132,6 +132,7 @@ export const MERCHANT_RULES: Record<string, ExpenseCategory> = {
     spotify: 'entertainment',
     hotstar: 'entertainment',
     'prime video': 'entertainment', // must outrank `vi`
+    'amazon prime': 'entertainment', // a subscription, must outrank `amazon`
     zee5: 'entertainment',
     gaana: 'entertainment',
     youtube: 'entertainment',
@@ -234,4 +235,22 @@ export function matchMerchant(text: string): MerchantMatch | null {
     }
 
     return null;
+}
+
+/**
+ * Stable grouping identity for a merchant string.
+ *
+ * Returns the matched rule keyword when one applies, so "Netflix" and
+ * "Netflix India" land on the same key while "Swiggy" and "Swiggy Instamart"
+ * stay apart, which is exactly what the longest-match ordering is for.
+ *
+ * Falls back to the whole normalised name, not its first word. The recurring
+ * charge detector used to key on the first word alone, which collapsed
+ * "Amazon Prime" into "Amazon" and "Google One" into "Google Pay", so ordinary
+ * shopping was reported as a subscription.
+ */
+export function merchantKey(text: string): string {
+    const match = matchMerchant(text);
+    if (match) return match.keyword;
+    return normalise(text).trim();
 }
