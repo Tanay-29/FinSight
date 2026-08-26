@@ -1,3 +1,11 @@
+/**
+ * courseContent.ts
+ *
+ * The FinSight curriculum: 19 modules across three learning paths, plus the
+ * glossary. This is authored teaching material, not placeholder data, and it
+ * is the single source for course content. It ships with the bundle rather
+ * than living in Firestore, so changing a module needs an app or OTA update.
+ */
 export interface MarketIndex {
     name: string;
     value: number;
@@ -32,14 +40,12 @@ export interface CategorySpending {
     name: string;
     amount: number;
     percentage: number;
-    icon: string;
 }
 
 export interface Budget {
     category: string;
     monthlyLimit: number;
     currentSpend: number;
-    icon: string;
 }
 
 export interface QuizQuestion {
@@ -77,188 +83,16 @@ export interface GlossaryTerm {
     definition: string;
 }
 
-export const MOCK_MARKET_DATA: MarketIndex[] = [
-    {
-        name: 'NIFTY 50',
-        value: 22145,
-        change: 0.85,
-        sparkline: [21800, 21920, 22050, 21980, 22100, 22200, 22145],
-    },
-    {
-        name: 'SENSEX',
-        value: 73298,
-        change: -0.12,
-        sparkline: [73500, 73400, 73350, 73200, 73100, 73250, 73298],
-    },
-    {
-        name: 'GOLD (₹/10g)',
-        value: 64850,
-        change: 1.23,
-        sparkline: [63800, 64000, 64200, 64100, 64500, 64700, 64850],
-    },
-    {
-        name: 'USD/INR',
-        value: 83.12,
-        change: -0.05,
-        sparkline: [83.25, 83.20, 83.18, 83.15, 83.10, 83.08, 83.12],
-    },
-];
 
-export const MOCK_EITM_CARDS: EITMCardData[] = [
-    {
-        id: 'eitm_1',
-        trigger: 'market_event',
-        headline: 'Why did gold prices jump 4% today?',
-        explanation:
-            'Gold prices surged because the US Federal Reserve hinted at cutting interest rates. Jab rates kam hote hain, gold becomes more attractive kyunki it doesn\'t pay interest anyway. Think of it like this: if your savings account gives less interest, you might prefer buying gold instead. Global uncertainty bhi gold demand push karti hai.',
-        personalImpact: {
-            holding: 'Gold ETF',
-            change: '+₹340',
-        },
-        learnMoreLink: '/learning-hub/gold-101',
-    },
-    {
-        id: 'eitm_2',
-        trigger: 'transaction_spike',
-        headline: 'Your dining spending is 40% above usual 🍽️',
-        explanation:
-            'Iss hafte aapne 5 baar food delivery order kiya — usually aap sirf 3 baar karte ho. Ye monthly dining budget ka 80% already use ho gaya hai. Ek simple trick: hafte mein 2 din ghar pe khana banao, ₹2,000+ save ho sakta hai.',
-        personalImpact: {
-            holding: 'Dining Budget',
-            change: '-₹2,100 over usual',
-        },
-        learnMoreLink: '/learning-hub/budgeting-basics',
-    },
-    {
-        id: 'eitm_3',
-        trigger: 'policy',
-        headline: 'RBI kept repo rate unchanged — what does this mean?',
-        explanation:
-            'RBI ne interest rate 6.5% pe hi rakha hai. Iska matlab aapki EMI same rahegi for now. Repo rate is like the "wholesale price" of money — jab RBI isse change karta hai, banks accordingly apne loan rates adjust karte hain. Filhaal, stable hai toh relax karo!',
-        personalImpact: {
-            holding: 'Home Loan EMI',
-            change: 'No change — ₹18,500/month',
-        },
-        learnMoreLink: '/learning-hub/rbi-policy',
-    },
-];
 
-export const MOCK_TRANSACTIONS: Transaction[] = [
-    {
-        id: 'txn_1',
-        amount: 450,
-        type: 'debit',
-        category: 'dining',
-        merchant: 'Swiggy',
-        date: '2026-02-12T14:30:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_2',
-        amount: 180,
-        type: 'debit',
-        category: 'transport',
-        merchant: 'Uber',
-        date: '2026-02-12T08:15:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_3',
-        amount: 320,
-        type: 'debit',
-        category: 'dining',
-        merchant: 'Starbucks',
-        date: '2026-02-11T17:45:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_4',
-        amount: 1299,
-        type: 'debit',
-        category: 'shopping',
-        merchant: 'Amazon',
-        date: '2026-02-11T22:10:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_5',
-        amount: 85000,
-        type: 'credit',
-        category: 'investments',
-        merchant: 'Salary Credit',
-        date: '2026-02-01T10:00:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_6',
-        amount: 249,
-        type: 'debit',
-        category: 'groceries',
-        merchant: 'Blinkit',
-        date: '2026-02-10T19:20:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_7',
-        amount: 599,
-        type: 'debit',
-        category: 'entertainment',
-        merchant: 'Netflix',
-        date: '2026-02-05T00:00:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_8',
-        amount: 2500,
-        type: 'debit',
-        category: 'utilities',
-        merchant: 'Jio Postpaid',
-        date: '2026-02-03T12:00:00Z',
-        source: 'manual',
-    },
-    {
-        id: 'txn_9',
-        amount: 780,
-        type: 'debit',
-        category: 'dining',
-        merchant: 'Zomato',
-        date: '2026-02-09T13:30:00Z',
-        source: 'auto',
-    },
-    {
-        id: 'txn_10',
-        amount: 5000,
-        type: 'debit',
-        category: 'investments',
-        merchant: 'Groww SIP',
-        date: '2026-02-01T09:00:00Z',
-        source: 'auto',
-    },
-];
 
-export const MOCK_CATEGORY_SPENDING: CategorySpending[] = [
-    { name: 'Dining', amount: 3200, percentage: 21, icon: '🍽️' },
-    { name: 'Shopping', amount: 2800, percentage: 18, icon: '🛍️' },
-    { name: 'Transport', amount: 1500, percentage: 10, icon: '🚗' },
-    { name: 'Groceries', amount: 1200, percentage: 8, icon: '🛒' },
-    { name: 'Utilities', amount: 2500, percentage: 16, icon: '⚡' },
-    { name: 'Entertainment', amount: 1040, percentage: 7, icon: '🎬' },
-];
 
-export const MOCK_BUDGETS: Budget[] = [
-    { category: 'Dining', monthlyLimit: 4000, currentSpend: 3200, icon: '🍽️' },
-    { category: 'Shopping', monthlyLimit: 5000, currentSpend: 2800, icon: '🛍️' },
-    { category: 'Transport', monthlyLimit: 3000, currentSpend: 1500, icon: '🚗' },
-    { category: 'Groceries', monthlyLimit: 3000, currentSpend: 1200, icon: '🛒' },
-    { category: 'Utilities', monthlyLimit: 3000, currentSpend: 2500, icon: '⚡' },
-    { category: 'Entertainment', monthlyLimit: 2000, currentSpend: 1040, icon: '🎬' },
-];
 
-export const MOCK_LEARNING_PATHS: LearningPath[] = [
+export const COURSE_CONTENT: LearningPath[] = [
     {
         id: 'investing101',
         title: 'Investing 101',
-        description: 'Learn the basics of stock market investing — from stocks to SIPs',
+        description: 'Learn the basics of stock market investing, from stocks to SIPs',
         overview: 'Master the fundamentals of Indian stock market investing. This 8-module course covers everything from understanding how stocks work to building your first SIP. Perfect for beginners who want to start their investment journey.',
         progress: { completed: 3, total: 8 },
         nextModule: 'Mutual Funds Explained',
@@ -312,7 +146,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Stocks require research; MFs are passive',
                     'MFs reduce individual stock risk through diversification',
                 ],
-                content: 'A stock is a direct share in a company. If you buy 1 share of Reliance, you own a tiny piece of Reliance. A mutual fund is different — it\'s money pooled from many investors, professionally managed, and invested in many stocks. Think of stocks as buying individual houses, and mutual funds as buying a residential complex where you own 1 flat among hundreds. Mutual funds are less risky because they spread money across many stocks.',
+                content: 'A stock is a direct share in a company. If you buy 1 share of Reliance, you own a tiny piece of Reliance. A mutual fund is different; it\'s money pooled from many investors, professionally managed, and invested in many stocks. Think of stocks as buying individual houses, and mutual funds as buying a residential complex where you own 1 flat among hundreds. Mutual funds are less risky because they spread money across many stocks.',
                 quiz: [
                     {
                         question: 'What is the biggest advantage of a Mutual Fund over direct stocks?',
@@ -330,7 +164,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                         question: 'Buying a stock directly is analogous to:',
                         options: ['Buying a flat in a large complex', 'Buying an entire individual house', 'Renting a property', 'Taking a bank loan'],
                         answerIndex: 1,
-                        explanation: 'Owning a stock means you directly own a slice of one specific company — like owning a standalone house rather than a flat in a complex.',
+                        explanation: 'Owning a stock means you directly own a slice of one specific company, like owning a standalone house rather than a flat in a complex.',
                     },
                 ],
             },
@@ -359,7 +193,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                         question: 'If a mutual fund earns 12% in a year, what happens to your investment?',
                         options: ['It stays the same', 'You get a fixed ₹12,000 regardless of investment', 'Your investment also grows by approximately 12%', 'You pay 12% as tax'],
                         answerIndex: 2,
-                        explanation: 'Mutual fund returns are proportional. If the fund grows 12%, your investment grows by 12% too — proportional to the units you hold.',
+                        explanation: 'Mutual fund returns are proportional. If the fund grows 12%, your investment grows by 12% too, proportional to the units you hold.',
                     },
                     {
                         question: 'What do you receive when you invest in a mutual fund?',
@@ -382,13 +216,13 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Balanced MFs mix both (moderate risk & return)',
                     'Liquid MFs are for emergency money (very safe)',
                 ],
-                content: 'There are 4 main types: (1) Equity MFs invest 100% in stocks — high growth but volatile. (2) Debt MFs invest in government bonds & corporate debt — safer, ~5-7% returns. (3) Balanced MFs mix both — good for medium-risk investors. (4) Liquid MFs are for money you might need soon, like an emergency fund. Choose based on your time horizon and risk appetite.',
+                content: 'There are 4 main types: (1) Equity MFs invest 100% in stocks, high growth but volatile. (2) Debt MFs invest in government bonds & corporate debt, safer, ~5-7% returns. (3) Balanced MFs mix both, good for medium-risk investors. (4) Liquid MFs are for money you might need soon, like an emergency fund. Choose based on your time horizon and risk appetite.',
                 quiz: [
                     {
                         question: 'Which type of mutual fund is MOST suitable for an emergency fund?',
                         options: ['Equity Fund', 'Balanced Fund', 'Liquid Fund', 'ELSS Fund'],
                         answerIndex: 2,
-                        explanation: 'Liquid funds invest in very short-term instruments and can be redeemed within 1 business day — perfect for emergency money that must be accessible quickly.',
+                        explanation: 'Liquid funds invest in very short-term instruments and can be redeemed within 1 business day, perfect for emergency money that must be accessible quickly.',
                     },
                     {
                         question: 'Equity mutual funds primarily invest in:',
@@ -423,13 +257,13 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                         question: 'What is "Rupee Cost Averaging" in a SIP?',
                         options: ['You always buy at the lowest price', 'You invest a fixed sum, buying more units when prices are low and fewer when high', 'You only invest when markets are falling', 'You double your investment monthly'],
                         answerIndex: 1,
-                        explanation: 'With regular fixed investments, you automatically buy more units when prices are low and fewer when prices are high — averaging out your cost over time.',
+                        explanation: 'With regular fixed investments, you automatically buy more units when prices are low and fewer when prices are high, averaging out your cost over time.',
                     },
                     {
                         question: 'What is a key psychological advantage of SIP?',
                         options: ['Guaranteed profits every month', 'It removes the emotion of timing the market', 'You can stop anytime with no penalty', 'It beats FD returns every single year'],
                         answerIndex: 1,
-                        explanation: 'SIPs automate investing so you don\'t need to worry about whether the market is up or down — it removes emotional decision-making from investing.',
+                        explanation: 'SIPs automate investing so you don\'t need to worry about whether the market is up or down. It removes emotional decision-making from investing.',
                     },
                     {
                         question: 'Which investment approach is generally safer for a first-time investor?',
@@ -487,7 +321,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Don\'t invest money you\'ll need in 1-2 years',
                     'Don\'t compare your returns to your friend\'s returns',
                 ],
-                content: 'New investors often panic when markets drop 20%. Stop! Long-term investors should smile — lower prices mean buying more units at cheaper rates. Don\'t chase "hot" funds. Don\'t invest short-term money in stocks. Don\'t check your portfolio daily — you\'ll stress yourself. Markets go up 80% of the time over 5+ year periods. Stay calm & stay invested.',
+                content: 'New investors often panic when markets drop 20%. Stop! Long-term investors should smile, because lower prices mean buying more units at cheaper rates. Don\'t chase "hot" funds. Don\'t invest short-term money in stocks. Don\'t check your portfolio daily; you\'ll stress yourself. Markets go up 80% of the time over 5+ year periods. Stay calm & stay invested.',
                 quiz: [
                     {
                         question: 'When the market drops 20%, what should a long-term investor ideally do?',
@@ -522,7 +356,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Consider your age: younger = more equity',
                     'Rebalance once a year',
                 ],
-                content: 'A simple beginner portfolio: (1) 70% Equity — diversified large-cap + mid-cap funds. (2) 20% Debt — short-term bond fund. (3) 10% Gold — hedge against inflation. As you age, shift allocation from equity to debt. At 25, you can do 90% equity. At 40, maybe 70% equity, 30% debt. Rebalance yearly to maintain your target allocation. This framework works for years.',
+                content: 'A simple beginner portfolio: (1) 70% Equity, diversified large-cap + mid-cap funds. (2) 20% Debt, short-term bond fund. (3) 10% Gold, hedge against inflation. As you age, shift allocation from equity to debt. At 25, you can do 90% equity. At 40, maybe 70% equity, 30% debt. Rebalance yearly to maintain your target allocation. This framework works for years.',
                 quiz: [
                     {
                         question: 'Why should a 25-year-old have MORE equity than a 50-year-old in their portfolio?',
@@ -568,7 +402,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Most people don\'t know where their money goes',
                     '78% of Indians say they live paycheck to paycheck',
                 ],
-                content: 'A budget is simply a plan for your money. It\'s not restrictive — it\'s empowering. When you know where every rupee goes, you can make conscious choices. "Do I really want to spend ₹5,000/month on food delivery?" When you see the number, decisions change. Studies show budgeters save 15-20% more than non-budgeters. You don\'t need a fancy app; pen & paper works.',
+                content: 'A budget is simply a plan for your money. It\'s not restrictive; it\'s empowering. When you know where every rupee goes, you can make conscious choices. "Do I really want to spend ₹5,000/month on food delivery?" When you see the number, decisions change. Studies show budgeters save 15-20% more than non-budgeters. You don\'t need a fancy app; pen & paper works.',
                 quiz: [
                     {
                         question: 'What is the primary goal of budgeting?',
@@ -603,13 +437,13 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     '20% for Savings & Debt (emergency fund, investments)',
                     'Adjust percentages based on your situation',
                 ],
-                content: 'If you earn ₹100,000/month: 50% (₹50k) for essentials like rent & groceries. 30% (₹30k) for fun — dining, movies, hobbies. 20% (₹20k) for savings & debt repayment. This doesn\'t have to be exact. If you live in expensive cities, rent might be 50% alone. Then 50% need, 35% want, 15% save. The point isn\'t the numbers — it\'s the principle of intentional spending.',
+                content: 'If you earn ₹100,000/month: 50% (₹50k) for essentials like rent & groceries. 30% (₹30k) for fun: dining, movies, hobbies. 20% (₹20k) for savings & debt repayment. This doesn\'t have to be exact. If you live in expensive cities, rent might be 50% alone. Then 50% need, 35% want, 15% save. The point isn\'t the numbers; it\'s the principle of intentional spending.',
                 quiz: [
                     {
                         question: 'In the 50-30-20 rule, what does the "20" represent?',
                         options: ['Dining and entertainment', 'Rent and food', 'Savings, investments, and debt repayment', 'Government taxes'],
                         answerIndex: 2,
-                        explanation: 'The 20% bucket is your wealth-building bucket — emergency fund, investments, and paying off debts faster than minimum payments.',
+                        explanation: 'The 20% bucket is your wealth-building bucket: emergency fund, investments, and paying off debts faster than minimum payments.',
                     },
                     {
                         question: 'Eating out at a restaurant is classified as which category in 50-30-20?',
@@ -619,7 +453,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     },
                     {
                         question: 'If you live in Mumbai where rent alone is ₹25,000 on a ₹50,000 salary, what should you do?',
-                        options: ['Strictly follow 50-30-20 and starve', 'Adjust percentages — the rule is a guideline, not law', 'Move to a cheaper city immediately', 'Stop investing entirely'],
+                        options: ['Strictly follow 50-30-20 and starve', 'Adjust percentages: the rule is a guideline, not law', 'Move to a cheaper city immediately', 'Stop investing entirely'],
                         answerIndex: 1,
                         explanation: 'The 50-30-20 rule is a framework, not a rigid law. Adapt it to your circumstances. High-cost-of-living cities may need a 60-20-20 or 55-25-20 split.',
                     },
@@ -636,9 +470,9 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Goal: 3-6 months of living expenses',
                     'Keep it in a separate, liquid account',
                     'Calculate your monthly need (rent, food, utilities)',
-                    'Build it gradually — even ₹1,000/month helps',
+                    'Build it gradually, even ₹1,000/month helps',
                 ],
-                content: 'An emergency fund is money for unexpected events: job loss, medical emergency, car repair. Without it, you\'ll go into debt. Ideal size: 6 months of expenses (some say 3 months minimum). Calculate: Monthly Needs = Rent + Food + Utilities + Phone + Insurance. Multiply by 6. That\'s your target. Don\'t have ₹2L? Start with ₹50k. Build it over time. Keep it in a savings account earning 6-7% interest (HDFC Bank, ICICI, Axis offer good rates). NOT in investments — must be liquid.',
+                content: 'An emergency fund is money for unexpected events: job loss, medical emergency, car repair. Without it, you\'ll go into debt. Ideal size: 6 months of expenses (some say 3 months minimum). Calculate: Monthly Needs = Rent + Food + Utilities + Phone + Insurance. Multiply by 6. That\'s your target. Don\'t have ₹2L? Start with ₹50k. Build it over time. Keep it in a savings account earning 6-7% interest (HDFC Bank, ICICI, Axis offer good rates). NOT in investments, must be liquid.',
                 quiz: [
                     {
                         question: 'Why should an emergency fund NOT be kept in stock market investments?',
@@ -679,7 +513,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                         question: 'What is the approximate annual interest rate on unpaid credit card debt in India?',
                         options: ['5-8% per year', '12-15% per year', '36-48% per year', '1-2% per year'],
                         answerIndex: 2,
-                        explanation: 'Credit card interest in India is typically 3-4% per MONTH — which compounds to 36-48% per year. It is one of the most expensive forms of debt.',
+                        explanation: 'Credit card interest in India is typically 3-4% per MONTH, which compounds to 36-48% per year. It is one of the most expensive forms of debt.',
                     },
                     {
                         question: 'In the "Avalanche" debt repayment method, you pay off debts in which order?',
@@ -737,7 +571,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
         id: 'taxSimplified',
         title: 'Tax Simplified',
         description: 'Decode ITR filing, Section 80C/80D, and capital gains tax',
-        overview: 'Taxes confuse everyone. This 6-module course demystifies Indian income tax: how to file ITR, save tax smartly with deductions, understand capital gains, and avoid penalties. You\'ll discover that taxes aren\'t boring — they\'re an opportunity to save thousands.',
+        overview: 'Taxes confuse everyone. This 6-module course demystifies Indian income tax: how to file ITR, save tax smartly with deductions, understand capital gains, and avoid penalties. You\'ll discover that taxes aren\'t boring, they\'re an opportunity to save thousands.',
         progress: { completed: 0, total: 6 },
         nextModule: 'What is Income Tax?',
         badgeEarned: false,
@@ -755,7 +589,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Tax slabs in India: vary from 0% to 30%',
                     'Each year you must file ITR (income tax return)',
                 ],
-                content: 'Income earned in India is taxed by the government. Salary, business profit, rental income, investment income — all taxed. India uses a "progressive" system: earn ₹2.5L/year, zero tax. Earn ₹10L, you pay 20-30% on amount above ₹7.5L (not on entire ₹10L). This year\'s slab (2025-26): ₹0-2.5L = 0%, ₹2.5-5L = 5%, ₹5-10L = 20%, ₹10L+ = 30%. You must file ITR every year if income exceeds ₹2.5L.',
+                content: 'Income earned in India is taxed by the government. Salary, business profit, rental income, investment income, all taxed. India uses a "progressive" system: earn ₹2.5L/year, zero tax. Earn ₹10L, you pay 20-30% on amount above ₹7.5L (not on entire ₹10L). This year\'s slab (2025-26): ₹0-2.5L = 0%, ₹2.5-5L = 5%, ₹5-10L = 20%, ₹10L+ = 30%. You must file ITR every year if income exceeds ₹2.5L.',
                 quiz: [
                     {
                         question: 'India uses a "progressive" tax system. What does this mean?',
@@ -765,7 +599,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     },
                     {
                         question: 'If you earn ₹10L/year, are you taxed on the ENTIRE ₹10L at 30%?',
-                        options: ['Yes, the full ₹10L at 30%', 'No — only the portion above each slab threshold is taxed at that slab\'s rate', 'No — income below ₹5L is always tax-free', 'Yes, but only if you are salaried'],
+                        options: ['Yes, the full ₹10L at 30%', 'No, only the portion above each slab threshold is taxed at that slab\'s rate', 'No, income below ₹5L is always tax-free', 'Yes, but only if you are salaried'],
                         answerIndex: 1,
                         explanation: 'Tax slabs are marginal. You pay 0% on the first ₹2.5L, 5% on ₹2.5L-5L, 20% on ₹5L-10L. The 30% rate only applies to income ABOVE ₹10L.',
                     },
@@ -803,7 +637,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                         question: 'ELSS mutual funds qualify for Section 80C deduction. What is their minimum lock-in period?',
                         options: ['1 year', '3 years', '5 years', '15 years'],
                         answerIndex: 1,
-                        explanation: 'ELSS (Equity Linked Savings Scheme) has a 3-year lock-in — the shortest among all 80C instruments, while offering equity market returns.',
+                        explanation: 'ELSS (Equity Linked Savings Scheme) has a 3-year lock-in: the shortest among all 80C instruments, while offering equity market returns.',
                     },
                     {
                         question: 'If you are in the 30% tax bracket and invest ₹1.5L under Section 80C, how much tax do you save?',
@@ -832,13 +666,13 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                         question: 'Section 80D allows you to deduct which of the following?',
                         options: ['Gym membership fees', 'Health insurance (Mediclaim) premiums', 'Hospital treatment costs directly', 'Ayurvedic supplement costs'],
                         answerIndex: 1,
-                        explanation: 'Section 80D covers health insurance premiums paid for yourself, spouse, children, and parents — not direct medical expenses.',
+                        explanation: 'Section 80D covers health insurance premiums paid for yourself, spouse, children, and parents, not direct medical expenses.',
                     },
                     {
                         question: 'Under Section 80E on education loans, what portion of repayment is deductible?',
                         options: ['Principal amount only', 'Both principal and interest equally', 'Interest paid only (no upper limit)', 'Only 50% of total repayment'],
                         answerIndex: 2,
-                        explanation: 'Section 80E deducts the interest component of education loan repayments with NO upper limit ceiling — making it very powerful for higher education loans.',
+                        explanation: 'Section 80E deducts the interest component of education loan repayments with NO upper limit ceiling, making it very powerful for higher education loans.',
                     },
                     {
                         question: 'Your parents are 64 years old and have a health insurance policy. How much can you deduct under Section 80D for their premium?',
@@ -861,7 +695,7 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Equity long-term: 15% tax (below ₹1L) or 20% (above)',
                     'Real estate long-term: 20% tax',
                 ],
-                content: 'Buy Reliance stock at ₹2,000, sell at ₹2,500 = ₹500 profit (capital gain). Holding period matters: (1) Short-term (< 1 year): Taxed as regular income (up to 30%). (2) Long-term (> 1 year): Lower rates. Equity funds held >1 year: 15% tax if gain ≤ ₹1L, else 20%. Property held >2 years: 20% tax. This is why you hear "buy and hold" — it\'s tax-efficient. Example: Profit ₹50k from mutual fund (1-year hold) = ₹7,500 tax (15%). Same profit short-term = ₹15,000 tax (30%). Double the tax!',
+                content: 'Buy Reliance stock at ₹2,000, sell at ₹2,500 = ₹500 profit (capital gain). Holding period matters: (1) Short-term (< 1 year): Taxed as regular income (up to 30%). (2) Long-term (> 1 year): Lower rates. Equity funds held >1 year: 15% tax if gain ≤ ₹1L, else 20%. Property held >2 years: 20% tax. This is why you hear "buy and hold"; it\'s tax-efficient. Example: Profit ₹50k from mutual fund (1-year hold) = ₹7,500 tax (15%). Same profit short-term = ₹15,000 tax (30%). Double the tax!',
                 quiz: [
                     {
                         question: 'You bought a stock and sold it 8 months later for a ₹20,000 profit. How is this taxed?',
@@ -929,19 +763,19 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
                     'Don\'t underreport income (Income Tax Dept has data from banks)',
                     'Don\'t claim expenses you can\'t prove',
                     'Don\'t miss deadlines (penalties are steep)',
-                    'Don\'t ignore tax notices — reply quickly',
+                    'Don\'t ignore tax notices, reply quickly',
                 ],
-                content: 'Biggest mistakes: (1) Hiding income. Income Tax Dept tracks bank deposits, property registrations, credit card purchases. You can\'t evade. (2) Claiming fake deductions. If audited, you must show proof. (3) Late filing after July 31 — penalty ₹5k + interest. (4) Ignoring tax notices. If IT Dept sends a notice, respond within 30 days with documents. Silence = default assessment (they calculate tax for you, often higher). (5) Not keeping records. Keep receipts, invoices, statements for 5 years. Insurance? Keep policy documents. Real estate? Keep sale deed & payment receipts.',
+                content: 'Biggest mistakes: (1) Hiding income. Income Tax Dept tracks bank deposits, property registrations, credit card purchases. You can\'t evade. (2) Claiming fake deductions. If audited, you must show proof. (3) Late filing after July 31, penalty ₹5k + interest. (4) Ignoring tax notices. If IT Dept sends a notice, respond within 30 days with documents. Silence = default assessment (they calculate tax for you, often higher). (5) Not keeping records. Keep receipts, invoices, statements for 5 years. Insurance? Keep policy documents. Real estate? Keep sale deed & payment receipts.',
                 quiz: [
                     {
                         question: 'You receive a tax notice from the Income Tax Department. What should you do?',
-                        options: ['Ignore it — it\'s probably spam', 'Respond within 30 days with relevant documents', 'Call a friend who is not a tax professional', 'Wait for a second notice'],
+                        options: ['Ignore it; it\'s probably spam', 'Respond within 30 days with relevant documents', 'Call a friend who is not a tax professional', 'Wait for a second notice'],
                         answerIndex: 1,
-                        explanation: 'Tax notices have strict deadlines (usually 30 days). Ignoring them leads to "ex-parte" or default assessments where the IT department calculates your tax — usually unfavorably.',
+                        explanation: 'Tax notices have strict deadlines (usually 30 days). Ignoring them leads to "ex-parte" or default assessments where the IT department calculates your tax, usually unfavorably.',
                     },
                     {
                         question: 'Can the Income Tax Department detect income you haven\'t reported?',
-                        options: ['No — they only know what you tell them', 'Yes — they track large bank deposits, property registrations, and credit card spends', 'Only for amounts above ₹1 crore', 'Only for foreign income'],
+                        options: ['No, they only know what you tell them', 'Yes, they track large bank deposits, property registrations, and credit card spends', 'Only for amounts above ₹1 crore', 'Only for foreign income'],
                         answerIndex: 1,
                         explanation: 'The IT Department has access to Annual Information Returns (AIR) from banks, registrars, and financial institutions. Large transactions are automatically flagged.',
                     },
@@ -957,22 +791,21 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
     },
 ];
 
-export const MOCK_GLOSSARY: GlossaryTerm[] = [
-    { term: 'SIP', definition: 'Systematic Investment Plan — a method to invest a fixed amount regularly in mutual funds. Like a recurring deposit, but for mutual funds.' },
-    { term: 'NAV', definition: 'Net Asset Value — the per-unit price of a mutual fund. It changes daily based on the fund\'s holdings.' },
-    { term: 'CAGR', definition: 'Compound Annual Growth Rate — the average annual growth rate of an investment over a specified period.' },
+export const GLOSSARY: GlossaryTerm[] = [
+    { term: 'SIP', definition: 'Systematic Investment Plan: a method to invest a fixed amount regularly in mutual funds. Like a recurring deposit, but for mutual funds.' },
+    { term: 'NAV', definition: 'Net Asset Value: the per-unit price of a mutual fund. It changes daily based on the fund\'s holdings.' },
+    { term: 'CAGR', definition: 'Compound Annual Growth Rate: the average annual growth rate of an investment over a specified period.' },
     { term: 'Repo Rate', definition: 'The rate at which RBI lends money to commercial banks. When RBI increases it, loans become more expensive.' },
     { term: 'NIFTY 50', definition: 'An index of the top 50 companies listed on the National Stock Exchange (NSE) by market capitalization.' },
-    { term: 'SENSEX', definition: 'Short for Sensitive Index — an index of the top 30 companies on the Bombay Stock Exchange (BSE).' },
+    { term: 'SENSEX', definition: 'Short for Sensitive Index: an index of the top 30 companies on the Bombay Stock Exchange (BSE).' },
     { term: 'Mutual Fund', definition: 'A pool of money collected from many investors, managed by a professional fund manager who invests in stocks, bonds, etc.' },
-    { term: 'EMI', definition: 'Equated Monthly Installment — a fixed payment amount you make each month to repay a loan.' },
-    { term: 'UPI', definition: 'Unified Payments Interface — India\'s instant real-time payment system used via apps like GPay, PhonePe.' },
-    { term: 'ELSS', definition: 'Equity Linked Savings Scheme — a type of mutual fund that offers tax benefits under Section 80C with a 3-year lock-in.' },
-    { term: 'P/E Ratio', definition: 'Price-to-Earnings Ratio — how much investors are willing to pay for ₹1 of a company\'s earnings. Higher P/E = more expensive.' },
+    { term: 'EMI', definition: 'Equated Monthly Installment: a fixed payment amount you make each month to repay a loan.' },
+    { term: 'UPI', definition: 'Unified Payments Interface, India\'s instant real-time payment system used via apps like GPay, PhonePe.' },
+    { term: 'ELSS', definition: 'Equity Linked Savings Scheme: a type of mutual fund that offers tax benefits under Section 80C with a 3-year lock-in.' },
+    { term: 'P/E Ratio', definition: 'Price-to-Earnings Ratio: how much investors are willing to pay for ₹1 of a company\'s earnings. Higher P/E = more expensive.' },
     { term: 'Liquidity', definition: 'How quickly you can convert an asset to cash without losing value. Savings accounts are highly liquid; real estate is not.' },
     { term: 'Diversification', definition: 'Spreading investments across different assets to reduce risk. "Don\'t put all your eggs in one basket."' },
     { term: 'Bull Market', definition: 'A market where prices are rising and investor confidence is high.' },
     { term: 'Bear Market', definition: 'A market where prices are falling and investor confidence is low.' },
 ];
 
-export const MOCK_WEEKLY_TREND = [1200, 1800, 2100, 1600, 2400, 3200, 2940];

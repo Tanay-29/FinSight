@@ -1,22 +1,22 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { MOCK_GLOSSARY, MOCK_LEARNING_PATHS } from '../../data/mockData';
 import {
-    getGlossaryTerms,
-    seedGlossary,
-    FirestoreGlossaryTerm,
-    getLearningPaths,
-    seedLearningPaths,
-    FirestoreLearningPath,
+    GLOSSARY,
+    COURSE_CONTENT,
+    GlossaryTerm,
+    LearningPath,
+} from '../../data/courseContent';
+import {
     getUserProgress,
     markModuleComplete as firestoreMarkModuleComplete,
     UserProgress,
 } from '../../services/firestoreService';
+import { fetchUserProfile } from './authSlice';
 
 // ─── State ───────────────────────────────────────────────────
 
 interface LearningState {
-    paths: FirestoreLearningPath[];
-    glossary: FirestoreGlossaryTerm[];
+    paths: LearningPath[];
+    glossary: GlossaryTerm[];
     /** Per-path progress map: { [pathId]: UserProgress } */
     progress: Record<string, UserProgress>;
     streak: number;
@@ -39,40 +39,21 @@ const initialState: LearningState = {
 
 // ─── Async Thunks ────────────────────────────────────────────
 
+/**
+ * Course content is static and ships with the app, so both of these resolve
+ * from the bundled data rather than Firestore. They stay thunks because the
+ * screens already dispatch them and the loading states are wired up; if course
+ * content ever needs to be editable without an app release, this is the one
+ * place that has to change.
+ */
 export const fetchGlossary = createAsyncThunk(
     'learning/fetchGlossary',
-    async (_, { rejectWithValue }) => {
-        try {
-            let terms = await getGlossaryTerms();
-            if (terms.length === 0) {
-                await seedGlossary(MOCK_GLOSSARY);
-                terms = await getGlossaryTerms();
-            }
-            return terms;
-        } catch (error: any) {
-            return rejectWithValue(error.message);
-        }
-    }
+    async () => GLOSSARY
 );
 
-/**
- * Fetch global learning paths from Firestore.
- * Seeds from mockData if the collection is empty.
- * Deduplicates by checking for existing path IDs to prevent re-seeding.
- */
 export const fetchLearningPaths = createAsyncThunk(
     'learning/fetchPaths',
-    async (_, { rejectWithValue }) => {
-        try {
-            // Always seed with stable IDs (setDoc is idempotent — no duplicates)
-            // This ensures mockData quiz questions are always in Firestore
-            await seedLearningPaths(MOCK_LEARNING_PATHS as any);
-            const paths = await getLearningPaths();
-            return paths;
-        } catch (error: any) {
-            return rejectWithValue(error.message);
-        }
-    }
+    async () => COURSE_CONTENT
 );
 
 /** Fetch all user-specific progress from the Firestore subcollection */
@@ -104,10 +85,14 @@ export const completeModule = createAsyncThunk(
         { dispatch, rejectWithValue }
     ) => {
         try {
-            await firestoreMarkModuleComplete(userId, pathId, moduleId, totalModules);
+            const streakUpdate = await firestoreMarkModuleComplete(
+                userId, pathId, moduleId, totalModules
+            );
             // Refresh progress in Redux after writing
             dispatch(fetchUserProgress(userId));
-            return { pathId, moduleId };
+            // Refresh the profile so streak and freeze counts stay in sync.
+            dispatch(fetchUserProfile(userId));
+            return { pathId, moduleId, streakUpdate };
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -167,7 +152,7 @@ const learningSlice = createSlice({
                 state.progressLoading = false;
             });
 
-        // Complete Module — optimistic local update while Firestore write is in flight
+        // Complete Module - optimistic local update while Firestore write is in flight
         builder.addCase(completeModule.pending, (state, action) => {
             const { pathId, moduleId } = action.meta.arg;
             const existing = state.progress[pathId];

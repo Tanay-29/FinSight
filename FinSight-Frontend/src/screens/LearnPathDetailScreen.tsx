@@ -3,7 +3,7 @@
  *
  * Shows course overview, real progress (from Redux), and module list.
  * Tapping any module opens ModuleReaderScreen (reading + quiz + completion flow).
- * Progress is read from state.learning.progress[pathId].completedModules — no mock data.
+ * Progress is read from state.learning.progress[pathId].completedModules - no mock data.
  */
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
@@ -11,9 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, BookOpen, Layers, Clock, Check, Trophy,
-    ChevronRight, Lock,
+    ChevronRight, Lock, Play,
 } from 'lucide-react-native';
-import { FirestoreLearningPath } from '../services/firestoreService';
+import { LearningPath } from '../data/courseContent';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchUserProgress } from '../store/slices/learningSlice';
 
@@ -24,7 +24,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
     const { progress } = useAppSelector((s) => s.learning);
     const { user } = useAppSelector((s) => s.auth);
 
-    const path = route.params?.path as FirestoreLearningPath;
+    const path = route.params?.path as LearningPath;
 
     // Refresh progress when screen mounts
     useEffect(() => {
@@ -214,8 +214,9 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
 
                                 {/* "Next up" banner */}
                                 {isCurrent && (
-                                    <View className="bg-indigo-600 px-4 py-1.5">
-                                        <Text className="text-white text-xs font-semibold text-center">▶ Continue here</Text>
+                                    <View className="bg-indigo-600 px-4 py-1.5 flex-row items-center justify-center">
+                                        <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
+                                        <Text className="text-white text-xs font-semibold ml-1.5">Continue here</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>

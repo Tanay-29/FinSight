@@ -1,4 +1,4 @@
-import { Transaction, Budget, EITMCardData, MOCK_MARKET_DATA } from '../data/mockData';
+import { EITMCardData } from '../data/courseContent';
 import { FirestoreTransaction, FirestoreBudget } from '../services/firestoreService';
 
 /**
@@ -40,7 +40,7 @@ export const generateInsights = (
             cards.push({
                 id: `alert_${budget.category}`,
                 trigger: 'transaction_spike',
-                headline: `⚠️ ${budget.category} Budget Alert!`,
+                headline: `${budget.category} Budget Alert`,
                 explanation: `You've used ${Math.round(percentage)}% of your ${budget.category} budget (₹${spent} / ₹${budget.monthlyLimit}). Slow down!`,
                 personalImpact: {
                     holding: `${budget.category} Budget`,
@@ -71,7 +71,7 @@ export const generateInsights = (
         cards.push({
             id: 'insight_good_job',
             trigger: 'policy', // Using policy icon for generic 'good'
-            headline: '✅ Spending Looks Controlled',
+            headline: 'Spending Looks Controlled',
             explanation: `You've spent ₹${totalSpent} so far. Keep tracking every expense to stay on top of your finances!`,
             personalImpact: {
                 holding: 'Total Spent',

@@ -6,7 +6,7 @@ import {
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
     TrendingDown,
 } from 'lucide-react-native';
-import { CategorySpending } from '../data/mockData';
+import { CategorySpending } from '../data/courseContent';
 
 interface FinancialVitalsProps {
     totalSpent: number;

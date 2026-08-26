@@ -2,9 +2,9 @@
  * ModuleReaderScreen
  *
  * Three-phase immersive learning experience:
- *   Phase 1 — Reading: full content + highlighted key points
- *   Phase 2 — Quiz:    3 MCQ questions with animated feedback
- *   Phase 3 — Done:    score, badge reveal, streak celebration
+ *   Phase 1 - Reading: full content + highlighted key points
+ *   Phase 2 - Quiz:    3 MCQ questions with animated feedback
+ *   Phase 3 - Done:    score, badge reveal, streak celebration
  *
  * On module complete → dispatches completeModule thunk → Firestore write + Redux optimistic update
  */
@@ -19,11 +19,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb,
     Trophy, Flame, BookOpen, Star, RefreshCw, CheckCircle2, BrainCircuit,
+    Snowflake,
 } from 'lucide-react-native';
-import { Module, QuizQuestion } from '../data/mockData';
-import { FirestoreLearningPath } from '../services/firestoreService';
+import { Module, QuizQuestion, LearningPath } from '../data/courseContent';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { completeModule } from '../store/slices/learningSlice';
+import Confetti from '../components/Confetti';
+import * as haptics from '../utils/haptics';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -123,7 +125,12 @@ const QuizPhase: React.FC<{
         if (answered) return;
         setSelectedOption(idx);
         setAnswered(true);
-        if (idx === q.answerIndex) setScore((s) => s + 1);
+        if (idx === q.answerIndex) {
+            haptics.success();
+            setScore((s) => s + 1);
+        } else {
+            haptics.warn();
+        }
     };
 
     const handleNext = () => {
@@ -265,12 +272,13 @@ const DonePhase: React.FC<{
     total: number;
     badgeEarned: boolean;
     streak: number;
+    streakSaved: boolean;
     moduleName: string;
     isSaving: boolean;
     onBack: () => void;
     onRetake: () => void;
     onFlashcards: () => void;
-}> = ({ score, total, badgeEarned, streak, moduleName, isSaving, onBack, onRetake, onFlashcards }) => {
+}> = ({ score, total, badgeEarned, streak, streakSaved, moduleName, isSaving, onBack, onRetake, onFlashcards }) => {
     const pct = Math.round((score / total) * 100);
     const perfect = score === total;
     const passed = pct >= 60;
@@ -316,7 +324,7 @@ const DonePhase: React.FC<{
                     ? `You aced "${moduleName}". Your understanding is solid.`
                     : passed
                         ? `Good progress on "${moduleName}". Review the explanations to reinforce.`
-                        : `No worries — re-read "${moduleName}" and try the quiz again.`
+                        : `No worries - re-read "${moduleName}" and try the quiz again.`
                 }
             </Text>
 
@@ -330,12 +338,23 @@ const DonePhase: React.FC<{
                 </View>
             )}
 
+            {/* A freeze absorbed a missed day, so say so: the whole point of
+                the mechanic is that the learner notices being rescued. */}
+            {streakSaved && (
+                <View className="mt-3 flex-row items-center bg-sky-50 border border-sky-100 rounded-2xl px-5 py-3">
+                    <Snowflake size={20} color="#0EA5E9" />
+                    <Text className="text-sm font-bold text-sky-600 ml-2">
+                        Streak freeze used. Your streak is safe.
+                    </Text>
+                </View>
+            )}
+
             {/* Badge */}
             {badgeEarned && (
                 <View className="mt-4 flex-row items-center bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3">
                     <Trophy size={20} color="#10B981" />
                     <Text className="text-sm font-bold text-emerald-600 ml-2">
-                        Course badge earned! 🎉
+                        Course badge earned
                     </Text>
                 </View>
             )}
@@ -403,12 +422,42 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     const { progress } = useAppSelector((s) => s.learning);
 
     const module: Module = route.params?.module;
-    const path: FirestoreLearningPath = route.params?.path;
+    const path: LearningPath = route.params?.path;
 
     const [phase, setPhase] = useState<Phase>('reading');
     const [quizScore, setQuizScore] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [quizAttempt, setQuizAttempt] = useState(0); // increment to retake
+    const [celebrating, setCelebrating] = useState(false);
+    const [streakSaved, setStreakSaved] = useState(false);
+
+    // Declared before the early return below: hooks must run on every render.
+    const handleQuizFinish = useCallback(async (score: number) => {
+        setQuizScore(score);
+        setPhase('done');
+
+        // Mark complete in Firestore regardless of score (reading = learning)
+        if (user?.uid && path?.id && module?.id) {
+            setIsSaving(true);
+            const result = await dispatch(completeModule({
+                userId: user.uid,
+                pathId: path.id,
+                moduleId: module.id,
+                totalModules: path.modules?.length ?? 1,
+            }));
+            setIsSaving(false);
+
+            if (completeModule.fulfilled.match(result)) {
+                setStreakSaved(result.payload.streakUpdate?.savedByFreeze ?? false);
+            }
+        }
+
+        // Celebrate the finish, harder for a perfect run.
+        const total = module?.quiz?.length ?? 0;
+        if (total > 0 && score === total) haptics.celebrate();
+        else haptics.success();
+        setCelebrating(true);
+    }, [user, path, module, dispatch]);
 
     if (!module || !path) {
         return (
@@ -423,26 +472,13 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     const badgeEarned = pathProgress?.badgeEarned ?? false;
     const streak = profile?.streak ?? 0;
 
-    const handleStartQuiz = () => setPhase('quiz');
-
-    const handleQuizFinish = useCallback(async (score: number) => {
-        setQuizScore(score);
-        setPhase('done');
-
-        // Mark complete in Firestore regardless of score (reading = learning)
-        if (user?.uid && path.id) {
-            setIsSaving(true);
-            await dispatch(completeModule({
-                userId: user.uid,
-                pathId: path.id,
-                moduleId: module.id,
-                totalModules: path.modules?.length ?? 1,
-            }));
-            setIsSaving(false);
-        }
-    }, [user, path, module, dispatch]);
+    const handleStartQuiz = () => {
+        haptics.tap();
+        setPhase('quiz');
+    };
 
     const handleRetake = () => {
+        haptics.tap();
         setQuizAttempt((a) => a + 1);
         setPhase('quiz');
     };
@@ -451,6 +487,9 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
 
     const handleFlashcards = () => {
         (navigation as any).navigate('Flashcards', {
+            // moduleId and pathId identify the cards in the review schedule.
+            moduleId: module.id,
+            pathId: path.id ?? '',
             moduleTitle: module.title,
             moduleContent: module.content,
             keyPoints: module.keyPoints ?? [],
@@ -523,6 +562,7 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
                     total={module.quiz?.length ?? 3}
                     badgeEarned={badgeEarned}
                     streak={streak}
+                    streakSaved={streakSaved}
                     moduleName={module.title}
                     isSaving={isSaving}
                     onBack={handleBack}
@@ -530,6 +570,9 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
                     onFlashcards={handleFlashcards}
                 />
             )}
+
+            {/* Sits above everything, ignores touches, clears itself. */}
+            <Confetti active={celebrating} onDone={() => setCelebrating(false)} />
         </SafeAreaView>
     );
 };
