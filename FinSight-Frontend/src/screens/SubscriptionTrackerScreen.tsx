@@ -8,7 +8,10 @@
  *   - Groups by normalised merchant name
  *   - Merchants that appear 2+ times → flagged as recurring
  *   - Estimates monthly cost from frequency and average amount
- *   - Classifies as 'subscription' (30–45 day cycle) or 'recurring' (shorter cycle)
+ *   - Rejects groups whose amounts vary too much to be a commitment
+ *   - Classifies on amount steadiness first, then interval: a near-constant
+ *     amount is a subscription (or weekly, under 10 days), a varying one is a
+ *     bill that varies. Intervals above 50 days are not treated as recurring.
  *
  * No Firestore writes - this is a read-only planning tool.
  */
@@ -21,15 +24,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ChevronLeft, Search, Check, X as XIcon,
     RefreshCw, Tv, Music, Zap, Coffee,
-    ShoppingBag, Heart, Repeat, AlertCircle,
+    ShoppingBag, Heart, Repeat, AlertCircle, TrendingUp,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../store/hooks';
+import * as haptics from '../utils/haptics';
+import { futureValueOfSeries, formatCompactINR } from '../utils/projections';
+import { merchantKey } from '../utils/merchantRules';
+import { RecurringType, amountVariation, classifyRecurring } from '../utils/recurring';
 import { format, parseISO, subDays, differenceInDays } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────
-
-type RecurringType = 'subscription' | 'recurring' | 'weekly';
 
 interface RecurringCharge {
     merchant: string;
@@ -39,21 +44,23 @@ interface RecurringCharge {
     avgAmount: number;
     estimatedMonthly: number;
     avgIntervalDays: number;
+    /** Coefficient of variation of the charged amounts. */
+    variation: number;
     type: RecurringType;
     lastDate: string;
     transactions: Array<{ date: string; amount: number }>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────
+const HORIZON_OPTIONS = [5, 10, 20];
 
-function normaliseMerchant(name: string): string {
-    return name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .split(' ')[0]; // use first word as the key (e.g. "Zomato Food" → "zomato")
-}
+
+/**
+ * Assumed annual return for the redirect projection. Stated on screen rather
+ * than buried, because the whole figure hangs off it.
+ */
+const ASSUMED_RETURN_PCT = 10;
+
+// ─── Helpers ──────────────────────────────────────────────────
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
     entertainment: <Tv size={18} color="#8B5CF6" />,
@@ -75,7 +82,7 @@ const CATEGORY_BG: Record<string, string> = {
 function getTypeLabel(type: RecurringType): { label: string; color: string; bg: string } {
     if (type === 'subscription') return { label: 'Monthly', color: '#6366F1', bg: '#EEF2FF' };
     if (type === 'weekly')       return { label: 'Weekly',  color: '#F59E0B', bg: '#FFFBEB' };
-    return                               { label: 'Recurring', color: '#10B981', bg: '#ECFDF5' };
+    return                               { label: 'Varies', color: '#10B981', bg: '#ECFDF5' };
 }
 
 // ─── Main Screen ──────────────────────────────────────────────
@@ -86,6 +93,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
 
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<'all' | 'subscription' | 'recurring'>('all');
+    const [projectionYears, setProjectionYears] = useState(10);
     const [keepSet, setKeepSet] = useState<Set<string>>(new Set());
     const [cancelSet, setCancelSet] = useState<Set<string>>(new Set());
 
@@ -102,7 +110,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
             } catch { return; }
 
             if (!t.merchant && !t.category) return;
-            const key = normaliseMerchant(t.merchant ?? t.category ?? 'unknown');
+            const key = merchantKey(t.merchant ?? t.category ?? 'unknown');
             if (!groups[key]) groups[key] = [];
             groups[key].push({
                 date: t.date,
@@ -128,16 +136,12 @@ const SubscriptionTrackerScreen: React.FC = () => {
             }
             const avgIntervalDays = Math.round(totalInterval / (dates.length - 1));
 
-            if (avgIntervalDays > 50) return; // too infrequent → not really recurring
-            if (avgIntervalDays < 3)  return; // too frequent → probably manual entries
-
             const avgAmount = txs.reduce((s, t) => s + t.amount, 0) / txs.length;
             const estimatedMonthly = Math.round((avgAmount * 30) / avgIntervalDays);
+            const variation = amountVariation(txs.map((t) => t.amount));
 
-            let type: RecurringType;
-            if (avgIntervalDays <= 10)      type = 'weekly';
-            else if (avgIntervalDays <= 40) type = 'subscription';
-            else                            type = 'recurring';
+            const type: RecurringType | null = classifyRecurring(variation, avgIntervalDays);
+            if (type === null) return;
 
             const lastTx = sorted[sorted.length - 1];
 
@@ -149,6 +153,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                 avgAmount: Math.round(avgAmount),
                 estimatedMonthly,
                 avgIntervalDays,
+                variation,
                 type,
                 lastDate: lastTx.date,
                 transactions: sorted.map((t) => ({ date: t.date, amount: t.amount })),
@@ -179,6 +184,17 @@ const SubscriptionTrackerScreen: React.FC = () => {
     const potentialSavings = charges
         .filter((c) => cancelSet.has(c.normalised))
         .reduce((s, c) => s + c.estimatedMonthly, 0);
+
+    // What the leak is worth if it goes into an index fund instead of out the
+    // door. Once anything is marked for cancelling, project that rather than
+    // the whole committed figure: it is the amount the user could actually act
+    // on today. Same futureValueOfSeries the Time Machine uses, so the two
+    // screens can never drift apart.
+    const redirectable = potentialSavings > 0 ? potentialSavings : totalMonthly;
+    const projected = useMemo(
+        () => futureValueOfSeries(redirectable, 'monthly', ASSUMED_RETURN_PCT, projectionYears),
+        [redirectable, projectionYears],
+    );
 
     const toggleKeep = (key: string) => {
         setKeepSet((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -236,6 +252,57 @@ const SubscriptionTrackerScreen: React.FC = () => {
                     )}
                 </View>
             </View>
+
+            {/* What the leak is worth if it is redirected instead of spent. */}
+            {redirectable > 0 && (
+                <View style={{
+                    marginHorizontal: 20, marginBottom: 16,
+                    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 18,
+                    borderWidth: 1, borderColor: '#E5E7EB',
+                }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                        <TrendingUp size={16} color="#059669" />
+                        <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: 8 }}>
+                            {potentialSavings > 0 ? 'If you cancel and invest instead' : 'If you redirected all of it'}
+                        </Text>
+                    </View>
+
+                    <Text style={{ fontSize: 34, fontWeight: '900', color: '#059669', letterSpacing: -1 }}>
+                        {formatCompactINR(projected)}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#4B5563', marginTop: 4, lineHeight: 19 }}>
+                        {`₹${redirectable.toLocaleString('en-IN')} a month for ${projectionYears} years, at ${ASSUMED_RETURN_PCT}% a year.`}
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+                        {HORIZON_OPTIONS.map((y) => {
+                            const active = projectionYears === y;
+                            return (
+                                <TouchableOpacity
+                                    key={y}
+                                    onPress={() => { haptics.select(); setProjectionYears(y); }}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: active }}
+                                    accessibilityLabel={`Project over ${y} years`}
+                                    style={{
+                                        paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999,
+                                        backgroundColor: active ? '#059669' : '#F3F4F6',
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#FFFFFF' : '#6B7280' }}>
+                                        {y}y
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 12, lineHeight: 16 }}>
+                        A projection, not a promise. Nominal, before inflation and tax, and it
+                        assumes a steady return that no real market delivers.
+                    </Text>
+                </View>
+            )}
 
             {/* Search bar */}
             <View style={{

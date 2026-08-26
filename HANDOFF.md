@@ -355,6 +355,87 @@ to 131.
 
 ---
 
+## 5c. The leak projection, and what it exposed
+
+`SubscriptionTrackerScreen` now shows what the detected leak is worth if it is
+redirected rather than spent, over 5, 10 or 20 years. Once anything is marked
+for cancelling it projects that figure instead of the whole committed total,
+because that is the amount the user can act on today.
+
+It calls `futureValueOfSeries` from `utils/projections.ts`, the same function
+the Time Machine uses, rather than growing a second copy. Verified against an
+independently computed closed form: 5 assertions covering the reference case,
+the zero-rate branch that would otherwise divide by zero, zero years, zero
+amount, and growth exceeding contributions. Rs 1,200 a month at 10% is
+Rs 2.46 L over ten years and Rs 9.11 L over twenty.
+
+**Note there are two future-value implementations in the codebase and they
+disagree.** `utils/projections.ts` uses an ordinary annuity, contributions at
+the end of each period. `CuratedBasketScreen` has its own local `futureValue`
+using an annuity due, contributions at the start, which is arguably the better
+model for a SIP. The gap is a factor of (1 + monthly rate), about 0.8% a year.
+Nothing was changed, because picking one alters numbers already committed, but
+this is the same duplication pattern as the two categorisers and should be
+settled deliberately.
+
+**Merchant grouping, fixed.** The detector keyed on the first word of the
+merchant name, so "Amazon Prime" and "Amazon" collapsed into a single group, as
+did "Google One" and "Google Pay". On ninety days of realistic data that
+reported one Rs 923 a month "subscription" covering both a real Rs 299 Prime
+renewal and three unrelated shopping trips, inflating the leak and calling a
+shopping habit a subscription.
+
+`utils/merchantRules.ts` now exports `merchantKey`, which returns the matched
+rule keyword when one applies and the whole normalised name otherwise. The
+tracker uses it, so merchant identity lives in one file rather than three.
+`'amazon prime': 'entertainment'` was added to the table, following the same
+longest-match pattern as `'swiggy instamart'`, because Amazon Prime is a
+subscription rather than a shopping trip.
+
+Verified with 19 assertions, since the original categoriser assertions were
+throwaway scripts and no longer exist. They cover the defects the shared table
+was built for, the new rule, and the grouping identities: Netflix and Netflix
+India together, Swiggy and Swiggy Instamart apart, Amazon Prime and Amazon
+apart. Note that bare `reliance` is deliberately unmatched while
+`reliance digital`, `reliance fresh` and `reliance smart` all resolve.
+
+**Variance check, the other half.** Grouping alone did not stop false
+subscriptions, because the detector classified on interval only: three Amazon
+purchases thirty days apart still read as a monthly plan even at Rs 1,450,
+Rs 890 and Rs 2,300. Steadiness of amount is now checked first, since it is the
+stronger signal.
+
+`utils/recurring.ts` holds `amountVariation`, a coefficient of variation, and
+`classifyRecurring`. A near-constant amount is a subscription, or weekly under
+ten days. Above 0.15 variation it is a bill that varies, labelled "Varies" in
+the UI. Above 0.60 the amounts have nothing in common and the group is dropped
+as a frequently visited merchant rather than a commitment. The interval bounds,
+3 to 50 days, are unchanged.
+
+That also revives the `recurring` type, which previously covered only the 41 to
+50 day band and so almost never appeared despite being a top-level tab. It now
+means "regular but variable", which is what electricity and phone bills
+actually are.
+
+The logic sits in `utils/` rather than in the screen so it can be checked
+directly, matching `vitals.ts`, `projections.ts` and `merchantRules.ts`.
+Verified with 26 assertions across two runs: the variation helper including its
+divide-by-zero guard, the Amazon case in both directions, a Netflix price rise
+that must stay a subscription, the interval boundaries at 3, 10, 11 and 50
+days, and both thresholds probed either side and exactly on.
+
+Thresholds worth knowing when reading results: Amazon shopping at
+1450/890/2300 is 0.375, a Netflix rise from 199 to 249 is 0.109, electricity at
+800/1200/950 is 0.168.
+
+The `recurring` classification is nearly unreachable. Intervals above 50 days
+are rejected outright and anything up to 40 days is `subscription`, leaving
+`recurring` to cover only 41 to 50 days, while the tab filter offers it as a
+top-level choice. The header comment described the opposite of what the code
+does and has been corrected.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to
