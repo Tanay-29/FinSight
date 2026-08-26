@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle, CalendarDays, Star, Zap, Users, ChevronRight } from 'lucide-react-native';
+import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchGoals,
@@ -61,7 +62,7 @@ const GoalCard: React.FC<{
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                         style={{ backgroundColor: `${goal.color}20` }}
                     >
-                        <Text className="text-xl">{goal.emoji}</Text>
+                        {React.createElement(goalIcon(goal.icon), { size: 20, color: goal.color })}
                     </View>
                     <View className="flex-1">
                         <Text className="text-base font-bold text-text-primary" numberOfLines={1}>
@@ -203,9 +204,12 @@ const DepositModal: React.FC<{
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <View className="flex-1 justify-end bg-black/40">
                 <View className="bg-white rounded-t-3xl p-6">
-                    <Text className="text-xl font-bold text-text-primary mb-1">
-                        Add to {goal?.emoji} {goal?.title}
-                    </Text>
+                    <View className="flex-row items-center mb-1">
+                        {React.createElement(goalIcon(goal?.icon), { size: 20, color: goal?.color ?? '#6366F1' })}
+                        <Text className="text-xl font-bold text-text-primary ml-2">
+                            Add to {goal?.title}
+                        </Text>
+                    </View>
                     <Text className="text-sm text-text-secondary mb-5">
                         ₹{goal?.savedAmount.toLocaleString('en-IN')} saved of ₹
                         {goal?.targetAmount.toLocaleString('en-IN')}
@@ -279,7 +283,6 @@ const DepositModal: React.FC<{
 
 // ─── Add Goal Modal ───────────────────────────────────────────
 
-const GOAL_EMOJIS = ['🏠', '✈️', '🎓', '💍', '🚗', '💻', '🏖️', '🏋️', '📱', '🐶', '🛍️', '🎸'];
 const GOAL_COLORS = [
     '#6366F1', '#10B981', '#F59E0B', '#EF4444',
     '#8B5CF6', '#EC4899', '#3B82F6', '#14B8A6',
@@ -293,7 +296,7 @@ const AddGoalModal: React.FC<{
     const [title, setTitle] = useState('');
     const [target, setTarget] = useState('');
     const [deadline, setDeadline] = useState('');
-    const [selectedEmoji, setSelectedEmoji] = useState('🏠');
+    const [selectedIcon, setSelectedIcon] = useState<string>(DEFAULT_GOAL_ICON_KEY);
     const [selectedColor, setSelectedColor] = useState('#6366F1');
 
     useEffect(() => {
@@ -301,7 +304,7 @@ const AddGoalModal: React.FC<{
             setTitle('');
             setTarget('');
             setDeadline('');
-            setSelectedEmoji('🏠');
+            setSelectedIcon(DEFAULT_GOAL_ICON_KEY);
             setSelectedColor('#6366F1');
         }
     }, [visible]);
@@ -320,7 +323,7 @@ const AddGoalModal: React.FC<{
         }
         onSave({
             title: title.trim(),
-            emoji: selectedEmoji,
+            icon: selectedIcon,
             targetAmount: amount,
             savedAmount: 0,
             deadline,
@@ -334,7 +337,7 @@ const AddGoalModal: React.FC<{
             <View className="flex-1 justify-end bg-black/40">
                 <View className="bg-white rounded-t-3xl p-6">
                     <Text className="text-xl font-bold text-text-primary mb-5">
-                        New Savings Goal 🎯
+                        New Savings Goal
                     </Text>
 
                     {/* Emoji picker */}
@@ -343,16 +346,23 @@ const AddGoalModal: React.FC<{
                     </Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                         <View className="flex-row gap-2">
-                            {GOAL_EMOJIS.map((e) => (
-                                <TouchableOpacity
-                                    key={e}
-                                    className={`w-10 h-10 rounded-xl items-center justify-center border-2 ${selectedEmoji === e ? 'border-brand-primary' : 'border-transparent bg-surface-secondary'
-                                        }`}
-                                    onPress={() => setSelectedEmoji(e)}
-                                >
-                                    <Text className="text-xl">{e}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            {GOAL_ICON_KEYS.map((key) => {
+                                const Icon = GOAL_ICONS[key];
+                                const isSelected = selectedIcon === key;
+                                return (
+                                    <TouchableOpacity
+                                        key={key}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={`${key} icon`}
+                                        accessibilityState={{ selected: isSelected }}
+                                        className={`w-10 h-10 rounded-xl items-center justify-center border-2 ${isSelected ? 'border-brand-primary' : 'border-transparent bg-surface-secondary'
+                                            }`}
+                                        onPress={() => setSelectedIcon(key)}
+                                    >
+                                        <Icon size={20} color={isSelected ? selectedColor : '#6B7280'} />
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </ScrollView>
 
@@ -619,8 +629,8 @@ export const GoalsScreen: React.FC = () => {
                                 No goals yet
                             </Text>
                             <Text className="text-sm text-text-secondary text-center leading-5 mb-6">
-                                Set a savings goal — whether it's a vacation, emergency fund, or
-                                new gadget — and track your progress here.
+                                Set a savings goal - whether it's a vacation, emergency fund, or
+                                new gadget - and track your progress here.
                             </Text>
                             <TouchableOpacity
                                 className="bg-brand-primary px-8 py-3 rounded-2xl flex-row items-center"

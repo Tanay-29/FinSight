@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { signUp, signIn, logOut } from '../../services/authService';
+import { signUp, signIn, logOut, deleteAccount } from '../../services/authService';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/firestoreService';
+
+type Preferences = UserProfile['preferences'];
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -79,7 +81,7 @@ export const logOutUser = createAsyncThunk(
     }
 );
 
-/** Fetch Firestore profile — called after auth state confirms user is logged in */
+/** Fetch Firestore profile - called after auth state confirms user is logged in */
 export const fetchUserProfile = createAsyncThunk(
     'auth/fetchUserProfile',
     async (uid: string, { rejectWithValue }) => {
@@ -103,6 +105,68 @@ export const completeOnboarding = createAsyncThunk(
             return { ...data, onboardingComplete: true } as Partial<UserProfile>;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to save onboarding data');
+        }
+    }
+);
+
+/**
+ * Persist a preference change. The reducer applies it optimistically so the
+ * switch does not lag behind the tap, and reverts if the write fails.
+ */
+export const updatePreferences = createAsyncThunk(
+    'auth/updatePreferences',
+    async (
+        { uid, changes }: { uid: string; changes: Partial<Preferences> },
+        { getState, rejectWithValue }
+    ) => {
+        const previous: Preferences = {
+            notifications: true,
+            language: 'en-IN',
+            autoTracking: true,
+            ...(getState() as { auth: AuthState }).auth.profile?.preferences,
+        };
+        const merged: Preferences = { ...previous, ...changes };
+        try {
+            await updateUserProfile(uid, { preferences: merged });
+            return merged;
+        } catch (error: any) {
+            // Hand back the pre-change values so the reducer can restore them.
+            return rejectWithValue({
+                message: error.message || 'Could not save that setting',
+                previous,
+            });
+        }
+    }
+);
+
+/** Permanently delete the account and every document belonging to it. */
+export const deleteUserAccount = createAsyncThunk(
+    'auth/deleteAccount',
+    async (_, { rejectWithValue }) => {
+        try {
+            await deleteAccount();
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Could not delete your account');
+        }
+    }
+);
+
+/**
+ * Persist any subset of profile fields and merge the result into Redux.
+ * Used by the Wave 2 features, which all write small patches to the profile
+ * rather than needing a thunk each.
+ */
+export const patchProfile = createAsyncThunk(
+    'auth/patchProfile',
+    async (
+        { uid, patch }: { uid: string; patch: Partial<UserProfile> },
+        { rejectWithValue }
+    ) => {
+        try {
+            await updateUserProfile(uid, patch);
+            return patch;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Could not save that');
         }
     }
 );
@@ -181,7 +245,7 @@ const authSlice = createSlice({
             })
             .addCase(fetchUserProfile.rejected, (state) => {
                 state.profileLoading = false;
-                // Non-fatal — fall through to onboarding
+                // Non-fatal - fall through to onboarding
             });
 
         // Complete Onboarding
@@ -192,6 +256,56 @@ const authSlice = createSlice({
                 } else {
                     state.profile = action.payload as UserProfile;
                 }
+            });
+
+        // Profile patches from the engagement features
+        builder
+            .addCase(patchProfile.fulfilled, (state, action) => {
+                if (state.profile) {
+                    state.profile = { ...state.profile, ...action.payload };
+                }
+            })
+            .addCase(patchProfile.rejected, (state, action) => {
+                state.error = action.payload as string;
+            });
+
+        // Preferences: apply optimistically, revert on failure
+        builder
+            .addCase(updatePreferences.pending, (state, action) => {
+                if (state.profile) {
+                    state.profile.preferences = {
+                        ...state.profile.preferences,
+                        ...action.meta.arg.changes,
+                    };
+                }
+            })
+            .addCase(updatePreferences.fulfilled, (state, action) => {
+                if (state.profile) state.profile.preferences = action.payload;
+            })
+            .addCase(updatePreferences.rejected, (state, action) => {
+                const payload = action.payload as { message: string; previous: Preferences };
+                // Restore the pre-change values so the switch matches reality.
+                if (state.profile && payload?.previous) {
+                    state.profile.preferences = payload.previous;
+                }
+                state.error = payload?.message ?? 'Could not save that setting';
+            });
+
+        // Account deletion: the auth listener also fires, this keeps state clean
+        builder
+            .addCase(deleteUserAccount.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteUserAccount.fulfilled, (state) => {
+                state.user = null;
+                state.profile = null;
+                state.isAuthenticated = false;
+                state.isLoading = false;
+            })
+            .addCase(deleteUserAccount.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
             });
     },
 });

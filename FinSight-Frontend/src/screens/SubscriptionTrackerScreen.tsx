@@ -1,7 +1,7 @@
 /**
  * SubscriptionTrackerScreen.tsx
  *
- * "Leaky Spend" scanner — detects recurring charges from transaction history.
+ * "Leaky Spend" scanner - detects recurring charges from transaction history.
  *
  * Algorithm:
  *   - Looks back 90 days at all debit transactions
@@ -10,7 +10,7 @@
  *   - Estimates monthly cost from frequency and average amount
  *   - Classifies as 'subscription' (30–45 day cycle) or 'recurring' (shorter cycle)
  *
- * No Firestore writes — this is a read-only planning tool.
+ * No Firestore writes - this is a read-only planning tool.
  */
 import React, { useMemo, useState } from 'react';
 import {
@@ -398,7 +398,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                     <View style={{ flexDirection: 'row', gap: 8, padding: 12, alignItems: 'flex-start' }}>
                         <AlertCircle size={13} color="#9CA3AF" style={{ marginTop: 1 }} />
                         <Text style={{ flex: 1, fontSize: 11, color: '#9CA3AF', lineHeight: 16 }}>
-                            Charges are detected from your FinSight transaction history. Amounts are estimates based on averages. "Cancel" marks only track your intent — no actual subscriptions are cancelled in this app.
+                            Charges are detected from your FinSight transaction history. Amounts are estimates based on averages. "Cancel" marks only track your intent - no actual subscriptions are cancelled in this app.
                         </Text>
                     </View>
                 )}

@@ -20,9 +20,13 @@ import {
     limit,
     onSnapshot,
     Unsubscribe,
-    Timestamp,
+    QuerySnapshot,
+    DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { applyStudyDay, StreakUpdate } from '../utils/streak';
+import type { StreakWager } from '../utils/wager';
+import type { MoneyPersonality } from '../data/moneyPersonality';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -34,6 +38,8 @@ export interface UserProfile {
     preferences: {
         notifications: boolean;
         language: string;
+        /** Auto-categorise transactions pasted from bank SMS. */
+        autoTracking?: boolean;
     };
     createdAt: string;
     // Onboarding profile fields
@@ -45,6 +51,30 @@ export interface UserProfile {
     // Learning streak
     streak?: number;
     lastStudiedDate?: string; // ISO date string e.g. '2026-04-20'
+    /** Banked streak freezes. Each absorbs one missed day. */
+    streakFreezes?: number;
+    /** Result of the money personality quiz, if taken. */
+    moneyPersonality?: MoneyPersonality;
+    /** The one wager in flight, plus its outcome once settled. */
+    streakWager?: StreakWager;
+    /** Daily question: last day answered, and lifetime tallies. */
+    lastDailyDate?: string;
+    dailyAnswered?: number;
+    dailyCorrect?: number;
+    /**
+     * Spend guesses keyed by month ('2026-08'). Bounded by the number of
+     * months the user has been active, so it is safe to keep on the profile.
+     */
+    spendGuesses?: Record<string, { guess: number; actual: number; accuracy: number; guessedAt: string }>;
+    /**
+     * Improvement League. Opt-in defaults to off: nothing about a learner is
+     * published to a cross-user collection until they turn this on.
+     */
+    leagueOptIn?: boolean;
+    /** Week the baseline below belongs to, as 'YYYY-Www'. */
+    leagueBaselineWeek?: string;
+    /** IQ score when the week began, so gain can be measured against it. */
+    leagueBaselineScore?: number;
 }
 
 export interface FirestoreTransaction {
@@ -214,71 +244,88 @@ export async function updateBudgetLimit(
     );
 }
 
-// ─── Glossary ────────────────────────────────────────────────
+/**
+ * Change a transaction's category, and record the correction.
+ *
+ * The correction log is the point: it is a merchant-to-category mapping the
+ * user confirmed by hand, which is the labelled data the keyword categoriser
+ * needs before its accuracy can be measured or improved. Writing it is
+ * best-effort, so a failure there never blocks the category change itself.
+ */
+export async function correctTransactionCategory(
+    userId: string,
+    transactionId: string,
+    category: string,
+    merchant: string
+): Promise<void> {
+    await updateDoc(
+        doc(db, 'users', userId, 'transactions', transactionId),
+        { category }
+    );
 
-export interface FirestoreGlossaryTerm {
-    id?: string;
-    term: string;
-    definition: string;
+    const key = merchant.trim().toLowerCase();
+    if (!key) return;
+
+    try {
+        await setDoc(
+            doc(db, 'users', userId, 'category_corrections', transactionId),
+            { merchant: key, category, correctedAt: new Date().toISOString() }
+        );
+    } catch {
+        // Logging is a nice-to-have; the category change already succeeded.
+    }
 }
 
-/** Get all glossary terms */
-export async function getGlossaryTerms(): Promise<FirestoreGlossaryTerm[]> {
-    const q = query(collection(db, 'glossary'), orderBy('term'));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreGlossaryTerm));
+/** Every per-user subcollection. Keep in sync with firestore.rules. */
+const USER_SUBCOLLECTIONS = [
+    'transactions', 'budgets', 'goals', 'learning_progress', 'flashcard_reviews',
+    'category_corrections', 'split',
+] as const;
+
+/** Delete the contents of every per-user subcollection, keeping the profile. */
+export async function clearUserData(userId: string): Promise<void> {
+    await Promise.all(
+        USER_SUBCOLLECTIONS.map(async (name) => {
+            const snap = await getDocs(collection(db, 'users', userId, name));
+            await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+        })
+    );
 }
 
-/** Seed glossary with initial data */
-export async function seedGlossary(terms: FirestoreGlossaryTerm[]): Promise<void> {
-    const batch = [];
-    // Firestore batch writes are limited to 500. We'll just use Promise.all for simplicity here 
-    // since this is a one-time seed of ~15 items.
-    const promises = terms.map((term) => addDoc(collection(db, 'glossary'), term));
-    await Promise.all(promises);
-}
-
-// ─── Learning Paths ──────────────────────────────────────────
-
-export interface FirestoreLearningPath {
-    id?: string;
-    title: string;
-    description: string;
-    overview: string;
-    progress: { completed: number; total: number };
-    nextModule: string;
-    badgeEarned: boolean;
-    modules: any[]; // Array of Module objects
-}
-
-/** Get all learning paths */
-export async function getLearningPaths(): Promise<FirestoreLearningPath[]> {
-    const snap = await getDocs(collection(db, 'learning_paths'));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreLearningPath));
+/** Delete all user data including the profile document itself. */
+export async function deleteAllUserData(userId: string): Promise<void> {
+    await clearUserData(userId);
+    await deleteDoc(doc(db, 'users', userId));
 }
 
 /**
- * Seed learning paths using setDoc with stable IDs (path.id as doc ID).
- * Idempotent — re-running won't create duplicates.
+ * Collect everything the app stores about a user into one plain object,
+ * suitable for writing out as JSON.
  */
-export async function seedLearningPaths(paths: FirestoreLearningPath[]): Promise<void> {
-    const promises = paths.map((path) => {
-        const docId = (path as any).id ?? path.title.replace(/\s+/g, '_').toLowerCase();
-        return setDoc(doc(db, 'learning_paths', docId), path, { merge: false });
-    });
-    await Promise.all(promises);
-}
-/** Clear all user data */
-export async function clearUserData(userId: string): Promise<void> {
-    const transactionsQ = query(collection(db, 'users', userId, 'transactions'));
-    const transactionsSnap = await getDocs(transactionsQ);
-    const transPromises = transactionsSnap.docs.map(d => deleteDoc(d.ref));
+export async function collectUserDataForExport(userId: string): Promise<Record<string, unknown>> {
+    const [profile, transactions, budgets, goals, progress, reviews] = await Promise.all([
+        getUserProfile(userId),
+        getDocs(collection(db, 'users', userId, 'transactions')),
+        getDocs(collection(db, 'users', userId, 'budgets')),
+        getDocs(collection(db, 'users', userId, 'goals')),
+        getDocs(collection(db, 'users', userId, 'learning_progress')),
+        getDocs(collection(db, 'users', userId, 'flashcard_reviews')),
+    ]);
 
-    const budgetsQ = query(collection(db, 'users', userId, 'budgets'));
-    const budgetsSnap = await getDocs(budgetsQ);
-    const budgetPromises = budgetsSnap.docs.map(d => deleteDoc(d.ref));
+    const toArray = (snap: QuerySnapshot<DocumentData>) =>
+        snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    await Promise.all([...transPromises, ...budgetPromises]);
+    return {
+        exportedAt: new Date().toISOString(),
+        app: 'FinSight',
+        formatVersion: 1,
+        profile,
+        transactions: toArray(transactions),
+        budgets: toArray(budgets),
+        goals: toArray(goals),
+        learningProgress: toArray(progress),
+        flashcardReviews: toArray(reviews),
+    };
 }
 
 
@@ -292,12 +339,15 @@ export async function clearUserData(userId: string): Promise<void> {
 export interface FirestoreGoal {
     id?: string;
     title: string;
-    emoji: string;
+    /** Icon key from theme/icons.ts GOAL_ICONS, e.g. 'home'. */
+    icon: string;
     targetAmount: number;
     savedAmount: number;
     deadline: string;    // ISO date string e.g. '2026-12-31'
     color: string;       // hex accent colour
     createdAt: string;
+    /** @deprecated Emoji glyph written by older builds. Read-only. */
+    emoji?: string;
 }
 
 /** Add a new savings goal */
@@ -383,7 +433,7 @@ export async function markModuleComplete(
     pathId: string,
     moduleId: string,
     totalModules: number
-): Promise<void> {
+): Promise<StreakUpdate | null> {
     const progressRef = doc(db, 'users', userId, 'learning_progress', pathId);
     const snap = await getDoc(progressRef);
 
@@ -392,7 +442,7 @@ export async function markModuleComplete(
     if (snap.exists()) {
         existing = (snap.data().completedModules as string[]) || [];
     }
-    if (existing.includes(moduleId)) return; // already done — idempotent
+    if (existing.includes(moduleId)) return null; // already done - idempotent
 
     const updated = [...existing, moduleId];
     const percentage = Math.round((updated.length / totalModules) * 100);
@@ -411,32 +461,25 @@ export async function markModuleComplete(
         { merge: true }
     );
 
-    // Update streak on user profile
-    const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    // Update the streak, spending a freeze if one is needed and available.
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-        const data = userSnap.data();
-        const lastDate: string = data.lastStudiedDate || '';
-        const currentStreak: number = data.streak || 0;
+    if (!userSnap.exists()) return null;
 
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const data = userSnap.data();
+    const update = applyStudyDay({
+        streak: data.streak || 0,
+        lastStudiedDate: data.lastStudiedDate || '',
+        freezes: data.streakFreezes || 0,
+    });
 
-        let newStreak = 1;
-        if (lastDate === today) {
-            newStreak = currentStreak; // already studied today, don't change
-        } else if (lastDate === yesterdayStr) {
-            newStreak = currentStreak + 1; // consecutive day
-        }
-        // else: streak resets to 1
+    await updateDoc(userRef, {
+        streak: update.streak,
+        lastStudiedDate: update.lastStudiedDate,
+        streakFreezes: update.freezes,
+    });
 
-        await updateDoc(userRef, {
-            streak: newStreak,
-            lastStudiedDate: today,
-        });
-    }
+    return update;
 }
 
 /** Get streak info from user profile */

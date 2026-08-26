@@ -12,6 +12,7 @@ import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import FinSightIQCard from '../components/FinSightIQCard';
+import DailyQuestionCard from '../components/DailyQuestionCard';
 import { format } from 'date-fns';
 
 
@@ -93,7 +94,7 @@ export const FeedScreen: React.FC = () => {
                 name: name.charAt(0).toUpperCase() + name.slice(1),
                 amount,
                 percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
-                icon: name, // category key — FinancialVitals uses its own Lucide icon map
+                icon: name, // category key - FinancialVitals uses its own Lucide icon map
             }))
             .sort((a, b) => b.amount - a.amount);
     }, [transactions]);
@@ -151,6 +152,9 @@ return (
 
                 {/* FinSight IQ Card */}
                 <FinSightIQCard />
+
+                {/* One quick question a day, for the days nobody wants a full module */}
+                <DailyQuestionCard />
 
                 {/* Market Pulse */}
                 <View className="mt-3">

@@ -15,7 +15,7 @@ import {
     Animated, ActivityIndicator,
     LayoutAnimation, Platform, UIManager,
 } from 'react-native';
-import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import {
     BrainCircuit, ChevronDown, ChevronUp,
     Zap, Target, BookOpen, TrendingUp,
@@ -56,6 +56,24 @@ function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg
 // The full track arc (210° → 330° going clockwise = 210° → 450°, i.e. 210°→330° via 360°)
 const TRACK_D  = describeArc(CX, CY, RADIUS, 210, 360) + ` A ${RADIUS} ${RADIUS} 0 0 1 ${polarToCartesian(CX, CY, RADIUS, 330).x} ${polarToCartesian(CX, CY, RADIUS, 330).y}`;
 
+/** "just now", "12 minutes ago", "3 hours ago", or a date once past a week. */
+function formatAdviceTime(iso: string): string {
+    const then = new Date(iso);
+    if (Number.isNaN(then.getTime())) return 'earlier';
+
+    const minutes = Math.floor((Date.now() - then.getTime()) / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+
+    return then.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
 // ─── Grade helper ──────────────────────────────────────────────
 
 function getGrade(score: number): { label: string; color: string } {
@@ -67,11 +85,12 @@ function getGrade(score: number): { label: string; color: string } {
     return                    { label: 'Needs Attention',  color: '#EF4444' };
 }
 
-const QUEST_ICONS: React.ReactNode[] = [
-    <Target size={14} color="#6366F1" />,
-    <BookOpen size={14} color="#8B5CF6" />,
-    <TrendingUp size={14} color="#10B981" />,
-];
+/** Icon and tint for quest 1, 2 and 3, in order. */
+const QUEST_ICONS = [
+    { Icon: Target, color: '#6366F1' },
+    { Icon: BookOpen, color: '#8B5CF6' },
+    { Icon: TrendingUp, color: '#10B981' },
+] as const;
 
 // ─── Arc Gauge ────────────────────────────────────────────────
 
@@ -154,7 +173,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                 )}
 
                 {/* Score text */}
-                <Text
+                <SvgText
                     x={CX}
                     y={CY - 4}
                     textAnchor="middle"
@@ -163,8 +182,8 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                     fill="#111827"
                 >
                     {displayScore}
-                </Text>
-                <Text
+                </SvgText>
+                <SvgText
                     x={CX}
                     y={CY + 20}
                     textAnchor="middle"
@@ -172,7 +191,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                     fill="#9CA3AF"
                 >
                     / 1000
-                </Text>
+                </SvgText>
             </Svg>
             <Text style={{ fontSize: 14, fontWeight: '700', color: grade.color, marginTop: -12 }}>
                 {grade.label}
@@ -283,6 +302,15 @@ const FinSightIQCard: React.FC = () => {
                             <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 4 }}>
                                 {advice.explanation}
                             </Text>
+                            {/* Advice is cached server-side until the user's finances
+                                change, so say when it was written rather than
+                                letting a refresh look like it did nothing. */}
+                            {lastFetchedAt ? (
+                                <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
+                                    Current as of {formatAdviceTime(lastFetchedAt)}. This updates when your
+                                    spending, budgets or goals change.
+                                </Text>
+                            ) : null}
                         </View>
                     </View>
                 </View>
@@ -339,7 +367,10 @@ const FinSightIQCard: React.FC = () => {
                                         alignItems: 'center', justifyContent: 'center',
                                         flexShrink: 0,
                                     }}>
-                                        {QUEST_ICONS[idx]}
+                                        {React.createElement(
+                                            (QUEST_ICONS[idx] ?? QUEST_ICONS[0]).Icon,
+                                            { size: 14, color: (QUEST_ICONS[idx] ?? QUEST_ICONS[0]).color }
+                                        )}
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>

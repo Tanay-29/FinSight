@@ -1,7 +1,7 @@
 /**
  * InvestScreen.tsx
  * ─────────────────────────────────────────────────────────────────────────
- * Mock Brokerage UI — Asset Price Board + BUY/SELL Modal + Order History
+ * Mock Brokerage UI - Asset Price Board + BUY/SELL Modal + Order History
  * Accessible via VitalsScreen quick-access card.
  */
 import React, { useEffect, useState, useCallback } from 'react';
@@ -14,7 +14,14 @@ import { useNavigation } from '@react-navigation/native';
 import {
     ChevronLeft, TrendingUp, TrendingDown, Briefcase,
     Zap, RefreshCw, ShoppingCart, CircleDollarSign,
+    BarChart3, Landmark, ClipboardList, LineChart,
 } from 'lucide-react-native';
+
+/** Icon shown on each asset row, by asset type. */
+const ASSET_ICONS = {
+    ETF: BarChart3,
+    Stock: LineChart,
+} as const;
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadPrices, loadOrders, submitOrder, clearError } from '../store/slices/brokerageSlice';
 import { loadWallet, addFunds } from '../store/slices/walletSlice';
@@ -130,9 +137,14 @@ const OrderModal: React.FC<{
                     >
                         {submitting
                             ? <ActivityIndicator color="#FFF" />
-                            : <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16 }}>
-                                {orderType === 'BUY' ? '🛒 Place Buy Order' : '💰 Place Sell Order'}
-                              </Text>
+                            : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                {orderType === 'BUY'
+                                    ? <ShoppingCart size={16} color="#FFF" />
+                                    : <CircleDollarSign size={16} color="#FFF" />}
+                                <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16 }}>
+                                    {orderType === 'BUY' ? 'Place Buy Order' : 'Place Sell Order'}
+                                </Text>
+                              </View>
                         }
                     </TouchableOpacity>
 
@@ -261,7 +273,7 @@ const InvestScreen: React.FC = () => {
             })).unwrap();
             setOrderModalVisible(false);
             dispatch(loadWallet());
-            Alert.alert('✅ Order Executed', `${type} ${qty} units of ${selectedAsset.name} at ₹${selectedAsset.price}`);
+            Alert.alert('Order Executed', `${type} ${qty} units of ${selectedAsset.name} at ₹${selectedAsset.price}`);
         } catch (err: any) {
             Alert.alert('Order Failed', err?.message || 'Unknown error');
         }
@@ -328,9 +340,14 @@ const InvestScreen: React.FC = () => {
                             backgroundColor: activeTab === tab ? '#6366F1' : 'transparent',
                         }}
                     >
-                        <Text style={{ color: activeTab === tab ? '#FFF' : 'rgba(255,255,255,0.5)', fontWeight: '700', textTransform: 'capitalize' }}>
-                            {tab === 'prices' ? '📈 Markets' : '📋 My Orders'}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            {tab === 'prices'
+                                ? <TrendingUp size={14} color={activeTab === tab ? '#FFF' : 'rgba(255,255,255,0.5)'} />
+                                : <ClipboardList size={14} color={activeTab === tab ? '#FFF' : 'rgba(255,255,255,0.5)'} />}
+                            <Text style={{ color: activeTab === tab ? '#FFF' : 'rgba(255,255,255,0.5)', fontWeight: '700' }}>
+                                {tab === 'prices' ? 'Markets' : 'My Orders'}
+                            </Text>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -377,9 +394,10 @@ const InvestScreen: React.FC = () => {
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                                             <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: color + '25', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Text style={{ fontSize: 18 }}>
-                                                    {asset.type === 'ETF' ? '📊' : asset.type === 'Stock' ? '📈' : '🏦'}
-                                                </Text>
+                                                {React.createElement(
+                                                    ASSET_ICONS[asset.type as keyof typeof ASSET_ICONS] ?? Landmark,
+                                                    { size: 18, color }
+                                                )}
                                             </View>
                                             <View>
                                                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>{asset.symbol.replace('_', ' ')}</Text>

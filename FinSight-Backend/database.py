@@ -1,5 +1,5 @@
 """
-database.py — SQLite setup for FinSight Phase 1 Execution Layer
+database.py - SQLite setup for FinSight Phase 1 Execution Layer
 All brokerage, wallet, and round-up data persisted in brokerage.db
 """
 import sqlite3

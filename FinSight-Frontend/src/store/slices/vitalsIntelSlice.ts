@@ -1,5 +1,5 @@
 /**
- * vitalsIntelSlice.ts — Redux slice for Intelligence Layer
+ * vitalsIntelSlice.ts - Redux slice for Intelligence Layer
  * Manages: burn rate, savings engine, 50/30/20 analysis
  */
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';

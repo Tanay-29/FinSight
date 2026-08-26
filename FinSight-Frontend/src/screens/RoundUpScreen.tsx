@@ -1,7 +1,7 @@
 /**
  * RoundUpScreen.tsx
  * ─────────────────────────────────────────────────────────────────────────
- * Round-Up & Invest — History, Balance, Manual Invest Trigger
+ * Round-Up & Invest - History, Balance, Manual Invest Trigger
  */
 import React, { useEffect, useCallback } from 'react';
 import {
@@ -39,7 +39,7 @@ const RoundUpScreen: React.FC = () => {
     useEffect(() => {
         if (lastInvestResult) {
             Alert.alert(
-                '🎉 Invested!',
+                'Invested',
                 `Successfully invested ₹${lastInvestResult.invested?.toFixed(2)} in ${lastInvestResult.asset}.\n\nUnits bought: ${lastInvestResult.quantity?.toFixed(4)}`,
                 [{ text: 'View Portfolio', onPress: () => navigation.navigate('Portfolio' as never) }, { text: 'Done' }]
             );
@@ -60,7 +60,7 @@ const RoundUpScreen: React.FC = () => {
             return;
         }
         Alert.alert(
-            '🚀 Invest Round-Ups',
+            'Invest Round-Ups',
             `Invest ₹${roundup.roundup_balance.toFixed(2)} in NIFTY BeES ETF?`,
             [
                 { text: 'Cancel', style: 'cancel' },
@@ -96,7 +96,10 @@ const RoundUpScreen: React.FC = () => {
             >
                 {/* How It Works */}
                 <View style={{ backgroundColor: '#FEF3C7', borderRadius: 18, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#FDE68A' }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400E', marginBottom: 10 }}>⚡ How Round-Ups Work</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                        <Zap size={14} color="#92400E" />
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400E' }}>How Round-Ups Work</Text>
+                    </View>
                     <Text style={{ fontSize: 13, color: '#78350F', lineHeight: 20 }}>
                         Every time you add an expense, we round it up to the nearest ₹10 and save the difference here.
                         {'\n\n'}

@@ -1,5 +1,5 @@
 /**
- * OnboardingScreen — 5-step user profiling flow
+ * OnboardingScreen - 5-step user profiling flow
  *
  * Step 1: Age
  * Step 2: Financial experience level (single-select)
@@ -42,7 +42,7 @@ interface OnboardingData {
     riskProfile: RiskProfile | null;
 }
 
-// ─── SelectCard — reusable single/multi select card ──────────────
+// ─── SelectCard - reusable single/multi select card ──────────────
 
 const SelectCard: React.FC<{
     icon: React.ReactNode;
@@ -162,7 +162,7 @@ const Step2Experience: React.FC<{
                 How comfortable are you with money?
             </Text>
             <Text className="text-base text-gray-500 mb-7 leading-6">
-                We'll tailor your content and suggestions accordingly — no wrong answer here.
+                We'll tailor your content and suggestions accordingly - no wrong answer here.
             </Text>
             {OPTIONS.map((opt) => (
                 <SelectCard
@@ -233,7 +233,7 @@ const Step3Goals: React.FC<{
                 What are you here for?
             </Text>
             <Text className="text-base text-gray-500 mb-2 leading-6">
-                Pick as many as you like — you can always change this later.
+                Pick as many as you like - you can always change this later.
             </Text>
             <Text className="text-xs text-indigo-500 font-semibold mb-6">
                 Select at least one
@@ -319,21 +319,21 @@ const Step5Risk: React.FC<{
         {
             value: 'conservative',
             icon: <Shield size={22} color={data.riskProfile === 'conservative' ? '#FFFFFF' : '#6B7280'} />,
-            title: "Sell — I can't risk it",
+            title: "Sell - I can't risk it",
             subtitle: 'Safety first. Prefer stability over returns.',
             accent: '#10B981',
         },
         {
             value: 'moderate',
             icon: <Minus size={22} color={data.riskProfile === 'moderate' ? '#FFFFFF' : '#6B7280'} />,
-            title: "Hold — I'll wait it out",
+            title: "Hold - I'll wait it out",
             subtitle: 'Comfortable with short-term dips.',
             accent: '#F59E0B',
         },
         {
             value: 'aggressive',
             icon: <Zap size={22} color={data.riskProfile === 'aggressive' ? '#FFFFFF' : '#6B7280'} />,
-            title: 'Buy more — great discount!',
+            title: 'Buy more - great discount!',
             subtitle: 'Long-term growth is the goal.',
             accent: '#6366F1',
         },
@@ -348,7 +348,7 @@ const Step5Risk: React.FC<{
                 Imagine your investments drop 20% in a month. What would you do?
             </Text>
             <Text className="text-xs text-gray-400 mb-7">
-                No right or wrong — this helps us tailor investment suggestions.
+                No right or wrong - this helps us tailor investment suggestions.
             </Text>
             {OPTIONS.map((opt) => (
                 <SelectCard

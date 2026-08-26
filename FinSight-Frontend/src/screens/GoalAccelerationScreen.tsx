@@ -5,10 +5,10 @@
  * Receives { goalId } from route params, reads real goal from Redux.
  *
  * Sections:
- *   1. Goal hero card — real title, emoji, progress, deadline
- *   2. Contribution adjuster — +/− ₹1,000 steps, live recalc
- *   3. Smart budget tip — reads top over-budget category from transactions
- *   4. Side-by-side timeline card — Bank 4% vs SIP 9%
+ *   1. Goal hero card - real title, emoji, progress, deadline
+ *   2. Contribution adjuster - +/− ₹1,000 steps, live recalc
+ *   3. Smart budget tip - reads top over-budget category from transactions
+ *   4. Side-by-side timeline card - Bank 4% vs SIP 9%
  *   5. Months-saved hero number
  */
 import React, { useState, useMemo } from 'react';
@@ -19,8 +19,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ChevronLeft, Clock, TrendingUp, ShieldCheck, Zap,
-    PiggyBank, Calendar, Minus, Plus, AlertCircle,
+    PiggyBank, Calendar, Minus, Plus, AlertCircle, Landmark,
 } from 'lucide-react-native';
+import { goalIcon } from '../theme/icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppSelector } from '../store/hooks';
@@ -32,8 +33,8 @@ type RouteParams = { goalId?: string };
 
 // ─── Math engine ──────────────────────────────────────────────
 
-const BANK_RATE = 0.04;       // 4%  p.a. — standard savings account
-const SIP_RATE  = 0.09;       // 9%  p.a. — conservative hybrid MF
+const BANK_RATE = 0.04;       // 4%  p.a. - standard savings account
+const SIP_RATE  = 0.09;       // 9%  p.a. - conservative hybrid MF
 
 /**
  * Iterative month-wise compound + contribution calculator.
@@ -210,7 +211,7 @@ const GoalAccelerationScreen: React.FC = () => {
                             backgroundColor: `${goal.color}20`,
                             alignItems: 'center', justifyContent: 'center', marginRight: 14,
                         }}>
-                            <Text style={{ fontSize: 24 }}>{goal.emoji}</Text>
+                            {React.createElement(goalIcon(goal.icon), { size: 24, color: goal.color })}
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
@@ -323,7 +324,7 @@ const GoalAccelerationScreen: React.FC = () => {
                         <AlertCircle size={18} color="#F97316" style={{ marginTop: 2 }} />
                         <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={{ fontSize: 13, fontWeight: '700', color: '#9A3412' }}>
-                                💡 Smart Tip
+                                Smart Tip
                             </Text>
                             <Text style={{ fontSize: 12, color: '#C2410C', marginTop: 2, lineHeight: 18 }}>
                                 You spent{' '}
@@ -381,7 +382,10 @@ const GoalAccelerationScreen: React.FC = () => {
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                             {/* Bank path */}
                             <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 11, color: '#A5B4FC', marginBottom: 6 }}>🏦 Bank (4% p.a.)</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                                    <Landmark size={12} color="#A5B4FC" />
+                                    <Text style={{ fontSize: 11, color: '#A5B4FC' }}>Bank (4% p.a.)</Text>
+                                </View>
                                 <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>
                                     {formatMonths(bankMonths)}
                                 </Text>
@@ -395,7 +399,10 @@ const GoalAccelerationScreen: React.FC = () => {
 
                             {/* SIP path */}
                             <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 11, color: '#A5B4FC', marginBottom: 6 }}>📈 SIP (9% p.a.)</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                                    <TrendingUp size={12} color="#A5B4FC" />
+                                    <Text style={{ fontSize: 11, color: '#A5B4FC' }}>SIP (9% p.a.)</Text>
+                                </View>
                                 <Text style={{ fontSize: 22, fontWeight: '800', color: '#34D399' }}>
                                     {formatMonths(sipMonths)}
                                 </Text>
@@ -415,10 +422,10 @@ const GoalAccelerationScreen: React.FC = () => {
                             </Text>
                             <Text style={{ fontSize: 12, color: '#6EE7B7', marginTop: 2, lineHeight: 17 }}>
                                 {daysLeft < 365
-                                    ? 'Short horizon (<1 year) — 100% debt for capital protection'
+                                    ? 'Short horizon (<1 year) - 100% debt for capital protection'
                                     : daysLeft < 1095
-                                    ? 'Medium horizon (1–3 years) — 80% Debt + 20% Equity'
-                                    : 'Long horizon (3+ years) — 100% equity for maximum growth'
+                                    ? 'Medium horizon (1–3 years) - 80% Debt + 20% Equity'
+                                    : 'Long horizon (3+ years) - 100% equity for maximum growth'
                                 }
                             </Text>
                         </View>

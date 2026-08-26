@@ -9,8 +9,10 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, PieChart, Repeat, Flame, Briefcase, PiggyBank, Leaf,
+    ChevronRight, PieChart, Repeat, Flame, Briefcase, PiggyBank,
+    Target, Sparkles, Clock, Users, Leaf,
 } from 'lucide-react-native';
+import { goalIcon } from '../theme/icons';
 import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
@@ -215,7 +217,7 @@ export const VitalsScreen: React.FC = () => {
     const noSpend = React.useMemo(() => summariseNoSpendDays(transactions), [transactions]);
     const { user } = useAppSelector((state) => state.auth);
     const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
-    // userId for non-hook usage (safe — read at component top level via selector)
+    // userId for non-hook usage (safe - read at component top level via selector)
     const userId = useAppSelector((state) => state.auth.user?.uid);
 
     const currentMonthKey = format(new Date(), 'yyyy-MM');
@@ -408,7 +410,7 @@ export const VitalsScreen: React.FC = () => {
                         <>
                             <View className="flex-row items-center mb-3">
                                 <View className="w-12 h-12 bg-indigo-50 rounded-full items-center justify-center mr-3">
-                                    <Text className="text-2xl">{topGoal.emoji || '🎯'}</Text>
+                                    {React.createElement(goalIcon(topGoal.icon), { size: 22, color: '#6366F1' })}
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-base font-bold text-text-primary">{topGoal.name || topGoal.title}</Text>
@@ -498,6 +500,109 @@ export const VitalsScreen: React.FC = () => {
                 <View style={{ marginHorizontal: 16, marginTop: 10, marginBottom: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Financial Intelligence</Text>
                 </View>
+                {/* Monthly recap and the group ledger */}
+                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 10 }}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Wrapped' as never)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        style={{ flex: 1, backgroundColor: '#5B21B6', borderRadius: 18, padding: 16 }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                                <Sparkles size={18} color="white" />
+                            </View>
+                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
+                        </View>
+                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Wrapped</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>Your month, recapped</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Split' as never)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#E5E7EB' }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
+                                <Users size={18} color="#10B981" />
+                            </View>
+                            <ChevronRight size={16} color="#D1D5DB" />
+                        </View>
+                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Split and Settle</Text>
+                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Who owes whom</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Guess Your Spend and Tidy Up: two quick games that both
+                    teach something and improve the data behind these charts. */}
+                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 10 }}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('GuessSpend' as never)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        style={{
+                            flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18,
+                            padding: 16, borderWidth: 1, borderColor: '#E5E7EB',
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' }}>
+                                <Target size={18} color="#6366F1" />
+                            </View>
+                            <ChevronRight size={16} color="#D1D5DB" />
+                        </View>
+                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Guess Your Spend</Text>
+                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Test your instincts</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('SwipeCategorise' as never)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        style={{
+                            flex: 1, backgroundColor: '#FFFFFF', borderRadius: 18,
+                            padding: 16, borderWidth: 1, borderColor: '#E5E7EB',
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#F5F3FF', alignItems: 'center', justifyContent: 'center' }}>
+                                <Sparkles size={18} color="#8B5CF6" />
+                            </View>
+                            <ChevronRight size={16} color="#D1D5DB" />
+                        </View>
+                        <Text style={{ color: '#111827', fontWeight: '800', fontSize: 13, marginTop: 12 }}>Tidy Up</Text>
+                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Fix miscategorised spends</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 10 }}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('TimeMachine' as never)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        style={{
+                            flex: 1, backgroundColor: '#4338CA', borderRadius: 18, padding: 16,
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Clock size={18} color="white" />
+                                </View>
+                                <View style={{ marginLeft: 12, flex: 1 }}>
+                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Time Machine</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 }}>
+                                        What that habit is really costing you
+                                    </Text>
+                                </View>
+                            </View>
+                            <ChevronRight size={16} color="rgba(255,255,255,0.6)" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 4 }}>
 
                     {/* Burn Rate */}

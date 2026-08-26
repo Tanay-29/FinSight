@@ -133,7 +133,7 @@ export default function AddTransactionScreen() {
 
                 <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
                     
-                    {/* ✨ Smart Paste Section */}
+                    {/* Smart Paste Section */}
                     <View className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6">
                         <View className="flex-row items-center mb-2">
                             <Sparkles size={18} color="#4F46E5" />

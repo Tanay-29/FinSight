@@ -1,10 +1,10 @@
 /**
  * MoneyManagerScreen.tsx
  *
- * The 50/30/20 Money Manager — auto-classifies this month's transactions
+ * The 50/30/20 Money Manager - auto-classifies this month's transactions
  * into Needs (50%), Wants (30%), and Savings (20%) buckets.
  *
- * Reads entirely from Redux state.transactions.items — no Firestore calls.
+ * Reads entirely from Redux state.transactions.items - no Firestore calls.
  */
 import React, { useMemo, useState } from 'react';
 import {
@@ -58,7 +58,7 @@ const BUCKET_META: Record<Bucket, {
         color: '#3B82F6',
         lightColor: '#EFF6FF',
         icon: <Home size={18} color="#3B82F6" />,
-        description: 'Essentials — groceries, rent, utilities, transport, health',
+        description: 'Essentials - groceries, rent, utilities, transport, health',
     },
     wants: {
         label: 'Wants',
@@ -66,7 +66,7 @@ const BUCKET_META: Record<Bucket, {
         color: '#8B5CF6',
         lightColor: '#F5F3FF',
         icon: <Coffee size={18} color="#8B5CF6" />,
-        description: 'Lifestyle — dining, shopping, entertainment, education',
+        description: 'Lifestyle - dining, shopping, entertainment, education',
     },
     savings: {
         label: 'Savings',
@@ -74,7 +74,7 @@ const BUCKET_META: Record<Bucket, {
         color: '#10B981',
         lightColor: '#ECFDF5',
         icon: <TrendingUp size={18} color="#10B981" />,
-        description: 'Future — investments, SIP, goal deposits',
+        description: 'Future - investments, SIP, goal deposits',
     },
 };
 
@@ -283,7 +283,7 @@ const MoneyManagerScreen: React.FC = () => {
             return { type: 'warning', msg: `You're spending ${(wantsPct - 30).toFixed(1)}% more than the 30% Wants target. Moving ₹${excess.toLocaleString('en-IN')} to savings would hit the golden ratio.` };
         }
         if (savePct < 15) {
-            return { type: 'tip', msg: `Your savings rate is ${savePct.toFixed(1)}%. Aim for at least 20% — even small SIPs compound significantly over time.` };
+            return { type: 'tip', msg: `Your savings rate is ${savePct.toFixed(1)}%. Aim for at least 20% - even small SIPs compound significantly over time.` };
         }
         return { type: 'success', msg: `Great balance! You're close to the 50/30/20 golden ratio. Keep maintaining this discipline.` };
     }, [buckets, totalSpend]);
@@ -401,13 +401,13 @@ const MoneyManagerScreen: React.FC = () => {
 
                 {/* ── About the rule ──────────────────────────── */}
                 <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#F3F4F6', marginTop: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>📐 About the 50/30/20 Rule</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>About the 50/30/20 Rule</Text>
                     <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 18 }}>
                         Popularised by US Senator Elizabeth Warren, this framework splits after-tax income into three buckets:
                         {'\n\n'}
-                        <Text style={{ fontWeight: '700', color: '#3B82F6' }}>50% Needs</Text> — Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
-                        <Text style={{ fontWeight: '700', color: '#8B5CF6' }}>30% Wants</Text> — Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
-                        <Text style={{ fontWeight: '700', color: '#10B981' }}>20% Savings</Text> — Pay yourself first: SIPs, emergency fund, goal deposits.
+                        <Text style={{ fontWeight: '700', color: '#3B82F6' }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
+                        <Text style={{ fontWeight: '700', color: '#8B5CF6' }}>30% Wants</Text> - Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
+                        <Text style={{ fontWeight: '700', color: '#10B981' }}>20% Savings</Text> - Pay yourself first: SIPs, emergency fund, goal deposits.
                     </Text>
                 </View>
             </ScrollView>
