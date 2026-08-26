@@ -24,7 +24,15 @@ import InvestScreen from '../screens/InvestScreen';
 import PortfolioScreen from '../screens/PortfolioScreen';
 import RoundUpScreen from '../screens/RoundUpScreen';
 import BurnRateScreen from '../screens/BurnRateScreen';
-// Social and shared
+// Engagement features
+import MoneyPersonalityScreen from '../screens/MoneyPersonalityScreen';
+import TimeMachineScreen from '../screens/TimeMachineScreen';
+import GuessSpendScreen from '../screens/GuessSpendScreen';
+import SwipeCategoriseScreen from '../screens/SwipeCategoriseScreen';
+// Social and shareable
+import WrappedScreen from '../screens/WrappedScreen';
+import LeagueScreen from '../screens/LeagueScreen';
+import SplitScreen from '../screens/SplitScreen';
 import SquadGoalsScreen from '../screens/SquadGoalsScreen';
 
 
@@ -82,6 +90,13 @@ export const RootNavigator = () => {
                     <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="RoundUp" component={RoundUpScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="BurnRate" component={BurnRateScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="MoneyPersonality" component={MoneyPersonalityScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TimeMachine" component={TimeMachineScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="GuessSpend" component={GuessSpendScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="SwipeCategorise" component={SwipeCategoriseScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Wrapped" component={WrappedScreen} options={{ headerShown: false, presentation: 'modal' }} />
+                    <Stack.Screen name="League" component={LeagueScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Split" component={SplitScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="SquadGoals" component={SquadGoalsScreen} options={{ headerShown: false }} />
                     <Stack.Screen
                         name="AddTransaction"

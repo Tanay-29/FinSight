@@ -8,6 +8,7 @@ import { COLORS } from '../theme/tokens';
 import { View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, BarChart2, Target, GraduationCap } from 'lucide-react-native';
+import * as haptics from '../utils/haptics';
 
 const Tab = createBottomTabNavigator();
 
@@ -44,6 +45,9 @@ export const BottomTabs: React.FC = () => {
                     fontWeight: '600',
                 },
             }}
+            // A light tick on every tab change, applied once here rather than
+            // repeated on all four screens.
+            screenListeners={{ tabPress: () => haptics.tap() }}
         >
             <Tab.Screen
                 name="Feed"
