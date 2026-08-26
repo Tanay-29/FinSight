@@ -100,6 +100,18 @@ const IncomeModal: React.FC<{
 
 // ── Main Screen ──────────────────────────────────────────────────────────
 
+
+const INCOME_BANDS: Record<string, number> = {
+    under_15k: 12000,
+    '15k_40k': 27500,
+    '40k_80k': 60000,
+    above_80k: 100000,
+    prefer_not: 0,
+};
+
+const incomeFromBand = (band?: string): number =>
+    (band ? INCOME_BANDS[band] : undefined) ?? 0;
+
 const BurnRateScreen: React.FC = () => {
     const dispatch   = useAppDispatch();
     const navigation = useNavigation();
@@ -111,8 +123,9 @@ const BurnRateScreen: React.FC = () => {
     const totalBudget   = useAppSelector((s) =>
         s.budgets.items.reduce((sum: number, b: any) => sum + (b.monthlyLimit || 0), 0)
     );
+    const profile       = useAppSelector((s) => s.auth.profile);
 
-    const [income, setIncome]             = useState(50000);
+    const [income, setIncome]             = useState(() => incomeFromBand(profile?.incomeRange));
     const [incomeModalVisible, setIncomeModalVisible] = useState(false);
     const [refreshing, setRefreshing]     = useState(false);
 
@@ -346,7 +359,11 @@ const BurnRateScreen: React.FC = () => {
                     <SectionHeader
                         icon={<Target size={22} color="#6366F1" />}
                         title="50 / 30 / 20 Live"
-                        subtitle={`Based on ₹${income.toLocaleString('en-IN')} monthly income`}
+                        subtitle={
+                            income > 0
+                                ? `Based on ₹${income.toLocaleString('en-IN')} monthly income`
+                                : 'Set your monthly income to evaluate this rule'
+                        }
                     />
 
                     {rule503020 && (
