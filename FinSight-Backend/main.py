@@ -8,6 +8,7 @@ from google import genai
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # ── Phase 1: Execution Layer imports ────────────────────────────────────────
+from auth import require_auth
 from database import init_db
 from blueprints.brokerage import brokerage_bp, tick_prices
 from blueprints.wallet import wallet_bp
@@ -20,7 +21,25 @@ from cache import (
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+# Origins permitted to call this API from a browser. The native app is not
+# subject to CORS, so this protects the web build; the ID token check is what
+# protects everything else. Comma-separated, overridden per environment.
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        'ALLOWED_ORIGINS', 'http://localhost:8081,http://127.0.0.1:8081'
+    ).split(',')
+    if o.strip()
+]
+CORS(
+    app,
+    resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
+    allow_headers=['Content-Type', 'Authorization'],
+    methods=['GET', 'POST'],
+)
+print(f"[CORS] Allowed origins: {ALLOWED_ORIGINS}")
+
 client = genai.Client()
 
 # ── Register Blueprints ──────────────────────────────────────────────────────
@@ -90,6 +109,7 @@ STYLE_RULES = """
 
 # --- 0. FLASHCARD GENERATOR ROUTE (POST) ---
 @app.route('/api/generate-flashcards', methods=['POST'])
+@require_auth
 def generate_flashcards():
     try:
         body = request.get_json(force=True, silent=True) or {}
@@ -251,6 +271,7 @@ def get_market_insight():
 
 # --- 3. FINSIGHT IQ AI ADVISOR ROUTE (POST) ---
 @app.route('/api/ai-advisor', methods=['POST'])
+@require_auth
 def get_ai_advisor():
     try:
         body = request.get_json(force=True, silent=True) or {}
@@ -357,6 +378,7 @@ Rules:{STYLE_RULES}
 
 # --- 4. CACHE STATS (for checking the cache is doing its job) ---
 @app.route('/api/cache-stats', methods=['GET'])
+@require_auth
 def get_cache_stats():
     return jsonify(cache.stats())
 

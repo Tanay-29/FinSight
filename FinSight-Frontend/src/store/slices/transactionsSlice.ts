@@ -6,6 +6,7 @@ import {
     getRecentTransactions,
     getBudgets,
     updateBudgetSpend,
+    correctTransactionCategory,
 } from '../../services/firestoreService';
 import { addRoundup } from '../../services/walletService';
 import { RootState } from '../store';
@@ -58,7 +59,7 @@ export const addTransaction = createAsyncThunk(
             // 1. Add Transaction
             const id = await addTransactionToFirestore(userId, transaction);
 
-            // 2. Find and Update Budget — ONLY for debit transactions
+            // 2. Find and Update Budget - ONLY for debit transactions
             if (transaction.type === 'debit') {
                 const transactionDate = new Date(transaction.date);
                 const month = format(transactionDate, 'yyyy-MM');
@@ -75,7 +76,7 @@ export const addTransaction = createAsyncThunk(
 
                 // 3. Record Round-Up for Execution Layer
                 try {
-                    await addRoundup(userId, transaction.amount);
+                    await addRoundup(transaction.amount);
                 } catch (err) {
                     console.log('Failed to record round-up:', err);
                 }
@@ -84,6 +85,29 @@ export const addTransaction = createAsyncThunk(
             return { id, ...transaction };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to add transaction');
+        }
+    }
+);
+
+/**
+ * Recategorise a transaction from the Tidy Up deck.
+ * The reducer applies the change immediately so the card can fly away without
+ * waiting on the network.
+ */
+export const updateTransactionCategory = createAsyncThunk(
+    'transactions/updateCategory',
+    async (
+        { transactionId, category, merchant }:
+            { transactionId: string; category: string; merchant: string },
+        { getState, rejectWithValue }
+    ) => {
+        const userId = (getState() as RootState).auth.user?.uid;
+        if (!userId) return rejectWithValue('Not signed in');
+        try {
+            await correctTransactionCategory(userId, transactionId, category, merchant);
+            return { transactionId, category };
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Could not update that category');
         }
     }
 );
@@ -153,6 +177,16 @@ const transactionsSlice = createSlice({
         builder
             .addCase(removeTransaction.fulfilled, (state, action) => {
                 state.items = state.items.filter((item) => item.id !== action.payload);
+            });
+
+        // Category correction, applied optimistically so the deck stays snappy
+        builder
+            .addCase(updateTransactionCategory.pending, (state, action) => {
+                const item = state.items.find((t) => t.id === action.meta.arg.transactionId);
+                if (item) item.category = action.meta.arg.category;
+            })
+            .addCase(updateTransactionCategory.rejected, (state, action) => {
+                state.error = action.payload as string;
             });
     },
 });

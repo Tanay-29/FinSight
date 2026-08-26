@@ -11,8 +11,9 @@ Endpoints:
 import uuid
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from database import get_connection
+from auth import require_auth
 
 wallet_bp = Blueprint('wallet', __name__)
 
@@ -25,10 +26,9 @@ def _ensure_wallet(conn, user_id: str):
 
 
 @wallet_bp.route('/api/wallet', methods=['GET'])
+@require_auth
 def get_wallet():
-    user_id = request.args.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     _ensure_wallet(conn, user_id)
@@ -46,13 +46,12 @@ def get_wallet():
 
 
 @wallet_bp.route('/api/wallet/credit', methods=['POST'])
+@require_auth
 def credit_wallet():
     body    = request.get_json(force=True, silent=True) or {}
-    user_id = body.get('user_id', '').strip()
+    user_id = g.uid
     amount  = float(body.get('amount', 0))
 
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
     if amount <= 0:
         return jsonify({"error": "amount must be > 0"}), 400
 
@@ -91,14 +90,13 @@ def credit_wallet():
 
 
 @wallet_bp.route('/api/wallet/debit', methods=['POST'])
+@require_auth
 def debit_wallet():
     body    = request.get_json(force=True, silent=True) or {}
-    user_id = body.get('user_id', '').strip()
+    user_id = g.uid
     amount  = float(body.get('amount', 0))
     reason  = body.get('reason', 'DEBIT')
 
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
     if amount <= 0:
         return jsonify({"error": "amount must be > 0"}), 400
 

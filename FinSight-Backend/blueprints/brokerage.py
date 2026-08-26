@@ -16,8 +16,9 @@ import threading
 from datetime import datetime, timezone
 from math import ceil, exp, sqrt
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from database import get_connection
+from auth import require_auth
 
 brokerage_bp = Blueprint('brokerage', __name__)
 
@@ -164,15 +165,14 @@ def get_prices():
 
 
 @brokerage_bp.route('/api/orders', methods=['POST'])
+@require_auth
 def place_order():
     body       = request.get_json(force=True, silent=True) or {}
-    user_id    = body.get('user_id', '').strip()
+    user_id    = g.uid
     asset_id   = body.get('asset_id', '').strip().upper()
     order_type = body.get('order_type', 'BUY').strip().upper()
     quantity   = float(body.get('quantity', 0))
 
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
     if asset_id not in ASSETS:
         return jsonify({"error": f"Unknown asset: {asset_id}"}), 400
     if quantity <= 0:
@@ -301,10 +301,9 @@ def place_order():
 
 
 @brokerage_bp.route('/api/orders', methods=['GET'])
+@require_auth
 def get_orders():
-    user_id = request.args.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     rows = conn.execute(
@@ -316,10 +315,9 @@ def get_orders():
 
 
 @brokerage_bp.route('/api/portfolio', methods=['GET'])
+@require_auth
 def get_portfolio():
-    user_id = request.args.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     holdings_rows = conn.execute(
@@ -377,10 +375,9 @@ def get_portfolio():
 
 
 @brokerage_bp.route('/api/ledger', methods=['GET'])
+@require_auth
 def get_ledger():
-    user_id = request.args.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     rows = conn.execute(

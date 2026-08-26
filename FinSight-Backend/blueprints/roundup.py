@@ -16,8 +16,9 @@ import uuid
 import math
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from database import get_connection
+from auth import require_auth
 
 roundup_bp = Blueprint('roundup', __name__)
 
@@ -33,17 +34,16 @@ def _ensure_wallet(conn, user_id: str):
 
 
 @roundup_bp.route('/api/roundup/add', methods=['POST'])
+@require_auth
 def add_roundup():
     """
     Record a round-up delta for an expense transaction.
     Body: { user_id, original_amount }
     """
     body            = request.get_json(force=True, silent=True) or {}
-    user_id         = body.get('user_id', '').strip()
+    user_id         = g.uid
     original_amount = float(body.get('original_amount', 0))
 
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
     if original_amount <= 0:
         return jsonify({"error": "original_amount must be > 0"}), 400
 
@@ -86,10 +86,9 @@ def add_roundup():
 
 
 @roundup_bp.route('/api/roundup/balance', methods=['GET'])
+@require_auth
 def get_roundup_balance():
-    user_id = request.args.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     row = conn.execute(
@@ -113,10 +112,9 @@ def get_roundup_balance():
 
 
 @roundup_bp.route('/api/roundup/history', methods=['GET'])
+@require_auth
 def get_roundup_history():
-    user_id = request.args.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     rows = conn.execute(
@@ -128,16 +126,13 @@ def get_roundup_history():
 
 
 @roundup_bp.route('/api/roundup/invest', methods=['POST'])
+@require_auth
 def trigger_roundup_invest():
     """
     Manually triggered: sweeps all PENDING round-up deltas and places a BUY
     order for NIFTY_BEES using the accumulated balance.
     """
-    body    = request.get_json(force=True, silent=True) or {}
-    user_id = body.get('user_id', '').strip()
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = g.uid
 
     conn = get_connection()
     try:

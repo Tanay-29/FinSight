@@ -3,12 +3,17 @@
  *
  * AI-generated flashcard revision experience.
  *
+ * Two modes, chosen by the `mode` route param:
+ *   'generate' (default) builds a fresh deck for one module via Gemini.
+ *   'due' replays the cards the spaced repetition schedule says are ready.
+ *
  * Flow:
- *   1. Enters with { moduleTitle, moduleContent, keyPoints } from route params
- *   2. Calls backend /api/generate-flashcards (Gemini generates 5 Q&A cards)
- *   3. User swipes through cards with a 3D flip animation
- *   4. After each card: marks "Got it ✓" or "Review ✗"
- *   5. End screen shows score + "Review Again" cards highlighted
+ *   1. Enters with module identifiers and content from route params
+ *   2. Loads a deck, either generated or due
+ *   3. User flips through cards with a 3D flip animation
+ *   4. Each answer is written to the Leitner schedule in reviewsSlice, so a
+ *      missed card returns tomorrow and a known card backs off to 15 days
+ *   5. End screen shows the session score and the cards to focus on
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
@@ -22,15 +27,26 @@ import {
     BrainCircuit, ChevronLeft, ChevronRight,
     Lightbulb, RefreshCw, Trophy,
 } from 'lucide-react-native';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { answerCard, fetchDueCards } from '../store/slices/reviewsSlice';
+import Confetti from '../components/Confetti';
+import * as haptics from '../utils/haptics';
+import { authedFetch } from '../config/api';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? '';
 
 // ─── Types ────────────────────────────────────────────────────
 
 export interface Flashcard {
     question: string;
     answer: string;
+}
+
+/** A flashcard plus the identifiers needed to schedule it for review. */
+interface DeckCard extends Flashcard {
+    moduleId: string;
+    moduleTitle: string;
+    pathId: string;
 }
 
 type Status = 'got_it' | 'review' | 'unseen';
@@ -93,7 +109,7 @@ const FlipCard: React.FC<{
                 activeOpacity={0.95}
                 style={{ width: SCREEN_W - 48, height: 280 }}
             >
-                {/* Front — Question */}
+                {/* Front - Question */}
                 <Animated.View style={{
                     position: 'absolute', width: '100%', height: '100%',
                     backfaceVisibility: 'hidden',
@@ -124,7 +140,7 @@ const FlipCard: React.FC<{
                     </Text>
                 </Animated.View>
 
-                {/* Back — Answer */}
+                {/* Back - Answer */}
                 <Animated.View style={{
                     position: 'absolute', width: '100%', height: '100%',
                     backfaceVisibility: 'hidden',
@@ -151,7 +167,7 @@ const FlipCard: React.FC<{
                 </Animated.View>
             </TouchableOpacity>
 
-            {/* Action buttons — only visible after flip */}
+            {/* Action buttons - only visible after flip */}
             {flipped && (
                 <View style={{ flexDirection: 'row', gap: 16, marginTop: 24 }}>
                     <TouchableOpacity
@@ -226,7 +242,7 @@ const ResultsScreen: React.FC<{
             </Text>
             <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
                 You got {gotItCount} of {cards.length} cards right
-                {reviewCount > 0 ? ` — ${reviewCount} card${reviewCount > 1 ? 's' : ''} need more review` : '!'}
+                {reviewCount > 0 ? ` - ${reviewCount} card${reviewCount > 1 ? 's' : ''} need more review` : '!'}
             </Text>
 
             {/* Stats row */}
@@ -308,25 +324,55 @@ const ResultsScreen: React.FC<{
 // ─── Main Screen ──────────────────────────────────────────────
 
 const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
-    const { moduleTitle, moduleContent, keyPoints } = route.params ?? {};
+    const {
+        moduleTitle, moduleContent, keyPoints,
+        moduleId = '', pathId = '',
+        // 'due' replays cards the schedule says are ready, instead of
+        // generating a fresh deck for one module.
+        mode = 'generate',
+    } = route.params ?? {};
 
-    const [cards, setCards] = useState<Flashcard[]>([]);
+    const dispatch = useAppDispatch();
+    const dueCards = useAppSelector((s) => s.reviews.due);
+    const isDueMode = mode === 'due';
+
+    const [cards, setCards] = useState<DeckCard[]>([]);
     const [statuses, setStatuses] = useState<Status[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [phase, setPhase] = useState<'cards' | 'results'>('cards');
+    const [celebrating, setCelebrating] = useState(false);
 
     // Active deck (all cards or review-only)
     const [activeDeck, setActiveDeck] = useState<number[]>([]);
+
+    const loadDeck = useCallback((deck: DeckCard[]) => {
+        setCards(deck);
+        setStatuses(deck.map(() => 'unseen'));
+        setActiveDeck(deck.map((_, i) => i));
+        setCurrentIndex(0);
+        setPhase('cards');
+    }, []);
 
     const fetchCards = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${BACKEND}/api/generate-flashcards`, {
+            if (isDueMode) {
+                // Cards are already in the store, put there by the Learn tab.
+                loadDeck(dueCards.map((c) => ({
+                    question: c.question,
+                    answer: c.answer,
+                    moduleId: c.moduleId,
+                    moduleTitle: c.moduleTitle,
+                    pathId: c.pathId,
+                })));
+                return;
+            }
+
+            const res = await authedFetch('/api/generate-flashcards', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: moduleTitle,
                     content: moduleContent,
@@ -335,43 +381,66 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
             });
             if (!res.ok) throw new Error(`Server error: ${res.status}`);
             const data: Flashcard[] = await res.json();
-            setCards(data);
-            setStatuses(data.map(() => 'unseen'));
-            setActiveDeck(data.map((_, i) => i));
-            setCurrentIndex(0);
-            setPhase('cards');
+            loadDeck(data.map((c) => ({ ...c, moduleId, moduleTitle, pathId })));
         } catch (e: any) {
             setError(e.message ?? 'Failed to load flashcards');
         } finally {
             setLoading(false);
         }
-    }, [moduleTitle, moduleContent, keyPoints]);
+    }, [moduleTitle, moduleContent, keyPoints, moduleId, pathId, isDueMode, dueCards, loadDeck]);
 
     useEffect(() => { fetchCards(); }, []);
 
     const currentCardOriginalIndex = activeDeck[currentIndex];
 
-    const handleGotIt = () => {
+    /**
+     * Record the answer against the spaced repetition schedule, then move on.
+     * The save is fire and forget: a failed write must not stall the session,
+     * and the slice already surfaces the error.
+     */
+    const answer = (correct: boolean) => {
+        correct ? haptics.success() : haptics.warn();
+        const card = cards[currentCardOriginalIndex];
+        if (card?.moduleId) {
+            dispatch(answerCard({
+                card: {
+                    moduleId: card.moduleId,
+                    moduleTitle: card.moduleTitle,
+                    pathId: card.pathId,
+                    question: card.question,
+                    answer: card.answer,
+                },
+                correct,
+            }));
+        }
+
         const newStatuses = [...statuses];
-        newStatuses[currentCardOriginalIndex] = 'got_it';
+        newStatuses[currentCardOriginalIndex] = correct ? 'got_it' : 'review';
         setStatuses(newStatuses);
-        advance(newStatuses);
+        advance();
     };
 
-    const handleReview = () => {
-        const newStatuses = [...statuses];
-        newStatuses[currentCardOriginalIndex] = 'review';
-        setStatuses(newStatuses);
-        advance(newStatuses);
-    };
+    const handleGotIt = () => answer(true);
+    const handleReview = () => answer(false);
 
-    const advance = (newStatuses: Status[]) => {
+    const advance = () => {
         if (currentIndex + 1 < activeDeck.length) {
             setCurrentIndex((i) => i + 1);
         } else {
+            // Refresh the due list so the Learn tab count is correct on return.
+            dispatch(fetchDueCards());
             setPhase('results');
         }
     };
+
+    // A clean sweep of the deck is worth celebrating; a partial one is not.
+    useEffect(() => {
+        if (phase !== 'results' || statuses.length === 0) return;
+        if (statuses.every((s) => s === 'got_it')) {
+            haptics.celebrate();
+            setCelebrating(true);
+        }
+    }, [phase, statuses]);
 
     const restart = () => {
         setStatuses(cards.map(() => 'unseen'));
@@ -473,6 +542,8 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                     onBack={() => navigation.goBack()}
                 />
             ) : null}
+
+            <Confetti active={celebrating} onDone={() => setCelebrating(false)} />
         </SafeAreaView>
     );
 };

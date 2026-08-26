@@ -1,5 +1,5 @@
 /**
- * brokerageSlice.ts — Redux slice for mock brokerage engine
+ * brokerageSlice.ts - Redux slice for mock brokerage engine
  * Manages: asset prices, orders, portfolio holdings
  */
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
@@ -49,7 +49,7 @@ export const loadOrders = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await fetchOrders(userId);
+            return await fetchOrders();
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -63,7 +63,7 @@ export const loadPortfolio = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await fetchPortfolio(userId);
+            return await fetchPortfolio();
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -80,7 +80,7 @@ export const submitOrder = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            const order = await placeOrder({ ...params, user_id: userId });
+            const order = await placeOrder(params);
             return order;
         } catch (e: any) {
             return rejectWithValue(e.message);

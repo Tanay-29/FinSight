@@ -1,8 +1,11 @@
 /**
  * walletService.ts
  * Communicates with the Flask Virtual Wallet + Round-Up endpoints
+ *
+ * None of these take a user_id: the backend derives the account from the
+ * Firebase ID token that authedFetch attaches.
  */
-import { BACKEND_URL } from '../config/api';
+import { authedFetch } from '../config/api';
 
 export interface WalletState {
     wallet_balance: number;
@@ -28,63 +31,56 @@ export interface RoundupTransaction {
     timestamp: string;
 }
 
-export const fetchWallet = async (user_id: string): Promise<WalletState> => {
-    const res = await fetch(`${BACKEND_URL}/api/wallet?user_id=${encodeURIComponent(user_id)}`);
+export const fetchWallet = async (): Promise<WalletState> => {
+    const res = await authedFetch('/api/wallet');
     if (!res.ok) throw new Error('Failed to fetch wallet');
     return res.json();
 };
 
-export const creditWallet = async (user_id: string, amount: number): Promise<WalletState> => {
-    const res = await fetch(`${BACKEND_URL}/api/wallet/credit`, {
+export const creditWallet = async (amount: number): Promise<WalletState> => {
+    const res = await authedFetch('/api/wallet/credit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id, amount }),
+        body: JSON.stringify({ amount }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Credit failed');
     return data;
 };
 
-export const debitWallet = async (user_id: string, amount: number, reason = 'DEBIT'): Promise<WalletState> => {
-    const res = await fetch(`${BACKEND_URL}/api/wallet/debit`, {
+export const debitWallet = async (amount: number, reason = 'DEBIT'): Promise<WalletState> => {
+    const res = await authedFetch('/api/wallet/debit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id, amount, reason }),
+        body: JSON.stringify({ amount, reason }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Debit failed');
     return data;
 };
 
-export const addRoundup = async (user_id: string, original_amount: number) => {
-    const res = await fetch(`${BACKEND_URL}/api/roundup/add`, {
+export const addRoundup = async (original_amount: number) => {
+    const res = await authedFetch('/api/roundup/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id, original_amount }),
+        body: JSON.stringify({ original_amount }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Round-up add failed');
     return data;
 };
 
-export const fetchRoundupBalance = async (user_id: string): Promise<RoundupBalance> => {
-    const res = await fetch(`${BACKEND_URL}/api/roundup/balance?user_id=${encodeURIComponent(user_id)}`);
+export const fetchRoundupBalance = async (): Promise<RoundupBalance> => {
+    const res = await authedFetch('/api/roundup/balance');
     if (!res.ok) throw new Error('Failed to fetch round-up balance');
     return res.json();
 };
 
-export const fetchRoundupHistory = async (user_id: string): Promise<RoundupTransaction[]> => {
-    const res = await fetch(`${BACKEND_URL}/api/roundup/history?user_id=${encodeURIComponent(user_id)}`);
+export const fetchRoundupHistory = async (): Promise<RoundupTransaction[]> => {
+    const res = await authedFetch('/api/roundup/history');
     if (!res.ok) throw new Error('Failed to fetch round-up history');
     return res.json();
 };
 
-export const triggerRoundupInvest = async (user_id: string) => {
-    const res = await fetch(`${BACKEND_URL}/api/roundup/invest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id }),
-    });
+export const triggerRoundupInvest = async () => {
+    const res = await authedFetch('/api/roundup/invest', { method: 'POST' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Round-up invest failed');
     return data;

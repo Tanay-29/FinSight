@@ -23,6 +23,7 @@
  */
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
+import { authedFetch } from '../../config/api';
 import { format, parseISO } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -119,9 +120,6 @@ export const fetchAIAdvice = createAsyncThunk(
     async (_, { rejectWithValue, getState }) => {
         try {
             const state = getState() as RootState;
-            const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-            if (!backendUrl) throw new Error('Backend URL not configured.');
-
             const transactions = state.transactions.items;
             const budgets      = state.budgets.items;
             const goals        = (state as any).goals?.items ?? [];
@@ -157,9 +155,8 @@ export const fetchAIAdvice = createAsyncThunk(
                 })),
             };
 
-            const res = await fetch(`${backendUrl}/api/ai-advisor`, {
+            const res = await authedFetch('/api/ai-advisor', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
             if (!res.ok) throw new Error(`Server returned ${res.status}`);

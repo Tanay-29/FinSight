@@ -11,3 +11,11 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false   # You will paste this manually in the Render dashboard
+      # Firebase project whose ID tokens this API accepts. Every user-scoped
+      # route rejects a token minted by any other project.
+      - key: FIREBASE_PROJECT_ID
+        value: finsight-f423d
+      # Browser origins allowed to call the API. The native app is unaffected
+      # by CORS; this is for the web build. Add the deployed web origin here.
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:8081,http://127.0.0.1:8081

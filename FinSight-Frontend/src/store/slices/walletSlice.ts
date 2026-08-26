@@ -1,5 +1,5 @@
 /**
- * walletSlice.ts — Redux slice for Virtual Wallet + Round-Up mechanism
+ * walletSlice.ts - Redux slice for Virtual Wallet + Round-Up mechanism
  */
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
@@ -43,7 +43,7 @@ export const loadWallet = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await fetchWallet(userId);
+            return await fetchWallet();
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -57,7 +57,7 @@ export const addFunds = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await creditWallet(userId, amount);
+            return await creditWallet(amount);
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -71,7 +71,7 @@ export const removeFunds = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await debitWallet(userId, amount, reason);
+            return await debitWallet(amount, reason);
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -85,7 +85,7 @@ export const recordRoundup = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await addRoundup(userId, original_amount);
+            return await addRoundup(original_amount);
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -99,7 +99,7 @@ export const loadRoundupBalance = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await fetchRoundupBalance(userId);
+            return await fetchRoundupBalance();
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -113,7 +113,7 @@ export const loadRoundupHistory = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await fetchRoundupHistory(userId);
+            return await fetchRoundupHistory();
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
@@ -127,7 +127,7 @@ export const investRoundups = createAsyncThunk(
             const state = getState() as RootState;
             const userId = state.auth.user?.uid;
             if (!userId) throw new Error('Not authenticated');
-            return await triggerRoundupInvest(userId);
+            return await triggerRoundupInvest();
         } catch (e: any) {
             return rejectWithValue(e.message);
         }
