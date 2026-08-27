@@ -1,3 +1,4 @@
+import { Category, normaliseCategory } from './categories';
 /**
  * Vitals intelligence: burn rate, savings surplus, and the 50/30/20 split.
  *
@@ -19,25 +20,28 @@
 export type Bucket = 'needs' | 'wants' | 'savings';
 
 /** Category to bucket. Anything unrecognised counts as a want. */
-const BUCKET_MAP: Record<string, Bucket> = {
+/**
+ * One entry per canonical category. This used to list every spelling in
+ * circulation, health and healthcare, housing and rent, other and
+ * miscellaneous, because the app had no agreed vocabulary. Lookups now go
+ * through normaliseCategory instead, so the aliases live in one place.
+ */
+const BUCKET_MAP: Record<Category, Bucket> = {
     groceries: 'needs',
     utilities: 'needs',
     transport: 'needs',
-    health: 'needs',
     healthcare: 'needs',
     housing: 'needs',
-    rent: 'needs',
     dining: 'wants',
     shopping: 'wants',
     entertainment: 'wants',
     education: 'wants',
-    miscellaneous: 'wants',
     other: 'wants',
     investments: 'savings',
 };
 
 export function bucketOf(category: string): Bucket {
-    return BUCKET_MAP[(category ?? '').toLowerCase()] ?? 'wants';
+    return BUCKET_MAP[normaliseCategory(category)];
 }
 
 /** Round to a fixed number of places, away from zero on a tie. */

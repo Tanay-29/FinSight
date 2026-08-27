@@ -668,6 +668,49 @@ Learn needs no empty state, its content is static. Goals already had one.
 
 ---
 
+## 5h. One category vocabulary, and merchants the parser could not see
+
+**There were five category vocabularies.** The add-transaction picker offered
+`health`, `housing` and `other`; the merchant rules produced `healthcare` and
+neither of the other two; the budget picker offered `health` but no `housing`;
+the sorting game assigned `rent` and `miscellaneous`, which no picker offered
+and no icon map knew; and the three icon maps keyed on `healthcare` alone.
+
+So a transaction filed by hand under `health` and one the parser filed under
+`healthcare` were different categories. Separate rows in the chart, a generic
+dollar icon instead of a heart, and a budget set on one that never saw spending
+on the other. `utils/vitals.ts` had already noticed and worked around it,
+listing every spelling in its needs-and-wants map rather than fixing the cause,
+which is the usual sign that the cause is somewhere else.
+
+`utils/categories.ts` is now the single list: eleven categories, used by both
+pickers and the sorting game. `normaliseCategory` maps the spellings already
+sitting in Firestore, `health`, `rent`, `miscellaneous`, `misc`, `medical`,
+`food`, onto canonical ones, so nothing has to be migrated and older data keeps
+resolving. Icon lookups and the bucket map go through it, and `ExpenseCategory`
+in the merchant rules is now an alias of the shared type, so the rules cannot
+invent a category no picker offers.
+
+**Railway merchants.** `irctc` was in the table but `railway` was not, and
+squashed bank codes like `IRCTCWEB` failed the word boundary that stops `gas`
+matching Vegas. Both are fixed, the second by a deliberately narrow mechanism: a
+keyword may also match at the start of a longer word, but only when what follows
+is one of a short list of noise suffixes, `web`, `uts`, `in`, `pay` and the
+like. "irctcweb" splits into a keyword and noise; "gasoline" does not, because
+"oline" is not on the list.
+
+That second pass runs only after the clean-boundary pass has failed across every
+keyword, never interleaved, so `swiggy instamart` cannot lose to a stray
+squashed `swiggy`.
+
+Verified with 29 assertions across two runs: the railway formats that failed,
+every substring defect the boundary exists to stop, the squashed forms
+`NETFLIXIN` and `AMAZONPAY`, longest-match ordering under the new pass, the
+legacy category spellings, and the 50/30/20 bucketing with legacy spellings
+still landing in the right bucket.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to

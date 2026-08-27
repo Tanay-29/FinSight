@@ -18,6 +18,7 @@ import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/b
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { BudgetBar } from '../components/BudgetBar';
 import { EmptyState } from '../components/EmptyState';
+import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory } from '../utils/categories';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
 // ─── Icon helpers (Lucide) ───────────────────────────────────────
@@ -39,7 +40,7 @@ const CATEGORY_ICON_MAP: Record<string, React.ComponentType<any>> = {
 };
 
 const getCategoryIconNode = (category: string, size = 16, color = '#6B7280') => {
-    const IconComponent = CATEGORY_ICON_MAP[category.toLowerCase()] || DollarSign;
+    const IconComponent = CATEGORY_ICON_MAP[normaliseCategory(category)] || DollarSign;
     return <IconComponent size={size} color={color} />;
 };
 
@@ -138,17 +139,9 @@ const CreateBudgetModal: React.FC<{
     onClose: () => void;
     onSave: (categoryId: string, limit: number) => void;
 }> = ({ visible, onClose, onSave }) => {
-    const CATEGORIES = [
-        { id: 'dining', name: 'Dining' },
-        { id: 'transport', name: 'Transport' },
-        { id: 'shopping', name: 'Shopping' },
-        { id: 'groceries', name: 'Groceries' },
-        { id: 'utilities', name: 'Utilities' },
-        { id: 'entertainment', name: 'Entertainment' },
-        { id: 'health', name: 'Health' },
-        { id: 'education', name: 'Education' },
-        { id: 'other', name: 'Other' },
-    ];
+    // Same list the transaction picker uses, so a budget can always match the
+    // category a transaction was filed under.
+    const CATEGORIES = CATEGORY_OPTIONS.map((c) => ({ id: c.key, name: c.label }));
     const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('dining');
     const [limit, setLimit] = React.useState('');
     React.useEffect(() => {

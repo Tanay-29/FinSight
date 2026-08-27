@@ -115,5 +115,5 @@ export function categorizeMerchant(
     // Longest match first, on word boundaries, against the table shared with
     // the clipboard parser. See utils/merchantRules.
     const match = matchMerchant(`${merchant} ${fullText}`);
-    return match ? match.category : 'miscellaneous';
+    return match ? match.category : 'other';
 }

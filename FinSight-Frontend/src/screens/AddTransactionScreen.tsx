@@ -6,6 +6,7 @@ import { Sparkles, ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addTransaction, fetchCategoryCorrections } from '../store/slices/transactionsSlice';
 import { parseBankSMS } from '../utils/smartCategorizer';
+import { CATEGORIES } from '../utils/categories';
 
 // --- 2. THE UI COMPONENT ---
 export default function AddTransactionScreen() {
@@ -29,7 +30,7 @@ export default function AddTransactionScreen() {
     const [type, setType] = useState<'debit' | 'credit'>('debit');
     const [isParsed, setIsParsed] = useState(false);
 
-    const ALL_CATEGORIES = ['dining', 'shopping', 'transport', 'groceries', 'utilities', 'entertainment', 'investments', 'health', 'education', 'housing', 'other'];
+
 
     const handleSmartPaste = () => {
         if (!smsText.trim()) {
@@ -168,14 +169,14 @@ export default function AddTransactionScreen() {
                     <View className="bg-white border border-border rounded-xl p-4 mb-8">
                         <Text className="text-xs text-text-secondary mb-3">Category</Text>
                         <View className="flex-row flex-wrap gap-2">
-                            {ALL_CATEGORIES.map((cat) => (
+                            {CATEGORIES.map(({ key: cat, label }) => (
                                 <TouchableOpacity
                                     key={cat}
                                     onPress={() => setCategory(cat)}
                                     className={`px-3 py-2 rounded-full border ${category === cat ? 'bg-brand-primary border-brand-primary' : 'bg-surface-secondary border-border'}`}
                                 >
-                                    <Text className={`text-sm capitalize ${category === cat ? 'text-white font-bold' : 'text-text-primary'}`}>
-                                        {cat}
+                                    <Text className={`text-sm ${category === cat ? 'text-white font-bold' : 'text-text-primary'}`}>
+                                        {label}
                                     </Text>
                                 </TouchableOpacity>
                             ))}

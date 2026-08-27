@@ -7,6 +7,7 @@ import {
     TrendingDown,
 } from 'lucide-react-native';
 import { CategorySpending } from '../data/courseContent';
+import { normaliseCategory } from '../utils/categories';
 
 interface FinancialVitalsProps {
     totalSpent: number;
@@ -67,7 +68,7 @@ const CategoryBar: React.FC<{
     maxAmount: number;
 }> = ({ category, maxAmount }) => {
     const percentage = (category.amount / maxAmount) * 100;
-    const key = category.name.toLowerCase();
+    const key = normaliseCategory(category.name);
     const IconComponent = CATEGORY_ICON_MAP[key] || DollarSign;
 
     return (

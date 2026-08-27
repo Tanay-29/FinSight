@@ -1,3 +1,5 @@
+import { Category } from './categories';
+
 /**
  * One merchant table, shared by both expense categorisers.
  *
@@ -30,16 +32,12 @@
  * miscategorised transaction is not a cosmetic error, it is a corrupted input.
  */
 
-export type ExpenseCategory =
-    | 'dining'
-    | 'transport'
-    | 'shopping'
-    | 'groceries'
-    | 'utilities'
-    | 'entertainment'
-    | 'healthcare'
-    | 'investments'
-    | 'education';
+/**
+ * The rules produce a subset of the app's categories: there is no keyword that
+ * means "other", and rent is not something a merchant name reveals. Sharing the
+ * type keeps the rules from inventing a category no picker offers.
+ */
+export type ExpenseCategory = Category;
 
 /**
  * Merchant or keyword to category.
@@ -70,6 +68,9 @@ export const MERCHANT_RULES: Record<string, ExpenseCategory> = {
 
     // ── Transport ────────────────────────────────────────────
     irctc: 'transport',
+    railway: 'transport',
+    railways: 'transport',
+    'indian railway': 'transport',
     uber: 'transport',
     ola: 'transport',
     rapido: 'transport',
@@ -230,6 +231,21 @@ export interface MerchantMatch {
  * rather than having one imposed here. The two parsers historically defaulted
  * to different strings and changing that is not this function's business.
  */
+/**
+ * Bank statements squash a merchant code onto a suffix: IRCTCWEB, NETFLIXIN,
+ * AMAZONPAY. Requiring a clean word boundary misses all of those, but dropping
+ * the boundary brings back the substring bugs the boundary exists to stop, with
+ * `gas` matching Vegas and `sip` matching gossip.
+ *
+ * So a keyword may also match at the start of a longer word, but only when what
+ * follows is one of these. "irctcweb" splits into a keyword and noise;
+ * "gasoline" does not, because "oline" means nothing here.
+ */
+const CODE_SUFFIXES = [
+    'web', 'uts', 'in', 'ind', 'india', 'online', 'app', 'com', 'co',
+    'pay', 'payu', 'bill', 'recharge', 'ltd', 'pvt', 'inc',
+];
+
 function findIn(
     haystack: string,
     keywords: string[],
@@ -240,6 +256,17 @@ function findIn(
             return { category: table[keyword] as ExpenseCategory, keyword };
         }
     }
+
+    // Second pass, never interleaved with the first: a clean word always beats
+    // a squashed code, so `swiggy instamart` cannot lose to a stray `swiggy`.
+    for (const keyword of keywords) {
+        for (const suffix of CODE_SUFFIXES) {
+            if (haystack.includes(` ${keyword}${suffix} `)) {
+                return { category: table[keyword] as ExpenseCategory, keyword };
+            }
+        }
+    }
+
     return null;
 }
 

@@ -73,7 +73,7 @@ function targetDate(months: number): string {
 
 // ─── Category rules for smart tip ────────────────────────────
 
-const NEEDS_CATS  = ['groceries','utilities','transport','health','housing'];
+const NEEDS_CATS  = ['groceries','utilities','transport','healthcare','housing'];
 const WANTS_CATS  = ['dining','shopping','entertainment','education'];
 
 // ─── Component ───────────────────────────────────────────────

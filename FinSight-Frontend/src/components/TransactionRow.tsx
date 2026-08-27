@@ -7,6 +7,7 @@ import {
 } from 'lucide-react-native';
 import { COLORS } from '../theme/tokens';
 import { format } from 'date-fns';
+import { normaliseCategory } from '../utils/categories';
 
 interface TransactionRowProps {
     category: string;
@@ -43,7 +44,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     source,
     onPress,
 }) => {
-    const key = category.toLowerCase();
+    const key = normaliseCategory(category);
     const IconComponent = CATEGORY_ICON_MAP[key] || DollarSign;
     const isDebit = type === 'debit';
     const formattedAmount = `${isDebit ? '-' : '+'}₹${amount.toLocaleString('en-IN')}`;

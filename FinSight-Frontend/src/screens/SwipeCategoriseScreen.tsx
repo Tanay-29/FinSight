@@ -27,6 +27,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { updateTransactionCategory } from '../store/slices/transactionsSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
+import { normaliseCategory } from '../utils/categories';
 
 type Props = NativeStackScreenProps<any, 'SwipeCategorise'>;
 
@@ -41,10 +42,10 @@ const CATEGORIES = [
     { key: 'utilities', label: 'Utilities', icon: Zap, color: '#EAB308' },
     { key: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#8B5CF6' },
     { key: 'healthcare', label: 'Health', icon: HeartPulse, color: '#14B8A6' },
-    { key: 'rent', label: 'Rent', icon: Home, color: '#6366F1' },
+    { key: 'housing', label: 'Rent', icon: Home, color: '#6366F1' },
     { key: 'investments', label: 'Investments', icon: TrendingUp, color: '#10B981' },
     { key: 'education', label: 'Education', icon: GraduationCap, color: '#3B82F6' },
-    { key: 'miscellaneous', label: 'Other', icon: Package, color: '#9CA3AF' },
+    { key: 'other', label: 'Other', icon: Package, color: '#9CA3AF' },
 ] as const;
 
 const categoryMeta = (key: string) =>
@@ -70,9 +71,8 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
     const deck = useMemo(
         () => transactions.filter((t) =>
             t.type === 'debit' &&
-            (t.category === 'other' ||
-                t.category === 'miscellaneous' ||
-                !t.category ||
+            (!t.category ||
+                normaliseCategory(t.category) === 'other' ||
                 t.source === 'auto')
         ),
         [transactions]
