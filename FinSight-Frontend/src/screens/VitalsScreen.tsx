@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, Leaf,
+    ChevronRight, Leaf, Wallet,
 } from 'lucide-react-native';
 import { goalIcon } from '../theme/icons';
 import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { BudgetBar } from '../components/BudgetBar';
+import { EmptyState } from '../components/EmptyState';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
 // ─── Icon helpers (Lucide) ───────────────────────────────────────
@@ -209,6 +210,12 @@ export const VitalsScreen: React.FC = () => {
 
     const { items: budgets, loading: budgetsLoading } = useAppSelector((state) => state.budgets);
     const transactions = useAppSelector((state) => state.transactions.items);
+    const transactionsLoaded = useAppSelector((state) => state.transactions.loaded);
+    const transactionsError = useAppSelector((state) => state.transactions.error);
+
+    // Every figure on this screen is derived from logged spending, so with none
+    // of it there is nothing here but noughts.
+    const hasNothingLogged = transactionsLoaded && !transactionsError && transactions.length === 0;
     const goals = useAppSelector((state: any) => state.goals?.items || []);
 
     // Days nothing went out. Counted as wins; see utils/noSpendDays.
@@ -324,6 +331,17 @@ export const VitalsScreen: React.FC = () => {
                     </View>
                 </View>
 
+                {hasNothingLogged ? (
+                    <EmptyState
+                        icon={<Wallet color="#6366F1" size={36} />}
+                        title="Nothing to show yet"
+                        body="Every number on this screen comes from what you have spent. Log an expense and your burn rate, categories and budgets start filling in."
+                        actionLabel="Add an expense"
+                        onAction={() => navigation.navigate('AddTransaction' as never)}
+                        hint="Paste a bank SMS and the amount, merchant and category are read for you."
+                    />
+                ) : (
+                  <>
                 {/* No-spend days. Deliberately the first thing on the screen:
                     it is the one panel that has something good to say on a day
                     with no money in it. */}
@@ -518,6 +536,8 @@ export const VitalsScreen: React.FC = () => {
                     )}
                 </View>
 
+                  </>
+                )}
             </ScrollView>
         </SafeAreaView>
     );

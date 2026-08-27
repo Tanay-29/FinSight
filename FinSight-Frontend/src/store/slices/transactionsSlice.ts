@@ -22,6 +22,15 @@ interface TransactionsState {
     syncStatus: 'idle' | 'syncing' | 'error';
     /** Merchant to category, learned from the user's own corrections. */
     corrections: Record<string, string>;
+    /**
+     * True once a fetch has settled, whether it found anything or not.
+     *
+     * `loading` alone cannot answer "is this account empty", because it starts
+     * false: between mount and the first pending action an existing user looks
+     * momentarily identical to a new one, which flashed the first-run screen at
+     * everybody on every launch.
+     */
+    loaded: boolean;
 }
 
 const initialState: TransactionsState = {
@@ -30,6 +39,7 @@ const initialState: TransactionsState = {
     error: null,
     syncStatus: 'idle',
     corrections: {},
+    loaded: false,
 };
 
 // ─── Async Thunks ────────────────────────────────────────────
@@ -166,11 +176,17 @@ const transactionsSlice = createSlice({
             })
             .addCase(fetchTransactions.fulfilled, (state, action) => {
                 state.loading = false;
+                state.loaded = true;
                 state.items = action.payload;
                 state.syncStatus = 'idle';
             })
             .addCase(fetchTransactions.rejected, (state, action) => {
                 state.loading = false;
+                // Settled, but with nothing to say about whether the account is
+                // empty. The screens check `error` as well before claiming it
+                // is, so an offline user with a full ledger is not told they
+                // have never spent anything.
+                state.loaded = true;
                 state.error = action.payload as string;
                 state.syncStatus = 'error';
             });

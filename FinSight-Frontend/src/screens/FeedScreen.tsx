@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Bot } from 'lucide-react-native';
+import { Plus, Bot, Wallet } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -11,6 +11,7 @@ import { MarketPulseWidget } from '../components/MarketPulseWidget';
 import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
+import { EmptyState } from '../components/EmptyState';
 import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
 
@@ -32,6 +33,11 @@ export const FeedScreen: React.FC = () => {
     const budgetsError = useAppSelector((state) => state.budgets.error);
     
     const [refreshing, setRefreshing] = React.useState(false);
+
+    // Everything below the market pulse is derived from logged spending, so
+    // with none of it there is nothing to render but noughts.
+    const transactionsLoaded = useAppSelector((state) => state.transactions.loaded);
+    const hasNothingLogged = transactionsLoaded && !transactionsError && transactions.length === 0;
 
     useEffect(() => {
         if (transactionsError) Alert.alert('Transaction Sync Error', transactionsError);
@@ -149,16 +155,25 @@ return (
                     </TouchableOpacity>
                 </View>
 
-                {/* FinSight IQ Card */}
-                <FinSightIQCard />
-
-
-                {/* Market Pulse */}
+                {/* Market Pulse. Real data, and it works on day one, so it is
+                    the one panel a brand new account still gets. */}
                 <View className="mt-3">
                     <MarketPulseWidget />
                 </View>
 
-                {/* NEW: Start Investing Entry Point */}
+                {hasNothingLogged ? (
+                    <EmptyState
+                        icon={<Wallet color="#6366F1" size={36} />}
+                        title="Start with one expense"
+                        body="FinSight works out where your money goes from what you log. Add a single expense and the rest of this screen fills in."
+                        actionLabel="Add your first expense"
+                        onAction={() => navigation.navigate('AddTransaction' as never)}
+                        hint="Got a bank SMS? Paste it and we will read the amount, merchant and category for you."
+                    />
+                ) : (
+                  <>
+                {/* FinSight IQ Card */}
+                <FinSightIQCard />
 
                 {/* EITM Cards Carousel */}
                 <View className="mt-5">
@@ -223,6 +238,8 @@ return (
                         </View>
                     )}
                 </View>
+                  </>
+                )}
             </ScrollView>
 
             <TouchableOpacity

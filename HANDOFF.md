@@ -634,6 +634,40 @@ to chase.
 
 ---
 
+## 5g. Empty states
+
+Feed and Vitals rendered their full layout against no data: a score of 400
+computed from nothing, zeroed vitals, an empty insight carousel and a bare
+"No recent transactions". A first-time user saw a dashboard of noughts with
+nothing telling them what to do about it.
+
+`components/EmptyState.tsx` follows the shape the goals list already used
+properly: one icon, one sentence naming what is missing, one on why it is worth
+doing, one button. Feed and Vitals now swap their data-dependent sections for it
+when nothing has been logged, and both point at Add Transaction and mention the
+SMS paste, which is the fastest way in.
+
+The market pulse stays visible on Feed either way. It is real data that works on
+day one, so it is the one panel a brand new account still gets.
+
+**The gate is `loaded && !error && count === 0`, and both extra conditions were
+found by working through the states rather than by reasoning about the happy
+path.** `loading` alone cannot answer "is this account empty", because it starts
+false: between mount and the first pending action an existing user looks exactly
+like a new one, which would have flashed the first-run screen at everybody on
+every launch. Hence the new `loaded` flag on the transactions slice, set when a
+fetch settles either way. The `!error` condition came second: with only
+`loaded`, a failed fetch told an offline user with a full ledger that they had
+never spent anything.
+
+Verified over the six states a user actually passes through, including a failed
+fetch with an empty cache and a failed fetch with a populated one, and with a
+real Android bundle.
+
+Learn needs no empty state, its content is static. Goals already had one.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to
