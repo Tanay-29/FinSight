@@ -7,6 +7,7 @@ import {
     MAX_BOX,
 } from '../../services/reviewService';
 import type { RootState } from '../store';
+import { friendlyError } from '../../utils/errors';
 
 interface ReviewsState {
     /** Cards scheduled for today or earlier. */
@@ -36,7 +37,7 @@ export const fetchDueCards = createAsyncThunk(
             ]);
             return { due, all };
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Could not load your review cards');
+            return rejectWithValue(friendlyError(error, 'Could not load your review cards.'));
         }
     }
 );
@@ -69,7 +70,7 @@ export const answerCard = createAsyncThunk(
         try {
             return await recordAnswer(userId, card, correct);
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Could not save that answer');
+            return rejectWithValue(friendlyError(error, 'Could not save that answer.'));
         }
     }
 );

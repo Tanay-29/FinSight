@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { friendlyError } from '../../utils/errors';
 
 // Existing Thunk for Market Data
 export const fetchMarketData = createAsyncThunk(
@@ -9,7 +10,7 @@ export const fetchMarketData = createAsyncThunk(
       if (!response.ok) throw new Error('Failed to fetch from backend');
       return await response.json();
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(friendlyError(error, 'Could not load market data.'));
     }
   }
 );
@@ -23,7 +24,7 @@ export const fetchMarketInsight = createAsyncThunk(
       if (!response.ok) throw new Error('Failed to fetch insight');
       return await response.json();
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(friendlyError(error, 'Could not load the market insight.'));
     }
   }
 );

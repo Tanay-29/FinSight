@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Bot, ArrowRight } from 'lucide-react-native';
+import { Plus, Bot } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -12,7 +12,6 @@ import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import FinSightIQCard from '../components/FinSightIQCard';
-import DailyQuestionCard from '../components/DailyQuestionCard';
 import { format } from 'date-fns';
 
 
@@ -153,8 +152,6 @@ return (
                 {/* FinSight IQ Card */}
                 <FinSightIQCard />
 
-                {/* One quick question a day, for the days nobody wants a full module */}
-                <DailyQuestionCard />
 
                 {/* Market Pulse */}
                 <View className="mt-3">
@@ -162,26 +159,6 @@ return (
                 </View>
 
                 {/* NEW: Start Investing Entry Point */}
-                <TouchableOpacity 
-                    activeOpacity={0.8}
-                    onPress={() => navigation.navigate('CuratedBasket' as never)}
-                    className="bg-indigo-900 rounded-3xl p-5 mx-4 mt-4 border border-indigo-800 shadow-md flex-row items-center justify-between"
-                >
-                    <View className="flex-1 mr-4">
-                        <Text className="text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">
-                            Lesson
-                        </Text>
-                        <Text className="text-white text-lg font-bold mb-1">
-                            How a diversified portfolio works
-                        </Text>
-                        <Text className="text-indigo-200 text-sm">
-                            Three asset classes, and what compounding does to a monthly habit.
-                        </Text>
-                    </View>
-                    <View className="w-12 h-12 bg-indigo-500 rounded-full items-center justify-center">
-                        <ArrowRight color="#FFFFFF" size={20} />
-                    </View>
-                </TouchableOpacity>
 
                 {/* EITM Cards Carousel */}
                 <View className="mt-5">

@@ -8,8 +8,6 @@ import marketReducer from './slices/marketSlice';
 import iqReducer from './slices/iqSlice';
 import reviewsReducer from './slices/reviewsSlice';
 // Phase 1: Execution + Intelligence Layer
-import brokerageReducer from './slices/brokerageSlice';
-import walletReducer from './slices/walletSlice';
 import vitalsIntelReducer from './slices/vitalsIntelSlice';
 
 export const store = configureStore({
@@ -22,9 +20,6 @@ export const store = configureStore({
         market: marketReducer,
         iq: iqReducer,
         reviews: reviewsReducer,
-        // Phase 1
-        brokerage: brokerageReducer,
-        wallet: walletReducer,
         vitalsIntel: vitalsIntelReducer,
     },
     middleware: (getDefaultMiddleware) =>

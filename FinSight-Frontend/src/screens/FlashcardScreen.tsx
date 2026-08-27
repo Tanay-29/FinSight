@@ -32,6 +32,7 @@ import { answerCard, fetchDueCards } from '../store/slices/reviewsSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
 import { authedFetch } from '../config/api';
+import { friendlyError } from '../utils/errors';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -383,7 +384,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
             const data: Flashcard[] = await res.json();
             loadDeck(data.map((c) => ({ ...c, moduleId, moduleTitle, pathId })));
         } catch (e: any) {
-            setError(e.message ?? 'Failed to load flashcards');
+            setError(friendlyError(e, 'Could not generate flashcards for this module.'));
         } finally {
             setLoading(false);
         }

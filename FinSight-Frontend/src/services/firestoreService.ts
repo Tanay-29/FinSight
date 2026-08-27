@@ -25,8 +25,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { applyStudyDay, StreakUpdate } from '../utils/streak';
-import type { StreakWager } from '../utils/wager';
-import type { MoneyPersonality } from '../data/moneyPersonality';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -53,10 +51,6 @@ export interface UserProfile {
     lastStudiedDate?: string; // ISO date string e.g. '2026-04-20'
     /** Banked streak freezes. Each absorbs one missed day. */
     streakFreezes?: number;
-    /** Result of the money personality quiz, if taken. */
-    moneyPersonality?: MoneyPersonality;
-    /** The one wager in flight, plus its outcome once settled. */
-    streakWager?: StreakWager;
     /** Daily question: last day answered, and lifetime tallies. */
     lastDailyDate?: string;
     dailyAnswered?: number;

@@ -14,26 +14,17 @@ import { LearnPathDetailScreen } from '../screens/LearnPathDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
 import OnboardingScreen from '../screens/OnboardingScreen';
-import CuratedBasketScreen from '../screens/CuratedBasketScreen';
 import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
 import FlashcardScreen from '../screens/FlashcardScreen';
 // Phase 1: Execution Layer Screens
-import InvestScreen from '../screens/InvestScreen';
-import PortfolioScreen from '../screens/PortfolioScreen';
-import RoundUpScreen from '../screens/RoundUpScreen';
 import BurnRateScreen from '../screens/BurnRateScreen';
 // Engagement features
-import MoneyPersonalityScreen from '../screens/MoneyPersonalityScreen';
 import TimeMachineScreen from '../screens/TimeMachineScreen';
 import GuessSpendScreen from '../screens/GuessSpendScreen';
 import SwipeCategoriseScreen from '../screens/SwipeCategoriseScreen';
 // Social and shareable
-import WrappedScreen from '../screens/WrappedScreen';
-import LeagueScreen from '../screens/LeagueScreen';
-import SplitScreen from '../screens/SplitScreen';
-import SquadGoalsScreen from '../screens/SquadGoalsScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -80,24 +71,15 @@ export const RootNavigator = () => {
                 // ── Fully onboarded user ──────────────────────────────────
                 <Stack.Group>
                     <Stack.Screen name="MainTabs" component={BottomTabs} />
-                    <Stack.Screen name="CuratedBasket" component={CuratedBasketScreen} />
                     <Stack.Screen name="GoalAcceleration" component={GoalAccelerationScreen} />
                     <Stack.Screen name="MoneyManager" component={MoneyManagerScreen} />
                     <Stack.Screen name="SubscriptionTracker" component={SubscriptionTrackerScreen} />
                     <Stack.Screen name="Flashcards" component={FlashcardScreen} options={{ headerShown: false }} />
                     {/* Phase 1: Execution + Intelligence Layer */}
-                    <Stack.Screen name="Invest" component={InvestScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="RoundUp" component={RoundUpScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="BurnRate" component={BurnRateScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="MoneyPersonality" component={MoneyPersonalityScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="TimeMachine" component={TimeMachineScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="GuessSpend" component={GuessSpendScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="SwipeCategorise" component={SwipeCategoriseScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Wrapped" component={WrappedScreen} options={{ headerShown: false, presentation: 'modal' }} />
-                    <Stack.Screen name="League" component={LeagueScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Split" component={SplitScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="SquadGoals" component={SquadGoalsScreen} options={{ headerShown: false }} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}

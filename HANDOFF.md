@@ -563,6 +563,77 @@ the study needs.
 
 ---
 
+## 5f. Error messages, and cutting the app down to its spine
+
+**Every error the app showed was written for a developer.** All 25 thunks
+rejected with `error.message`, which for Firebase is literally
+`Firebase: Error (auth/invalid-credential).` That is what appeared on the login
+screen. There was no error mapping anywhere in the codebase.
+
+`utils/errors.ts` maps Firebase Auth and Firestore codes to sentences, and
+every call site passes a fallback written for the thing being attempted rather
+than a generic apology. An unmapped code, a missing code, or a stack blob all
+resolve to that fallback, so a raw SDK string can no longer reach a user.
+Errors the app raises itself carry no code and are already written for a
+person, so those pass through.
+
+Note that wrong password, unknown email and `invalid-credential` all give the
+same sentence on purpose. Distinguishing them tells an attacker which addresses
+have accounts, the same reasoning as the password reset.
+
+Verified with 16 assertions, including that the three enumeration cases are
+byte-identical and that nothing raw escapes.
+
+**The app was cut to its spine.** 26 files deleted: the whole simulated
+brokerage (Invest, Portfolio, Curated Basket, Round-Up, plus the brokerage and
+wallet slices and services), Squad Goals, League, Split, Wrapped, Money
+Personality, the streak wager and the daily question.
+
+The reasoning, from the session that preceded it: every feature worked in
+isolation and the plumbing between them was never finished, which is why the
+app felt broken while most things technically functioned. Twenty-five features
+at eighty percent is worse than eight at a hundred, and only one of those is
+finishable by a student team.
+
+What is left is the spine: log an expense, see where the money went, find the
+leak and what it costs, learn, save towards a goal. Guess Your Spend and Tidy
+Up were kept, Tidy Up because it now feeds the categoriser and so earns its
+place.
+
+18 screens down from 27, nine navigator destinations removed, lint warnings
+127 to 94. Verified with a real Android bundle rather than a typecheck, and by
+auditing every `navigate()` target against the navigator, since
+`navigate('X' as never)` is invisible to TypeScript and five cards were still
+pointing at deleted screens after the imports were clean.
+
+**The eleven SQLite backend routes are now dead.** `/api/orders`,
+`/api/portfolio`, `/api/ledger`, `/api/wallet*` and `/api/roundup/*` exist only
+for the brokerage the app no longer has. `/api/prices` too. Nothing calls them.
+Deleting them, and the SQLite layer with them, would remove most of the backend
+and all of its state, leaving Flask holding the Gemini key and the Yahoo
+scraper, which is what section 1 says it is for. Not done here because it is a
+backend decision of its own.
+
+**Known open, from the same session.** Squad Goals was cut rather than fixed,
+but the cause is recorded for whoever revisits it: `createSquad` did a `getDoc`
+collision check first, and the read rule requires membership, so a
+non-existent document denies the read and Firestore reports "Missing or
+insufficient permissions". `joinSquad` ten lines below carries a comment
+explaining exactly this hazard, which the create path did not apply.
+
+The categoriser does not know railways: `irctc` is in the table, `railway` and
+`indian railway` are not, and squashed bank codes like `IRCTCWEB` fail the word
+boundary that stops `gas` matching Vegas. The manual category picker offers
+`health`, `housing` and `other` while the categoriser produces `healthcare` and
+has neither of the others, so hand-picked and parsed transactions land in
+different buckets. There are no empty states in Feed or Vitals. And a render
+error about a missing navigation context, reported around the income toggle,
+could not be reproduced from the source: the container is wired correctly and
+all twelve `useNavigation` calls are inside it, so it needs the full red screen
+to chase.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to

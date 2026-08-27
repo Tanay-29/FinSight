@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { FirestoreBudget, getBudgets, setBudget as setBudgetInFirestore, updateBudgetLimit as setBudgetLimitInFirestore } from '../../services/firestoreService';
 import { RootState } from '../store';
 import { format } from 'date-fns';
+import { friendlyError } from '../../utils/errors';
 
 interface BudgetsState {
     items: FirestoreBudget[];
@@ -27,7 +28,7 @@ export const fetchBudgets = createAsyncThunk(
             const budgets = await getBudgets(userId, currentMonth);
             return budgets;
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not load your budgets.'));
         }
     }
 );
@@ -43,7 +44,7 @@ export const createBudget = createAsyncThunk(
             const id = await setBudgetInFirestore(userId, budget);
             return { id, ...budget };
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not create that budget.'));
         }
     }
 );
@@ -59,7 +60,7 @@ export const updateBudgetLimit = createAsyncThunk(
             await setBudgetLimitInFirestore(userId, id, limit);
             return { id, limit };
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not update that budget.'));
         }
     }
 );

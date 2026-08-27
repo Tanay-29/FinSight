@@ -12,7 +12,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle, CalendarDays, Star, Zap, Users, ChevronRight, Coins, Receipt } from 'lucide-react-native';
+import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle, CalendarDays, Star, Zap } from 'lucide-react-native';
 import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
@@ -586,65 +586,11 @@ export const GoalsScreen: React.FC = () => {
                 </View>
 
                 {/* Squad Goals: the shared counterpart to the private goals below */}
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('SquadGoals' as never)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open squad goals"
-                    className="mx-4 mt-3 flex-row items-center bg-white border border-gray-100 rounded-2xl px-4 py-3.5"
-                >
-                    <View className="w-10 h-10 rounded-full bg-brand-primary/10 items-center justify-center mr-3">
-                        <Users color="#6366F1" size={18} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-sm font-bold text-text-primary">Squad Goals</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5">
-                            Save towards something with friends
-                        </Text>
-                    </View>
-                    <ChevronRight color="#D1D5DB" size={18} />
-                </TouchableOpacity>
 
                 {/* Round-up and bill splitting. Both are ways money moves
                     towards or between people's savings, which is the question
                     this tab answers. They were previously tiles on Vitals. */}
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('RoundUp' as never)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open round-up wallet"
-                    className="mx-4 mt-3 flex-row items-center bg-white border border-gray-100 rounded-2xl px-4 py-3.5"
-                >
-                    <View className="w-10 h-10 rounded-full bg-amber-50 items-center justify-center mr-3">
-                        <Coins color="#D97706" size={18} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-sm font-bold text-text-primary">Round-Up Wallet</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5">
-                            Spare change from every spend, invested once it adds up
-                        </Text>
-                    </View>
-                    <ChevronRight color="#D1D5DB" size={18} />
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('Split' as never)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open bill splitting"
-                    className="mx-4 mt-3 flex-row items-center bg-white border border-gray-100 rounded-2xl px-4 py-3.5"
-                >
-                    <View className="w-10 h-10 rounded-full bg-teal-50 items-center justify-center mr-3">
-                        <Receipt color="#0D9488" size={18} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-sm font-bold text-text-primary">Split a Bill</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5">
-                            Work out who owes what, and settle it
-                        </Text>
-                    </View>
-                    <ChevronRight color="#D1D5DB" size={18} />
-                </TouchableOpacity>
 
                 {/* Summary Banner (only if goals exist) */}
                 {goals.length > 0 && <SummaryBanner goals={goals} />}

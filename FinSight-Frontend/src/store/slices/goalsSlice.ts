@@ -9,6 +9,7 @@ import {
     deleteGoal,
 } from '../../services/firestoreService';
 import { RootState } from '../store';
+import { friendlyError } from '../../utils/errors';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ export const fetchGoals = createAsyncThunk(
             if (!userId) throw new Error('User not authenticated');
             return await getGoals(userId);
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not load your goals.'));
         }
     }
 );
@@ -50,7 +51,7 @@ export const createGoal = createAsyncThunk(
             const id = await addGoal(userId, goal);
             return { id, ...goal };
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not create that goal.'));
         }
     }
 );
@@ -75,7 +76,7 @@ export const depositToGoal = createAsyncThunk(
             await updateGoalSaved(userId, goalId, newSaved);
             return { goalId, savedAmount: newSaved };
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not add to that goal.'));
         }
     }
 );
@@ -90,7 +91,7 @@ export const removeGoal = createAsyncThunk(
             await deleteGoal(userId, goalId);
             return goalId;
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not delete that goal.'));
         }
     }
 );

@@ -13,8 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Award, Flame, Search, HelpCircle, GraduationCap,
-    ChevronRight, Trophy, Target, Sparkles, BrainCircuit, Snowflake, Compass,
-    Layers, Hourglass, TrendingUp,
+    ChevronRight, Trophy, Target, Sparkles, BrainCircuit, Snowflake,
+    Layers, Hourglass,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
@@ -24,8 +24,6 @@ import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { streakAtRisk, MAX_FREEZES } from '../utils/streak';
 import * as haptics from '../utils/haptics';
-import StreakWagerCard from '../components/StreakWagerCard';
-import { ARCHETYPES } from '../data/moneyPersonality';
 
 // Map onboarding goal → which pathId to promote first
 const GOAL_PATH_PRIORITY: Record<string, string> = {
@@ -68,7 +66,6 @@ export const LearnScreen: React.FC = () => {
     const badgesEarned = Object.values(progress).filter((p) => p.badgeEarned).length;
     const currentStreak = profile?.streak ?? streak;
     const freezes = profile?.streakFreezes ?? 0;
-    const personality = profile?.moneyPersonality;
     const atRisk = streakAtRisk({
         streak: currentStreak,
         lastStudiedDate: profile?.lastStudiedDate ?? '',
@@ -259,52 +256,8 @@ export const LearnScreen: React.FC = () => {
                     </View>
                 ) : null}
 
-                {/* ── Streak wager ────────────────────────────── */}
-                <StreakWagerCard />
 
-                {/* ── Money personality ───────────────────────── */}
-                <TouchableOpacity
-                    onPress={() => { haptics.tap(); navigation.navigate('MoneyPersonality'); }}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    className="mx-4 mt-4 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-violet-50 items-center justify-center mr-3">
-                        <Compass size={20} color="#8B5CF6" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">
-                            {personality
-                                ? `You are ${ARCHETYPES[personality.archetype].name}`
-                                : 'What kind of money person are you?'}
-                        </Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
-                            {personality
-                                ? ARCHETYPES[personality.archetype].tagline
-                                : 'Eight questions, two minutes, shapes your course order'}
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color="#8B5CF6" />
-                </TouchableOpacity>
 
-                {/* ── Improvement League ──────────────────────── */}
-                <TouchableOpacity
-                    onPress={() => { haptics.tap(); navigation.navigate('League'); }}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    className="mx-4 mt-4 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-amber-50 items-center justify-center mr-3">
-                        <Trophy size={20} color="#F59E0B" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Improvement League</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
-                            Weekly board ranked on points gained, not money held
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color="#F59E0B" />
-                </TouchableOpacity>
 
                 {/* ── Practise ────────────────────────────────────
                     Three tools that teach by doing. They used to sit in a grid
@@ -368,23 +321,6 @@ export const LearnScreen: React.FC = () => {
                     <ChevronRight size={18} color="#10B981" />
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={() => { haptics.tap(); navigation.navigate('Invest'); }}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-indigo-50 items-center justify-center mr-3">
-                        <TrendingUp size={20} color="#6366F1" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Practice Simulator</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
-                            Buy and sell with simulated money and real market mechanics
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color="#6366F1" />
-                </TouchableOpacity>
 
                 {/* ── Personalised Banner ─────────────────────── */}
                 {profile?.appGoals && profile.appGoals.length > 0 && (

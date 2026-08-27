@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { signUp, signIn, logOut, deleteAccount } from '../../services/authService';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/firestoreService';
+import { friendlyError } from '../../utils/errors';
 
 type Preferences = UserProfile['preferences'];
 
@@ -46,7 +47,7 @@ export const signUpUser = createAsyncThunk(
                 displayName: user.displayName,
             } as AuthUser;
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Sign up failed');
+            return rejectWithValue(friendlyError(error, 'Could not create your account. Try again.'));
         }
     }
 );
@@ -65,7 +66,7 @@ export const signInUser = createAsyncThunk(
                 displayName: user.displayName,
             } as AuthUser;
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Sign in failed');
+            return rejectWithValue(friendlyError(error, 'Could not sign you in. Try again.'));
         }
     }
 );
@@ -76,7 +77,7 @@ export const logOutUser = createAsyncThunk(
         try {
             await logOut();
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Logout failed');
+            return rejectWithValue(friendlyError(error, 'Could not sign you out. Try again.'));
         }
     }
 );
@@ -88,7 +89,7 @@ export const fetchUserProfile = createAsyncThunk(
         try {
             return await getUserProfile(uid);
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Failed to load profile');
+            return rejectWithValue(friendlyError(error, 'Could not load your profile.'));
         }
     }
 );
@@ -104,7 +105,7 @@ export const completeOnboarding = createAsyncThunk(
             await updateUserProfile(uid, { ...data, onboardingComplete: true });
             return { ...data, onboardingComplete: true } as Partial<UserProfile>;
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Failed to save onboarding data');
+            return rejectWithValue(friendlyError(error, 'Could not save your answers. Try again.'));
         }
     }
 );
@@ -146,7 +147,7 @@ export const deleteUserAccount = createAsyncThunk(
         try {
             await deleteAccount();
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Could not delete your account');
+            return rejectWithValue(friendlyError(error, 'Could not delete your account.'));
         }
     }
 );
@@ -166,7 +167,7 @@ export const patchProfile = createAsyncThunk(
             await updateUserProfile(uid, patch);
             return patch;
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Could not save that');
+            return rejectWithValue(friendlyError(error, 'Could not save that change.'));
         }
     }
 );

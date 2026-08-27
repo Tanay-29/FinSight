@@ -11,6 +11,7 @@ import {
     UserProgress,
 } from '../../services/firestoreService';
 import { fetchUserProfile } from './authSlice';
+import { friendlyError } from '../../utils/errors';
 
 // ─── State ───────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ export const fetchUserProgress = createAsyncThunk(
             const progressMap = await getUserProgress(userId);
             return progressMap;
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not load your course progress.'));
         }
     }
 );
@@ -94,7 +95,7 @@ export const completeModule = createAsyncThunk(
             dispatch(fetchUserProfile(userId));
             return { pathId, moduleId, streakUpdate };
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(friendlyError(error, 'Could not save that module as finished.'));
         }
     }
 );

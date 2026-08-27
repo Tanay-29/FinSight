@@ -9,9 +9,9 @@ import {
     correctTransactionCategory,
     getCategoryCorrections,
 } from '../../services/firestoreService';
-import { addRoundup } from '../../services/walletService';
 import { RootState } from '../store';
 import { format } from 'date-fns';
+import { friendlyError } from '../../utils/errors';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ export const fetchTransactions = createAsyncThunk(
             const transactions = await getRecentTransactions(userId);
             return transactions;
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Failed to fetch transactions');
+            return rejectWithValue(friendlyError(error, 'Could not load your transactions.'));
         }
     }
 );
@@ -77,18 +77,11 @@ export const addTransaction = createAsyncThunk(
                     const newSpend = budget.currentSpend + transaction.amount;
                     await updateBudgetSpend(userId, budget.id, newSpend);
                 }
-
-                // 3. Record Round-Up for Execution Layer
-                try {
-                    await addRoundup(transaction.amount);
-                } catch (err) {
-                    console.log('Failed to record round-up:', err);
-                }
             }
 
             return { id, ...transaction };
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Failed to add transaction');
+            return rejectWithValue(friendlyError(error, 'Could not add that transaction.'));
         }
     }
 );
@@ -111,7 +104,7 @@ export const updateTransactionCategory = createAsyncThunk(
             await correctTransactionCategory(userId, transactionId, category, merchant);
             return { transactionId, category };
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Could not update that category');
+            return rejectWithValue(friendlyError(error, 'Could not update that category.'));
         }
     }
 );
@@ -130,7 +123,7 @@ export const fetchCategoryCorrections = createAsyncThunk(
         try {
             return await getCategoryCorrections(userId);
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Could not load corrections');
+            return rejectWithValue(friendlyError(error, 'Could not load your saved corrections.'));
         }
     }
 );
@@ -147,7 +140,7 @@ export const removeTransaction = createAsyncThunk(
             await deleteTransaction(userId, id);
             return id;
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Failed to delete transaction');
+            return rejectWithValue(friendlyError(error, 'Could not delete that transaction.'));
         }
     }
 );
