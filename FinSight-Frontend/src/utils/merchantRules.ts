@@ -221,20 +221,48 @@ export interface MerchantMatch {
 /**
  * Find the most specific merchant rule in a piece of text.
  *
+ * Pass `learned` to fold in categories the user has corrected by hand. Those
+ * are merged with the built-in rules and matched in the same single
+ * longest-first pass, so a correction can teach a merchant the table has never
+ * heard of without disturbing the ordering that makes the table work.
+ *
  * Returns null when nothing matches, so each caller can apply its own default
  * rather than having one imposed here. The two parsers historically defaulted
  * to different strings and changing that is not this function's business.
  */
-export function matchMerchant(text: string): MerchantMatch | null {
-    const haystack = normalise(text);
-
-    for (const keyword of SORTED_KEYWORDS) {
+function findIn(
+    haystack: string,
+    keywords: string[],
+    table: Record<string, string>
+): MerchantMatch | null {
+    for (const keyword of keywords) {
         if (haystack.includes(` ${keyword} `)) {
-            return { category: MERCHANT_RULES[keyword], keyword };
+            return { category: table[keyword] as ExpenseCategory, keyword };
         }
     }
-
     return null;
+}
+
+export function matchMerchant(
+    text: string,
+    learned?: Record<string, string>
+): MerchantMatch | null {
+    const haystack = normalise(text);
+
+    if (learned && Object.keys(learned).length > 0) {
+        // One pass over both tables rather than checking learned entries first,
+        // so longest match still decides across the union. A user who corrected
+        // `swiggy` has not thereby overruled the more specific
+        // `swiggy instamart`, and a correction on the same keyword as a rule
+        // does win, because they told us and the table only guessed.
+        const merged: Record<string, string> = { ...MERCHANT_RULES, ...learned };
+        const keywords = Object.keys(merged).sort(
+            (a, b) => b.length - a.length || a.localeCompare(b)
+        );
+        return findIn(haystack, keywords, merged);
+    }
+
+    return findIn(haystack, SORTED_KEYWORDS, MERCHANT_RULES);
 }
 
 /**

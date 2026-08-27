@@ -1,61 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Sparkles, ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { addTransaction } from '../store/slices/transactionsSlice'; 
-
-// --- 1. THE SMART CATEGORIZATION ENGINE ---
-const CATEGORY_RULES = {
-    dining: ['zomato', 'swiggy', 'mcdonalds', 'starbucks', 'cafe', 'restaurant', 'kfc', 'dominos', 'pizza'],
-    transport: ['irctc', 'uber', 'ola', 'rapido', 'makemytrip', 'indigo', 'metro', 'petrol', 'hpcl', 'bpcl', 'indian oil', 'chalo'],
-    shopping: ['amazon', 'flipkart', 'myntra', 'zara', 'h&m', 'reliance', 'd-mart', 'ajio'],
-    groceries: ['blinkit', 'zepto', 'instamart', 'bigbasket', 'grocery', 'supermarket', 'milk'],
-    utilities: ['bescom', 'electricity', 'jio', 'airtel', 'vi', 'broadband', 'gas', 'recharge', 'water'],
-    entertainment: ['netflix', 'spotify', 'bookmyshow', 'pvr', 'prime', 'hotstar', 'cinema'],
-    health: ['apollo', 'pharmacy', 'hospital', 'clinic', 'practo', 'medplus'],
-    investments: ['zerodha', 'groww', 'upstox', 'mutual fund', 'sip', 'indmoney']
-};
-
-const parseBankSMS = (smsText: string) => {
-    const lowerText = smsText.toLowerCase();
-    
-    // 1. Smarter Regex Magic
-    let amount = 0;
-    // Look for standard symbols OR phrases like "debited by"
-    const explicitMatch = smsText.match(/(?:rs\.?|inr|₹|debited by|payment of|paid)\s*([\d,]+\.?\d*)/i);
-    
-    if (explicitMatch) {
-        amount = parseFloat(explicitMatch[1].replace(/,/g, ''));
-    } else {
-        // Fallback: If no currency word is found, find the first standard decimal number (e.g., 103.00)
-        const fallbackMatch = smsText.match(/([\d,]+\.\d{2})/);
-        if (fallbackMatch) {
-            amount = parseFloat(fallbackMatch[1].replace(/,/g, ''));
-        }
-    }
-
-    let detectedCategory = 'other';
-    let detectedMerchant = 'Unknown Merchant';
-
-    // 2. Scan through our keyword dictionary
-    for (const [category, keywords] of Object.entries(CATEGORY_RULES)) {
-        const foundKeyword = keywords.find(keyword => lowerText.includes(keyword));
-        if (foundKeyword) {
-            detectedCategory = category;
-            // Capitalize for a clean UI look
-            detectedMerchant = foundKeyword.charAt(0).toUpperCase() + foundKeyword.slice(1);
-            break;
-        }
-    }
-
-    // 3. Determine Credit vs Debit
-    const isCredit = lowerText.includes('credited') || lowerText.includes('received') || lowerText.includes('deposited');
-    const type = isCredit ? 'credit' : 'debit';
-
-    return { amount, category: detectedCategory, merchant: detectedMerchant, type };
-};
+import { addTransaction, fetchCategoryCorrections } from '../store/slices/transactionsSlice';
+import { parseBankSMS } from '../utils/smartCategorizer';
 
 // --- 2. THE UI COMPONENT ---
 export default function AddTransactionScreen() {
@@ -63,7 +13,13 @@ export default function AddTransactionScreen() {
     const dispatch = useAppDispatch();
     
     // Bring back your original syncStatus for the loading spinner!
-    const { syncStatus } = useAppSelector((state) => state.transactions);
+    const { syncStatus, corrections } = useAppSelector((state) => state.transactions);
+
+    // Load what the user has already taught the categoriser, so a paste lands
+    // in the right category first time for merchants the rules do not know.
+    useEffect(() => {
+        dispatch(fetchCategoryCorrections());
+    }, [dispatch]);
 
     // Form State
     const [smsText, setSmsText] = useState('');
@@ -81,7 +37,7 @@ export default function AddTransactionScreen() {
             return;
         }
 
-        const extracted = parseBankSMS(smsText);
+        const extracted = parseBankSMS(smsText, corrections);
         
         if (extracted.amount === 0) {
             Alert.alert("Couldn't find an amount", "Make sure the SMS contains 'INR', 'Rs', or '₹'.");

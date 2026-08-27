@@ -7,6 +7,7 @@ import {
     getBudgets,
     updateBudgetSpend,
     correctTransactionCategory,
+    getCategoryCorrections,
 } from '../../services/firestoreService';
 import { addRoundup } from '../../services/walletService';
 import { RootState } from '../store';
@@ -19,6 +20,8 @@ interface TransactionsState {
     loading: boolean;
     error: string | null;
     syncStatus: 'idle' | 'syncing' | 'error';
+    /** Merchant to category, learned from the user's own corrections. */
+    corrections: Record<string, string>;
 }
 
 const initialState: TransactionsState = {
@@ -26,6 +29,7 @@ const initialState: TransactionsState = {
     loading: false,
     error: null,
     syncStatus: 'idle',
+    corrections: {},
 };
 
 // ─── Async Thunks ────────────────────────────────────────────
@@ -112,6 +116,25 @@ export const updateTransactionCategory = createAsyncThunk(
     }
 );
 
+/**
+ * Load every category the user has corrected by hand, so the parser can get it
+ * right first time next time. Failing quietly is deliberate: without these the
+ * built-in rules still work, so a read error should not block adding an
+ * expense.
+ */
+export const fetchCategoryCorrections = createAsyncThunk(
+    'transactions/fetchCorrections',
+    async (_, { getState, rejectWithValue }) => {
+        const userId = (getState() as RootState).auth.user?.uid;
+        if (!userId) return rejectWithValue('Not signed in');
+        try {
+            return await getCategoryCorrections(userId);
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Could not load corrections');
+        }
+    }
+);
+
 export const removeTransaction = createAsyncThunk(
     'transactions/remove',
     async (id: string, { rejectWithValue, getState }) => {
@@ -184,9 +207,18 @@ const transactionsSlice = createSlice({
             .addCase(updateTransactionCategory.pending, (state, action) => {
                 const item = state.items.find((t) => t.id === action.meta.arg.transactionId);
                 if (item) item.category = action.meta.arg.category;
+
+                // Learn it now rather than on the next load, so a merchant the
+                // user just fixed is already right for the next paste in this
+                // session.
+                const merchant = action.meta.arg.merchant.trim().toLowerCase();
+                if (merchant) state.corrections[merchant] = action.meta.arg.category;
             })
             .addCase(updateTransactionCategory.rejected, (state, action) => {
                 state.error = action.payload as string;
+            })
+            .addCase(fetchCategoryCorrections.fulfilled, (state, action) => {
+                state.corrections = action.payload;
             });
     },
 });

@@ -507,6 +507,62 @@ The two warnings left in `VitalsScreen` were there at HEAD; it had five.
 
 ---
 
+## 5e. category_corrections, and what wiring it up uncovered
+
+**The categoriser fix had never reached users.** Commit `0c3ebe0` built
+`utils/merchantRules.ts` with word-boundary matching and longest match first,
+and gave it to `utils/smartCategorizer.ts` and `services/notificationParser.ts`.
+Both of those are imported nowhere. The only categorisation path anyone
+actually reached, `AddTransactionScreen`, carried a **third** table of its own
+and matched it with `lowerText.includes(keyword)`, breaking at the first
+category in declaration order.
+
+That is both documented defects, still live: `gas` matched Vegas, `sip` matched
+gossip, `prime` matched Amazon Prime and `vi` shadowed prime video. The fix was
+right and simply never connected to the screen.
+
+`AddTransactionScreen` now imports the shared parser and its local table is
+gone. The merge went both ways: that copy's amount handling was better than the
+shared one's, understanding "debited by", "payment of" and "paid" and falling
+back to a bare decimal like 103.00, and it treated "deposited" as a credit.
+All of that is kept in `smartCategorizer` rather than thrown away with the
+substring matching.
+
+**The correction loop is now closed.** `matchMerchant` takes an optional
+`learned` table, merged with the built-in rules and matched in the same single
+longest-first pass. Merging rather than checking corrections first is
+deliberate: someone who corrected `swiggy` has not thereby overruled the more
+specific `swiggy instamart`, while a correction on the same keyword as a rule
+does win, because they told us and the table only guessed.
+
+`getCategoryCorrections` reads the subcollection and collapses it to a merchant
+to category map, most recent correction winning. One document is written per
+correction event, so a merchant corrected twice appears twice. The transactions
+slice holds the map, loads it when Add Transaction mounts, and updates it
+optimistically on the correcting action so a merchant just fixed is already
+right for the next paste in the same session.
+
+This makes the Tidy Up card's promise true. It says "sort miscategorised
+transactions and teach the app as you go", which until now it did not.
+
+Verified with 24 assertions across two runs: every documented substring and
+shadowing defect, the amount phrasings and credit wording kept from the screen
+copy, an unknown merchant before and after correction, and that a correction
+cannot disturb longest-match ordering.
+
+**Still dead:** `services/notificationParser.ts` is imported nowhere. Unlike the
+feed slice, that is not an accident. It is the Android notification listener,
+which needs a development build and is disabled in Expo Go, so it is waiting
+rather than abandoned. Worth a decision either way.
+
+**For the accuracy study.** The corpus is now both collected and consumed, so
+corrections are worth something to the user rather than only to the paper. The
+labelled data is `users/{uid}/category_corrections`, each document a merchant,
+a category and a timestamp, which is exactly the before-and-after error rate
+the study needs.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to

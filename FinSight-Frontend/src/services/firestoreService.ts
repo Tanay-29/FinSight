@@ -283,6 +283,46 @@ const USER_SUBCOLLECTIONS = [
 ] as const;
 
 /** Delete the contents of every per-user subcollection, keeping the profile. */
+/**
+ * Every category the user has put a merchant into by hand.
+ *
+ * One document is written per correction event, so a merchant corrected twice
+ * appears twice. The most recent wins, which is what "I changed my mind" should
+ * mean. Returns a plain merchant to category map, ready to hand to
+ * matchMerchant as its learned table.
+ *
+ * This subcollection has been filling up since categorisation shipped and
+ * nothing read it until now.
+ */
+export async function getCategoryCorrections(
+    userId: string
+): Promise<Record<string, string>> {
+    const snapshot = await getDocs(
+        collection(db, 'users', userId, 'category_corrections')
+    );
+
+    const latestAt: Record<string, string> = {};
+    const learned: Record<string, string> = {};
+
+    snapshot.forEach((entry) => {
+        const data = entry.data() as {
+            merchant?: string;
+            category?: string;
+            correctedAt?: string;
+        };
+        const merchant = (data.merchant ?? '').trim().toLowerCase();
+        if (!merchant || !data.category) return;
+
+        const at = data.correctedAt ?? '';
+        if (latestAt[merchant] !== undefined && at <= latestAt[merchant]) return;
+
+        latestAt[merchant] = at;
+        learned[merchant] = data.category;
+    });
+
+    return learned;
+}
+
 export async function clearUserData(userId: string): Promise<void> {
     await Promise.all(
         USER_SUBCOLLECTIONS.map(async (name) => {
