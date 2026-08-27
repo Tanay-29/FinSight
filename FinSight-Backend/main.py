@@ -1,3 +1,16 @@
+"""
+main.py
+
+The Flask API exists for the two things a client cannot do safely itself: hold
+the Gemini key and scrape Yahoo Finance. Four routes serve the app, plus a cache
+readout.
+
+It used to carry a simulated brokerage as well, thirteen routes over SQLite for
+orders, wallets and round-ups, along with a background thread ticking mock
+prices every sixty seconds. That whole layer went when the brokerage was cut
+from the app, and with it the only state this service held. Nothing here
+persists anything now, which is why losing the container costs nothing.
+"""
 import os
 from dotenv import load_dotenv
 import json
@@ -5,14 +18,8 @@ import yfinance as yf
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from google import genai
-from apscheduler.schedulers.background import BackgroundScheduler
 
-# ── Phase 1: Execution Layer imports ────────────────────────────────────────
 from auth import require_auth
-from database import init_db
-from blueprints.brokerage import brokerage_bp, tick_prices
-from blueprints.wallet import wallet_bp
-from blueprints.roundup import roundup_bp
 from cache import (
     cache, make_key,
     TTL_MARKET_PULSE, TTL_MARKET_INSIGHT, TTL_FLASHCARDS, TTL_AI_ADVISOR,
@@ -41,20 +48,6 @@ CORS(
 print(f"[CORS] Allowed origins: {ALLOWED_ORIGINS}")
 
 client = genai.Client()
-
-# ── Register Blueprints ──────────────────────────────────────────────────────
-app.register_blueprint(brokerage_bp)
-app.register_blueprint(wallet_bp)
-app.register_blueprint(roundup_bp)
-
-# ── Initialise SQLite DB ─────────────────────────────────────────────────────
-init_db()
-
-# ── Start Price Tick Scheduler (every 60 seconds) ────────────────────────────
-scheduler = BackgroundScheduler()
-scheduler.add_job(tick_prices, 'interval', seconds=60, id='price_tick')
-scheduler.start()
-print("[Scheduler] Price tick job started (every 60s)")
 
 TICKERS = {
     "^NSEI": "NIFTY 50",

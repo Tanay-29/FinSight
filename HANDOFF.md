@@ -711,6 +711,36 @@ still landing in the right bucket.
 
 ---
 
+## 5i. The backend is four routes now
+
+Cutting the brokerage from the app left eleven backend routes with no callers:
+`/api/prices`, `/api/orders` twice over, `/api/portfolio`, `/api/ledger`, the
+three wallet routes and the four round-up ones. They are gone, and the SQLite
+layer under them with them.
+
+Deleted: `blueprints/` entire, `database.py`, and the background thread that
+ticked mock prices every sixty seconds. `APScheduler` came out of
+`requirements.txt`, having existed only for that thread. A stray empty
+`package-lock.json`, left by an `npm install` in the wrong directory, went too.
+
+What is left is `main.py`, `auth.py` and `cache.py`, serving four routes the app
+calls plus a cache readout. That is the service section 1 describes: the two
+things a client cannot do safely itself, hold the Gemini key and scrape Yahoo.
+
+**The ephemeral-disk problem is gone rather than mitigated.** SQLite on Render
+lost brokerage, wallet and round-up state on every redeploy, and that was listed
+as a longer-term worry needing PostgreSQL. Nothing is persisted here any more,
+so a redeploy costs a cold cache and nothing else. The one-worker note in
+`render.yaml` was rewritten, since half its reasoning was about the price engine
+that no longer exists.
+
+Verified by booting the stripped service and calling everything: the four live
+routes answer, the two gated ones still return 401 without a token,
+`/api/market-pulse` and `/api/market-insight` still return 200, all eleven
+removed routes return 404, and no `.db` file is created on startup any more.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to
@@ -721,7 +751,8 @@ still landing in the right bucket.
   removed and `mockData.ts` is the single source, so content changes need an app
   or OTA update.
 - **The vitals maths runs on the client**, in `utils/vitals.ts`. The backend is
-  17 routes, not 20.
+  five routes: market pulse, market insight, AI advisor, flashcards and a cache
+  readout. It was 17 before the brokerage was cut.
 - **Month boundaries in `utils/vitals.ts` are UTC**, carried over faithfully from
   the Python. A late-night IST transaction can land in the next UTC month.
   Changing it would shift which transactions count, so it deserves its own change
