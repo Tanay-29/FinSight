@@ -49,6 +49,13 @@ print(f"[CORS] Allowed origins: {ALLOWED_ORIGINS}")
 
 client = genai.Client()
 
+# Named once, and overridable without a code change, because models get retired
+# under you. gemini-2.5-flash was hardcoded in three places and stopped being
+# available to newly issued API keys: existing keys kept working, so the app
+# looked fine until someone generated a fresh one and every AI route started
+# answering with its fallback.
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.6-flash')
+
 TICKERS = {
     "^NSEI": "NIFTY 50",
     "^BSESN": "SENSEX",
@@ -143,7 +150,7 @@ Rules:{STYLE_RULES}
 - Return ONLY the raw JSON array. No extra text."""
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model=GEMINI_MODEL,
             contents=prompt,
         )
         raw = response.text.strip()
@@ -238,7 +245,7 @@ def get_market_insight():
         """
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model=GEMINI_MODEL,
             contents=prompt,
         )
         ai_response_text = response.text.strip()
@@ -344,7 +351,7 @@ Rules:{STYLE_RULES}
 - Return ONLY the raw JSON. No extra text, no markdown."""
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model=GEMINI_MODEL,
             contents=prompt,
         )
         raw = response.text.strip()

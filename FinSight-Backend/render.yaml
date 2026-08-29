@@ -14,6 +14,11 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false   # You will paste this manually in the Render dashboard
+      # Set here rather than in code because models get retired. When a request
+      # starts coming back 404 saying the model is no longer available, this is
+      # the one line to change, with no redeploy of the source.
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
       # Firebase project whose ID tokens this API accepts. Every user-scoped
       # route rejects a token minted by any other project.
       - key: FIREBASE_PROJECT_ID
