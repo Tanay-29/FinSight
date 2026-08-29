@@ -13,7 +13,8 @@
  * and a single button.
  */
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from './PressableScale';
 
 interface EmptyStateProps {
     icon: React.ReactNode;
@@ -47,14 +48,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         </Text>
 
         {actionLabel && onAction && (
-            <TouchableOpacity
+            <PressableScale
                 className="bg-brand-primary px-8 py-3 rounded-2xl"
                 onPress={onAction}
-                activeOpacity={0.85}
                 accessibilityRole="button"
             >
                 <Text className="text-white font-bold">{actionLabel}</Text>
-            </TouchableOpacity>
+            </PressableScale>
         )}
 
         {hint && (

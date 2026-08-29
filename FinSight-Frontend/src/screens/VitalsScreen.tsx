@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
     Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Svg, Rect, Text as SvgText } from 'react-native-svg';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
@@ -55,37 +55,81 @@ const getCategoryColor = (category: string) => {
 
 // ─── Bar Chart ───────────────────────────────────────────────────
 
+/**
+ * Category spending, as horizontal bars.
+ *
+ * This was vertical bars in an SVG whose viewBox was sized to the number of
+ * categories while the SVG itself rendered at width 100%. With two categories
+ * the whole drawing scaled up to fill the screen and the labels came out
+ * enormous; with eight it shrank. The labels were also cut to six characters
+ * with no ellipsis, so Entertainment read as "Entert".
+ *
+ * Horizontal bars fix both. The row height is fixed, so any number of
+ * categories looks the same, and a long Indian category name has the full width
+ * of the card to sit in.
+ */
 const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: string }[] }> = ({ data }) => {
-    if (data.length === 0) return (
-        <View className="py-6 items-center">
-            <Text className="text-text-secondary text-sm">No spending data this month.</Text>
-        </View>
-    );
-    const maxAmount = Math.max(...data.map((d) => d.amount));
-    const barWidth = 36;
-    const chartHeight = 150;
-    const gap = 12;
-    const totalWidth = data.length * (barWidth + gap);
+    const reduced = useReducedMotion();
+    const [grown, setGrown] = useState(false);
+
+    // Bars sweep out once when the card appears. They are childless and their
+    // width is a percentage of a fixed-height track, so this does not reflow
+    // anything around them.
+    useEffect(() => {
+        if (reduced) { setGrown(true); return; }
+        const t = setTimeout(() => setGrown(true), 60);
+        return () => clearTimeout(t);
+    }, [reduced]);
+
+    if (data.length === 0) {
+        return (
+            <View className="py-6 items-center">
+                <Text className="text-text-secondary text-sm">Nothing spent yet this month.</Text>
+            </View>
+        );
+    }
+
+    const maxAmount = Math.max(...data.map((d) => d.amount)) || 1;
+    const total = data.reduce((sum, d) => sum + d.amount, 0);
 
     return (
-        <Svg width="100%" height={chartHeight + 30} viewBox={`0 0 ${totalWidth} ${chartHeight + 30}`}>
-            {data.map((item, index) => {
-                const barHeight = (item.amount / maxAmount) * (chartHeight - 20) || 5;
-                const x = index * (barWidth + gap) + gap / 2;
-                const y = chartHeight - barHeight;
+        <View>
+            {data.map((item) => {
+                const share = Math.round((item.amount / total) * 100);
                 return (
-                    <React.Fragment key={item.name}>
-                        <Rect x={x} y={y} width={barWidth} height={barHeight} rx={6} fill={item.color} />
-                        <SvgText x={x + barWidth / 2} y={y - 6} textAnchor="middle" fontSize={10} fill="#374151" fontWeight="600">
-                            {item.amount >= 1000 ? `${(item.amount / 1000).toFixed(1)}k` : `${item.amount}`}
-                        </SvgText>
-                        <SvgText x={x + barWidth / 2} y={chartHeight + 16} textAnchor="middle" fontSize={9} fill="#9CA3AF">
-                            {item.name.substring(0, 6)}
-                        </SvgText>
-                    </React.Fragment>
+                    <View key={item.name} className="mb-3.5">
+                        <View className="flex-row items-baseline justify-between mb-1.5">
+                            <Text
+                                className="text-sm font-medium text-text-primary flex-1 mr-3"
+                                numberOfLines={1}
+                            >
+                                {item.name}
+                            </Text>
+                            <Text className="text-sm font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+                                ₹{item.amount.toLocaleString('en-IN')}
+                            </Text>
+                            <Text className="text-xs text-text-tertiary ml-2 w-9 text-right">
+                                {share}%
+                            </Text>
+                        </View>
+
+                        <View className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
+                            <Animated.View
+                                style={{
+                                    height: '100%',
+                                    borderRadius: 999,
+                                    backgroundColor: item.color,
+                                    width: grown ? `${Math.max((item.amount / maxAmount) * 100, 2)}%` : '0%',
+                                    transitionProperty: 'width',
+                                    transitionDuration: reduced ? 0 : 520,
+                                    transitionTimingFunction: 'ease-out',
+                                } as never}
+                            />
+                        </View>
+                    </View>
                 );
             })}
-        </Svg>
+        </View>
     );
 };
 

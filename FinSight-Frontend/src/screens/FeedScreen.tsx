@@ -11,6 +11,7 @@ import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import { EmptyState } from '../components/EmptyState';
+import { PressableScale } from '../components/PressableScale';
 import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
 
@@ -230,13 +231,15 @@ return (
                 )}
             </ScrollView>
 
-            <TouchableOpacity
+            <PressableScale
                 className="absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
                 onPress={() => navigation.navigate('AddTransaction' as never)}
-                activeOpacity={0.8}
+                activeScale={0.92}
+                accessibilityRole="button"
+                accessibilityLabel="Add a transaction"
             >
                 <Plus color="white" size={24} />
-            </TouchableOpacity>
+            </PressableScale>
         </SafeAreaView>
     );
 };

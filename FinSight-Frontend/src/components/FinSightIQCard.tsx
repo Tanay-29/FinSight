@@ -13,20 +13,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, TouchableOpacity,
     Animated, ActivityIndicator,
-    LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
-import {
-    BrainCircuit, ChevronDown, ChevronUp,
-    Zap, Target, BookOpen, TrendingUp,
-    MessageCircle, RefreshCw,
-} from 'lucide-react-native';
+import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ─── Gauge config ─────────────────────────────────────────────
 
@@ -56,23 +47,6 @@ function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg
 // The full track arc (210° → 330° going clockwise = 210° → 450°, i.e. 210°→330° via 360°)
 const TRACK_D  = describeArc(CX, CY, RADIUS, 210, 360) + ` A ${RADIUS} ${RADIUS} 0 0 1 ${polarToCartesian(CX, CY, RADIUS, 330).x} ${polarToCartesian(CX, CY, RADIUS, 330).y}`;
 
-/** "just now", "12 minutes ago", "3 hours ago", or a date once past a week. */
-function formatAdviceTime(iso: string): string {
-    const then = new Date(iso);
-    if (Number.isNaN(then.getTime())) return 'earlier';
-
-    const minutes = Math.floor((Date.now() - then.getTime()) / 60000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-
-    return then.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
 
 // ─── Grade helper ──────────────────────────────────────────────
 
@@ -219,7 +193,6 @@ const FinSightIQCard: React.FC = () => {
     // Live score calculated on frontend
     const liveScore = calculateIQScore(transactions, budgets, goals, completedModules, streak);
 
-    const [questsOpen, setQuestsOpen] = useState(false);
 
     // Fetch AI advice on mount (once per session)
     useEffect(() => {
@@ -232,10 +205,6 @@ const FinSightIQCard: React.FC = () => {
         dispatch(fetchAIAdvice());
     };
 
-    const toggleQuests = () => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setQuestsOpen((v) => !v);
-    };
 
     return (
         <View style={{
@@ -261,7 +230,6 @@ const FinSightIQCard: React.FC = () => {
                     </View>
                     <View>
                         <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }}>FinSight IQ</Text>
-                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Behavioral Financial Score</Text>
                     </View>
                 </View>
                 <TouchableOpacity
@@ -302,15 +270,6 @@ const FinSightIQCard: React.FC = () => {
                             <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 4 }}>
                                 {advice.explanation}
                             </Text>
-                            {/* Advice is cached server-side until the user's finances
-                                change, so say when it was written rather than
-                                letting a refresh look like it did nothing. */}
-                            {lastFetchedAt ? (
-                                <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
-                                    Current as of {formatAdviceTime(lastFetchedAt)}. This updates when your
-                                    spending, budgets or goals change.
-                                </Text>
-                            ) : null}
                         </View>
                     </View>
                 </View>
@@ -320,77 +279,57 @@ const FinSightIQCard: React.FC = () => {
                 </View>
             ) : null}
 
-            {/* Level-Up Quests */}
-            {advice?.quests && (
-                <>
-                    <TouchableOpacity
-                        onPress={toggleQuests}
-                        style={{
-                            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                            paddingHorizontal: 20, paddingVertical: 12,
-                            borderTopWidth: 1, borderTopColor: '#F3F4F6',
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Zap size={14} color="#F59E0B" />
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
-                                Level-Up Quests
-                            </Text>
-                            <View style={{ backgroundColor: '#FEF3C7', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
-                                <Text style={{ fontSize: 11, fontWeight: '700', color: '#D97706' }}>
-                                    +{advice.quests.reduce((s, q) => s + q.points, 0)} IQ available
+            {/* What to do next.
+                This was an accordion holding three bordered cards, each with
+                its own tint, badge and padding, under a header carrying a
+                second badge totalling the points. Five nested surfaces to say
+                "do these three things". It is a plain list now, always open,
+                because a card on a feed that has to be unfolded before it says
+                anything is a card that says nothing. */}
+            {advice?.quests?.length ? (
+                <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18 }}>
+                    <Text style={{
+                        fontSize: 11, fontWeight: '700', color: '#9CA3AF',
+                        textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10,
+                    }}>
+                        Do next
+                    </Text>
+
+                    {advice.quests.slice(0, 3).map((quest, idx) => {
+                        const { Icon, color } = QUEST_ICONS[idx] ?? QUEST_ICONS[0];
+                        return (
+                            <View
+                                key={idx}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'flex-start',
+                                    gap: 10,
+                                    paddingVertical: 9,
+                                    borderTopWidth: idx === 0 ? 0 : 1,
+                                    borderTopColor: '#F3F4F6',
+                                }}
+                            >
+                                <Icon size={15} color={color} style={{ marginTop: 2 }} />
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
+                                        {quest.title}
+                                    </Text>
+                                    <Text
+                                        numberOfLines={2}
+                                        style={{ fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 1 }}
+                                    >
+                                        {quest.description}
+                                    </Text>
+                                </View>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginTop: 1 }}>
+                                    +{quest.points}
                                 </Text>
                             </View>
-                        </View>
-                        {questsOpen ? <ChevronUp size={16} color="#9CA3AF" /> : <ChevronDown size={16} color="#9CA3AF" />}
-                    </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            ) : null}
 
-                    {questsOpen && (
-                        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                            {advice.quests.map((quest, idx) => (
-                                <View
-                                    key={idx}
-                                    style={{
-                                        flexDirection: 'row',
-                                        backgroundColor: '#FAFAFA',
-                                        borderRadius: 14,
-                                        padding: 14,
-                                        marginBottom: idx < 2 ? 8 : 0,
-                                        borderWidth: 1,
-                                        borderColor: '#F3F4F6',
-                                        gap: 12,
-                                    }}
-                                >
-                                    <View style={{
-                                        width: 32, height: 32, borderRadius: 10,
-                                        backgroundColor: ['#EEF2FF', '#F5F3FF', '#ECFDF5'][idx],
-                                        alignItems: 'center', justifyContent: 'center',
-                                        flexShrink: 0,
-                                    }}>
-                                        {React.createElement(
-                                            (QUEST_ICONS[idx] ?? QUEST_ICONS[0]).Icon,
-                                            { size: 14, color: (QUEST_ICONS[idx] ?? QUEST_ICONS[0]).color }
-                                        )}
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827', flex: 1 }}>
-                                                {quest.title}
-                                            </Text>
-                                            <View style={{ backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 8 }}>
-                                                <Text style={{ fontSize: 11, fontWeight: '700', color: '#6B7280' }}>+{quest.points}</Text>
-                                            </View>
-                                        </View>
-                                        <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 17 }}>
-                                            {quest.description}
-                                        </Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-                </>
-            )}
         </View>
     );
 };

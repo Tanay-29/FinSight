@@ -11,11 +11,14 @@
  * the top is concrete, not a tagline: it names what the app does with a
  * pasted bank message, which is the one thing here nothing else does.
  *
- * Motion is deliberately thin. The sheet arrives once per session, so it gets
- * an entrance; buttons dip under the finger, because on mobile that is the only
- * confirmation a control can give; the name field slides in when you switch to
- * signing up, because a field appearing from nowhere is jarring. Nothing else
- * moves.
+ * Motion is deliberately thin, and thinner than it first was. The sheet arrives
+ * once per session, the name field slides in when you switch to signing up, and
+ * buttons dip under the finger. Nothing else moves.
+ *
+ * In particular there are no layout animations. Putting LinearTransition on the
+ * sheet and on each field meant that showing a validation error, which makes the
+ * sheet taller, animated every field to its new position at once, and the whole
+ * form shuffled. An error should appear. The form around it should hold still.
  */
 import React, { useState } from 'react';
 import {
@@ -28,12 +31,7 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import Animated, {
-    FadeIn,
-    FadeInDown,
-    LinearTransition,
-    useReducedMotion,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { Eye, EyeOff, Sparkles } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, signInUser, clearError } from '../store/slices/authSlice';
@@ -97,7 +95,7 @@ const LoginScreen: React.FC = () => {
     return (
         <KeyboardAvoidingView
             className="flex-1 bg-brand-primary"
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
@@ -129,8 +127,7 @@ const LoginScreen: React.FC = () => {
 
                 {/* The sheet. Rises once, then never moves again. */}
                 <Animated.View
-                    entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(420).springify().damping(18)}
-                    layout={LinearTransition.duration(220)}
+                    entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(380)}
                     className="flex-1 bg-surface-primary rounded-t-[32px] px-7 pt-7 pb-10"
                 >
                     <View className="flex-row items-baseline justify-between mb-6">
@@ -147,7 +144,6 @@ const LoginScreen: React.FC = () => {
                     {isSignUp && (
                         <Animated.View
                             entering={reduced ? FadeIn.duration(150) : FadeInDown.duration(260)}
-                            layout={LinearTransition.duration(220)}
                             className="mb-3"
                         >
                             <TextInput
@@ -164,7 +160,7 @@ const LoginScreen: React.FC = () => {
                         </Animated.View>
                     )}
 
-                    <Animated.View layout={LinearTransition.duration(220)} className="mb-3">
+                    <View className="mb-3">
                         <TextInput
                             className={fieldClass('email') + ' text-base text-text-primary'}
                             placeholder="Email"
@@ -178,9 +174,9 @@ const LoginScreen: React.FC = () => {
                             autoCorrect={false}
                             textContentType="emailAddress"
                         />
-                    </Animated.View>
+                    </View>
 
-                    <Animated.View layout={LinearTransition.duration(220)} className="mb-2">
+                    <View className="mb-2">
                         <View className="relative justify-center">
                             <TextInput
                                 className={fieldClass('password') + ' text-base text-text-primary pr-12'}
@@ -207,7 +203,7 @@ const LoginScreen: React.FC = () => {
                                     : <Eye size={19} color="#9CA3AF" />}
                             </TouchableOpacity>
                         </View>
-                    </Animated.View>
+                    </View>
 
                     {!isSignUp && (
                         <TouchableOpacity
