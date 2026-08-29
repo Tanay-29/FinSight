@@ -6,8 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { fetchBudgets } from '../store/slices/budgetsSlice';
-import { fetchMarketData, fetchMarketInsight } from '../store/slices/marketSlice'; // <-- 1. Import new thunks
-import { MarketPulseWidget } from '../components/MarketPulseWidget';
+import { fetchMarketInsight } from '../store/slices/marketSlice';
 import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
@@ -45,11 +44,7 @@ export const FeedScreen: React.FC = () => {
     }, [transactionsError, budgetsError]);
 
     useEffect(() => {
-        // 3. Kick off real data fetches for both pulse and insights on load
-        dispatch(fetchMarketData());
         dispatch(fetchMarketInsight());
-
-        // Load real transactions and budgets
         dispatch(fetchTransactions());
         dispatch(fetchBudgets());
     }, [dispatch]);
@@ -58,8 +53,7 @@ export const FeedScreen: React.FC = () => {
         setRefreshing(true);
         Promise.all([
             dispatch(fetchTransactions()),
-            dispatch(fetchMarketData()), // <-- Change this here too
-            dispatch(fetchMarketInsight())
+            dispatch(fetchMarketInsight()),
         ]).then(() => setRefreshing(false));
     }, [dispatch]);
 
@@ -153,12 +147,6 @@ return (
                             {displayName.charAt(0).toUpperCase()}
                         </Text>
                     </TouchableOpacity>
-                </View>
-
-                {/* Market Pulse. Real data, and it works on day one, so it is
-                    the one panel a brand new account still gets. */}
-                <View className="mt-3">
-                    <MarketPulseWidget />
                 </View>
 
                 {hasNothingLogged ? (

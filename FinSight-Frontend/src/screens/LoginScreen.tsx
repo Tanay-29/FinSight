@@ -1,3 +1,22 @@
+/**
+ * LoginScreen
+ *
+ * The first screen anyone sees, and it used to be a grey card floating in the
+ * middle of white with a title above it. Nothing wrong, nothing memorable, and
+ * it told a student nothing about why this app is worth an account.
+ *
+ * The structure now is a coloured field that owns the top of the screen and a
+ * white sheet that rises into the bottom two thirds, so the form reads as
+ * something that came to you rather than a box sitting in space. The claim at
+ * the top is concrete, not a tagline: it names what the app does with a
+ * pasted bank message, which is the one thing here nothing else does.
+ *
+ * Motion is deliberately thin. The sheet arrives once per session, so it gets
+ * an entrance; buttons dip under the finger, because on mobile that is the only
+ * confirmation a control can give; the name field slides in when you switch to
+ * signing up, because a field appearing from nowhere is jarring. Nothing else
+ * moves.
+ */
 import React, { useState } from 'react';
 import {
     View,
@@ -9,15 +28,23 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
+import Animated, {
+    FadeIn,
+    FadeInDown,
+    LinearTransition,
+    useReducedMotion,
+} from 'react-native-reanimated';
+import { Eye, EyeOff, Sparkles } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, signInUser, clearError } from '../store/slices/authSlice';
 import { sendPasswordReset } from '../services/authService';
+import { PressableScale } from '../components/PressableScale';
 import type { RootState, AppDispatch } from '../store/store';
 
 const LoginScreen: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { isLoading, error } = useSelector((state: RootState) => state.auth);
+    const reduced = useReducedMotion();
 
     const [isSignUp, setIsSignUp] = useState(false);
     const [name, setName] = useState('');
@@ -26,6 +53,7 @@ const LoginScreen: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [resetNotice, setResetNotice] = useState<string | null>(null);
     const [resetting, setResetting] = useState(false);
+    const [focused, setFocused] = useState<string | null>(null);
 
     const handleSubmit = () => {
         if (isSignUp) {
@@ -60,168 +88,178 @@ const LoginScreen: React.FC = () => {
         }
     };
 
+    /** Border colour is the only thing that marks focus, and it costs nothing. */
+    const fieldClass = (key: string) =>
+        `bg-surface-secondary rounded-2xl px-4 py-3.5 border ${
+            focused === key ? 'border-brand-primary' : 'border-transparent'
+        }`;
+
     return (
         <KeyboardAvoidingView
-            className="flex-1 bg-surface-primary"
+            className="flex-1 bg-brand-primary"
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
                 keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
             >
-                <View className="flex-1 justify-center px-6">
-                    {/* Logo / Brand */}
-                    <View className="items-center mb-10">
-                        <Text className="text-4xl font-bold text-brand-primary">
-                            FinSight
-                        </Text>
-                        <Text className="text-base text-text-secondary mt-2">
-                            Your Daily Money Mentor
-                        </Text>
+                {/* The claim. Concrete, because "Your Daily Money Mentor" told
+                    a student nothing they could picture. */}
+                <Animated.View
+                    entering={reduced ? FadeIn.duration(200) : FadeIn.duration(400)}
+                    className="px-7 pt-16 pb-9"
+                >
+                    <View className="flex-row items-center mb-5">
+                        <View className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center mr-2.5">
+                            <Sparkles size={18} color="#FFFFFF" />
+                        </View>
+                        <Text className="text-white text-lg font-bold tracking-tight">FinSight</Text>
                     </View>
 
-                    {/* Form Card */}
-                    <View className="bg-surface-secondary rounded-2xl p-6 shadow-md">
-                        <Text className="text-2xl font-bold text-text-primary mb-6">
-                            {isSignUp ? 'Create Account' : 'Welcome Back'}
+                    <Text className="text-white text-[32px] leading-10 font-bold tracking-tight mb-3">
+                        Paste a bank text.{'\n'}See where it went.
+                    </Text>
+                    <Text className="text-indigo-100 text-[15px] leading-6">
+                        Built for students who want to know where the money goes,
+                        without a spreadsheet.
+                    </Text>
+                </Animated.View>
+
+                {/* The sheet. Rises once, then never moves again. */}
+                <Animated.View
+                    entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(420).springify().damping(18)}
+                    layout={LinearTransition.duration(220)}
+                    className="flex-1 bg-surface-primary rounded-t-[32px] px-7 pt-7 pb-10"
+                >
+                    <View className="flex-row items-baseline justify-between mb-6">
+                        <Text className="text-[22px] font-bold text-text-primary tracking-tight">
+                            {isSignUp ? 'Create your account' : 'Welcome back'}
                         </Text>
-
-                        {/* Name (Sign Up only) */}
-                        {isSignUp && (
-                            <View className="mb-4">
-                                <Text className="text-sm font-medium text-text-secondary mb-1">
-                                    Full Name
-                                </Text>
-                                <TextInput
-                                    className="bg-surface-primary border border-border rounded-xl px-4 py-3 text-base text-text-primary"
-                                    placeholder="Enter your name"
-                                    placeholderTextColor="#9CA3AF"
-                                    value={name}
-                                    onChangeText={setName}
-                                    autoCapitalize="words"
-                                />
-                            </View>
-                        )}
-
-                        {/* Email */}
-                        <View className="mb-4">
-                            <Text className="text-sm font-medium text-text-secondary mb-1">
-                                Email
+                        <TouchableOpacity onPress={toggleMode} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <Text className="text-sm font-semibold text-brand-primary">
+                                {isSignUp ? 'Sign in' : 'Sign up'}
                             </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {isSignUp && (
+                        <Animated.View
+                            entering={reduced ? FadeIn.duration(150) : FadeInDown.duration(260)}
+                            layout={LinearTransition.duration(220)}
+                            className="mb-3"
+                        >
                             <TextInput
-                                className="bg-surface-primary border border-border rounded-xl px-4 py-3 text-base text-text-primary"
-                                placeholder="you@example.com"
+                                className={fieldClass('name') + ' text-base text-text-primary'}
+                                placeholder="Your name"
                                 placeholderTextColor="#9CA3AF"
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
+                                value={name}
+                                onChangeText={setName}
+                                onFocus={() => setFocused('name')}
+                                onBlur={() => setFocused(null)}
+                                autoCapitalize="words"
+                                textContentType="name"
+                            />
+                        </Animated.View>
+                    )}
+
+                    <Animated.View layout={LinearTransition.duration(220)} className="mb-3">
+                        <TextInput
+                            className={fieldClass('email') + ' text-base text-text-primary'}
+                            placeholder="Email"
+                            placeholderTextColor="#9CA3AF"
+                            value={email}
+                            onChangeText={setEmail}
+                            onFocus={() => setFocused('email')}
+                            onBlur={() => setFocused(null)}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            textContentType="emailAddress"
+                        />
+                    </Animated.View>
+
+                    <Animated.View layout={LinearTransition.duration(220)} className="mb-2">
+                        <View className="relative justify-center">
+                            <TextInput
+                                className={fieldClass('password') + ' text-base text-text-primary pr-12'}
+                                placeholder={isSignUp ? 'Password, at least 6 characters' : 'Password'}
+                                placeholderTextColor="#9CA3AF"
+                                value={password}
+                                onChangeText={setPassword}
+                                onFocus={() => setFocused('password')}
+                                onBlur={() => setFocused(null)}
+                                secureTextEntry={!showPassword}
                                 autoCapitalize="none"
                                 autoCorrect={false}
+                                textContentType={isSignUp ? 'newPassword' : 'password'}
                             />
+                            <TouchableOpacity
+                                className="absolute right-4 p-1"
+                                onPress={() => setShowPassword((v) => !v)}
+                                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                                accessibilityRole="button"
+                                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword
+                                    ? <EyeOff size={19} color="#9CA3AF" />
+                                    : <Eye size={19} color="#9CA3AF" />}
+                            </TouchableOpacity>
                         </View>
+                    </Animated.View>
 
-                        {/* Password */}
-                        <View className="mb-6">
-                            <Text className="text-sm font-medium text-text-secondary mb-1">
-                                Password
-                            </Text>
-                            <View className="relative justify-center">
-                                <TextInput
-                                    className="bg-surface-primary border border-border rounded-xl pl-4 pr-12 py-3 text-base text-text-primary"
-                                    placeholder="Min 6 characters"
-                                    placeholderTextColor="#9CA3AF"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={!showPassword}
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                    textContentType={isSignUp ? 'newPassword' : 'password'}
-                                />
-                                <TouchableOpacity
-                                    className="absolute right-3 p-1"
-                                    onPress={() => setShowPassword((v) => !v)}
-                                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                                >
-                                    {showPassword ? (
-                                        <EyeOff size={20} color="#9CA3AF" />
-                                    ) : (
-                                        <Eye size={20} color="#9CA3AF" />
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-
-                            {!isSignUp && (
-                                <TouchableOpacity
-                                    onPress={handleForgotPassword}
-                                    disabled={resetting}
-                                    accessibilityRole="button"
-                                    className="self-end mt-2"
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                >
-                                    <Text className="text-sm font-medium text-brand-primary">
-                                        {resetting ? 'Sending...' : 'Forgot password?'}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-
-                        {resetNotice && (
-                            <View className="bg-surface-secondary border border-border rounded-xl p-3 mb-4">
-                                <Text className="text-text-secondary text-sm text-center">
-                                    {resetNotice}
-                                </Text>
-                            </View>
-                        )}
-
-                        {/* Error */}
-                        {error && (
-                            <View className="bg-loss-bg rounded-xl p-3 mb-4">
-                                <Text className="text-loss-red text-sm text-center">
-                                    {error}
-                                </Text>
-                            </View>
-                        )}
-
-                        {/* Submit Button */}
+                    {!isSignUp && (
                         <TouchableOpacity
-                            className={`rounded-xl py-4 items-center ${isLoading ? 'bg-brand-primary/50' : 'bg-brand-primary'
-                                }`}
-                            onPress={handleSubmit}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
+                            onPress={handleForgotPassword}
+                            disabled={resetting}
+                            accessibilityRole="button"
+                            className="self-end mb-1"
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text className="text-white font-semibold text-base">
-                                    {isSignUp ? 'Sign Up' : 'Sign In'}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-
-                        {/* Toggle */}
-                        <TouchableOpacity
-                            className="mt-4 items-center py-2"
-                            onPress={toggleMode}
-                        >
-                            <Text className="text-text-secondary text-sm">
-                                {isSignUp
-                                    ? 'Already have an account? '
-                                    : "Don't have an account? "}
-                                <Text className="text-brand-primary font-semibold">
-                                    {isSignUp ? 'Sign In' : 'Sign Up'}
-                                </Text>
+                            <Text className="text-sm font-medium text-brand-primary">
+                                {resetting ? 'Sending...' : 'Forgot password?'}
                             </Text>
                         </TouchableOpacity>
-                    </View>
+                    )}
 
-                    {/* Footer */}
-                    <Text className="text-xs text-text-tertiary text-center mt-8">
-                        By continuing, you agree to our Terms of Service
+                    {resetNotice && (
+                        <Animated.View
+                            entering={FadeIn.duration(180)}
+                            className="bg-surface-secondary rounded-xl p-3 mt-3"
+                        >
+                            <Text className="text-text-secondary text-sm text-center">{resetNotice}</Text>
+                        </Animated.View>
+                    )}
+
+                    {error && (
+                        <Animated.View
+                            entering={FadeIn.duration(180)}
+                            className="bg-loss-bg rounded-xl p-3 mt-3"
+                        >
+                            <Text className="text-loss text-sm text-center">{error}</Text>
+                        </Animated.View>
+                    )}
+
+                    <PressableScale
+                        onPress={handleSubmit}
+                        disabled={isLoading}
+                        accessibilityRole="button"
+                        className={`rounded-2xl py-4 items-center mt-5 ${isLoading ? 'bg-brand-primary/60' : 'bg-brand-primary'}`}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text className="text-white font-bold text-base">
+                                {isSignUp ? 'Create account' : 'Sign in'}
+                            </Text>
+                        )}
+                    </PressableScale>
+
+                    <Text className="text-xs text-text-tertiary text-center mt-5 leading-5">
+                        FinSight is educational. It holds no money and connects to no bank.
                     </Text>
-                </View>
+                </Animated.View>
             </ScrollView>
         </KeyboardAvoidingView>
     );

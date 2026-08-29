@@ -1,60 +1,65 @@
+/**
+ * The AI-written market notes shown on the Feed.
+ *
+ * This used to carry a second thunk for /api/market-pulse, feeding a ticker of
+ * NIFTY, SENSEX, gold and USD/INR. That ticker was cut: it served a student who
+ * has not logged their first expense a row of index levels they cannot act on,
+ * and it cost a Yahoo dependency and a rate limit to do it. The insights that
+ * read those same numbers and say something about them stayed.
+ */
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { BACKEND_URL } from '../../config/api';
 import { friendlyError } from '../../utils/errors';
 
-// Existing Thunk for Market Data
-export const fetchMarketData = createAsyncThunk(
-  'market/fetchMarketPulse',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/market-pulse`);
-      if (!response.ok) throw new Error('Failed to fetch from backend');
-      return await response.json();
-    } catch (error: any) {
-      return rejectWithValue(friendlyError(error, 'Could not load market data.'));
-    }
-  }
-);
+export interface MarketInsight {
+    title: string;
+    text: string;
+}
 
-// Thunk for the Insight Engine (Now expects a list of 3 from Flask)
+interface MarketState {
+    insights: MarketInsight[];
+    loading: boolean;
+    error: string | null;
+}
+
+const initialState: MarketState = {
+    insights: [],
+    loading: false,
+    error: null,
+};
+
 export const fetchMarketInsight = createAsyncThunk(
-  'market/fetchMarketInsight',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/market-insight`);
-      if (!response.ok) throw new Error('Failed to fetch insight');
-      return await response.json();
-    } catch (error: any) {
-      return rejectWithValue(friendlyError(error, 'Could not load the market insight.'));
+    'market/fetchMarketInsight',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/market-insight`);
+            if (!response.ok) throw new Error('Failed to fetch insight');
+            return (await response.json()) as MarketInsight[];
+        } catch (error) {
+            return rejectWithValue(friendlyError(error, 'Could not load market insights.'));
+        }
     }
-  }
 );
 
 const marketSlice = createSlice({
-  name: 'market',
-  initialState: {
-    data: [],
-    insights: [] as Array<{ title: string; text: string }>, // ← UPDATED: Now an array to hold multiple cards
-    loading: false,
-    error: null as string | null,
-  },
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      // Handle Market Pulse (Data)
-      .addCase(fetchMarketData.pending, (state) => { state.loading = true; })
-      .addCase(fetchMarketData.fulfilled, (state, action) => {
-        state.loading = false;
-        state.data = action.payload;
-      })
-      .addCase(fetchMarketData.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Handle Market Insight (AI Text)
-      .addCase(fetchMarketInsight.fulfilled, (state, action) => {
-        state.insights = action.payload; // ← UPDATED: Saves the array of 3 insights
-      });
-  },
+    name: 'market',
+    initialState,
+    reducers: {},
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchMarketInsight.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchMarketInsight.fulfilled, (state, action) => {
+                state.loading = false;
+                state.insights = action.payload;
+            })
+            .addCase(fetchMarketInsight.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            });
+    },
 });
 
 export default marketSlice.reducer;
