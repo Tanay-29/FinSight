@@ -10,8 +10,10 @@ import {
     TextInput,
     Alert,
     ActivityIndicator,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle, CalendarDays, Star, Zap } from 'lucide-react-native';
 import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -22,7 +24,7 @@ import {
     removeGoal,
 } from '../store/slices/goalsSlice';
 import { FirestoreGoal } from '../services/firestoreService';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { addMonths, differenceInDays, format, parseISO } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
 
 // ─── Goal Card ────────────────────────────────────────────────
@@ -295,7 +297,10 @@ const AddGoalModal: React.FC<{
 }> = ({ visible, onClose, onSave }) => {
     const [title, setTitle] = useState('');
     const [target, setTarget] = useState('');
-    const [deadline, setDeadline] = useState('');
+    // Defaults to three months out: far enough to be a goal, near enough to
+    // matter, and it means the field is never empty.
+    const [deadlineDate, setDeadlineDate] = useState(() => addMonths(new Date(), 3));
+    const [pickerOpen, setPickerOpen] = useState(false);
     const [selectedIcon, setSelectedIcon] = useState<string>(DEFAULT_GOAL_ICON_KEY);
     const [selectedColor, setSelectedColor] = useState('#6366F1');
 
@@ -303,7 +308,7 @@ const AddGoalModal: React.FC<{
         if (visible) {
             setTitle('');
             setTarget('');
-            setDeadline('');
+            setDeadlineDate(addMonths(new Date(), 3));
             setSelectedIcon(DEFAULT_GOAL_ICON_KEY);
             setSelectedColor('#6366F1');
         }
@@ -311,14 +316,8 @@ const AddGoalModal: React.FC<{
 
     const handleSave = () => {
         const amount = parseFloat(target);
-        if (!title.trim() || isNaN(amount) || amount <= 0 || !deadline) {
-            Alert.alert('Missing info', 'Please fill in all fields.');
-            return;
-        }
-        // Basic date validation
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(deadline)) {
-            Alert.alert('Invalid date', 'Use format YYYY-MM-DD (e.g. 2026-12-31)');
+        if (!title.trim() || isNaN(amount) || amount <= 0) {
+            Alert.alert('Missing info', 'Give the goal a name and an amount.');
             return;
         }
         onSave({
@@ -326,7 +325,7 @@ const AddGoalModal: React.FC<{
             icon: selectedIcon,
             targetAmount: amount,
             savedAmount: 0,
-            deadline,
+            deadline: format(deadlineDate, 'yyyy-MM-dd'),
             color: selectedColor,
             createdAt: new Date().toISOString(),
         });
@@ -417,18 +416,39 @@ const AddGoalModal: React.FC<{
                         </View>
                     </View>
 
-                    {/* Deadline */}
-                    <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-6">
-                        <Text className="text-xs text-text-tertiary mb-1">Target date (YYYY-MM-DD)</Text>
-                        <TextInput
-                            className="text-base text-text-primary font-medium"
-                            placeholder="2026-12-31"
-                            placeholderTextColor="#9CA3AF"
-                            value={deadline}
-                            onChangeText={setDeadline}
-                            keyboardType="numbers-and-punctuation"
+                    {/* Deadline. Typed dates meant learning a format and getting
+                        it wrong; this opens the platform picker instead. */}
+                    <TouchableOpacity
+                        className="bg-surface-secondary rounded-xl px-4 py-3 mb-6 flex-row items-center justify-between"
+                        onPress={() => setPickerOpen(true)}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Target date, ${format(deadlineDate, 'd MMMM yyyy')}. Tap to change.`}
+                    >
+                        <View>
+                            <Text className="text-xs text-text-tertiary mb-1">Target date</Text>
+                            <Text className="text-base text-text-primary font-medium">
+                                {format(deadlineDate, 'd MMM yyyy')}
+                            </Text>
+                        </View>
+                        <CalendarDays size={18} color="#9CA3AF" />
+                    </TouchableOpacity>
+
+                    {pickerOpen && (
+                        <DateTimePicker
+                            value={deadlineDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                            minimumDate={new Date()}
+                            onChange={(event, picked) => {
+                                // Android fires once and dismisses itself; iOS
+                                // keeps the inline picker up until dismissed.
+                                if (Platform.OS === 'android') setPickerOpen(false);
+                                if (event.type === 'dismissed') return;
+                                if (picked) setDeadlineDate(picked);
+                            }}
                         />
-                    </View>
+                    )}
 
                     <View className="flex-row gap-3">
                         <TouchableOpacity

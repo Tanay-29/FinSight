@@ -144,22 +144,33 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                     {(path.modules && path.modules.length > 0) ? path.modules.map((module, index) => {
                         const isComplete = completedModules.includes(module.id);
                         const isCurrent = !isComplete && completedModules.length === index;
+                        // A path is a sequence, so everything past the one you
+                        // are on is shut. Without this the list read as a menu
+                        // and a beginner could open module five first.
+                        const isLocked = !isComplete && !isCurrent;
                         const diff = getDifficultyColor(module.difficulty);
 
                         return (
                             <TouchableOpacity
                                 key={module.id}
-                                onPress={() => openModule(module, index)}
+                                onPress={() => { if (!isLocked) openModule(module, index); }}
+                                disabled={isLocked}
                                 activeOpacity={0.8}
                                 style={{
                                     borderWidth: isCurrent ? 2 : 1,
                                     borderColor: isCurrent ? '#6366F1' : '#F3F4F6',
                                     backgroundColor: isComplete ? '#F9FAFB' : '#FFFFFF',
+                                    opacity: isLocked ? 0.55 : 1,
                                 }}
                                 className="mb-3 rounded-2xl overflow-hidden"
                                 accessible
-                                accessibilityLabel={`Module ${index + 1}: ${module.title}`}
+                                accessibilityLabel={
+                                    isLocked
+                                        ? `Module ${index + 1}, ${module.title}. Locked. Finish the module before it to open this.`
+                                        : `Module ${index + 1}: ${module.title}`
+                                }
                                 accessibilityRole="button"
+                                accessibilityState={{ disabled: isLocked }}
                             >
                                 <View className="flex-row items-center p-4">
                                     {/* Status dot */}
@@ -175,6 +186,8 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                     >
                                         {isComplete ? (
                                             <Check size={14} color="white" strokeWidth={3} />
+                                        ) : isLocked ? (
+                                            <Lock size={13} color="#9CA3AF" />
                                         ) : (
                                             <Text className="text-xs font-bold" style={{ color: isCurrent ? '#6366F1' : '#9CA3AF' }}>
                                                 {String(index + 1).padStart(2, '0')}

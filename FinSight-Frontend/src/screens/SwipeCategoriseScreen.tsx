@@ -71,9 +71,11 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
     const deck = useMemo(
         () => transactions.filter((t) =>
             t.type === 'debit' &&
-            (!t.category ||
-                normaliseCategory(t.category) === 'other' ||
-                t.source === 'auto')
+            // Only what still needs a category. `source === 'auto'` used to be
+            // in here, which meant every imported transaction stayed in the
+            // deck forever: you sorted one, closed the screen, and it was back,
+            // because importing it was what put it there, not its category.
+            (!t.category || normaliseCategory(t.category) === 'other')
         ),
         [transactions]
     );
