@@ -23,6 +23,7 @@ from auth import require_auth
 from cache import (
     cache, make_key,
     TTL_MARKET_PULSE, TTL_MARKET_INSIGHT, TTL_FLASHCARDS, TTL_AI_ADVISOR,
+    TTL_MARKET_LAST_GOOD,
 )
 
 load_dotenv()
@@ -82,21 +83,35 @@ def _fetch_market_quotes():
     if cached is not None:
         return cached, True
 
-    data = yf.Tickers(" ".join(TICKERS.keys()))
-    quotes = []
-    for symbol, name in TICKERS.items():
-        info = data.tickers[symbol].fast_info
-        current_price = info.last_price
-        prev_close = info.previous_close
-        quotes.append({
-            "symbol": symbol,
-            "name": name,
-            "price": current_price,
-            "prev_close": prev_close,
-            "change_percent": ((current_price - prev_close) / prev_close) * 100,
-        })
+    try:
+        data = yf.Tickers(" ".join(TICKERS.keys()))
+        quotes = []
+        for symbol, name in TICKERS.items():
+            info = data.tickers[symbol].fast_info
+            current_price = info.last_price
+            prev_close = info.previous_close
+            quotes.append({
+                "symbol": symbol,
+                "name": name,
+                "price": current_price,
+                "prev_close": prev_close,
+                "change_percent": ((current_price - prev_close) / prev_close) * 100,
+            })
+    except Exception as exc:
+        # Yahoo rate limits by IP, and a shared host gets throttled far sooner
+        # than a laptop does. Serve the last quotes that were genuinely fetched
+        # rather than inventing numbers: they are real, just not current, and
+        # the caller is told which.
+        stale = cache.get("market:quotes:last")
+        if stale is not None:
+            print(f"[market] yfinance failed ({exc}); serving last known quotes")
+            return stale, True
+        raise
 
     cache.set("market:quotes", quotes, TTL_MARKET_PULSE)
+    # A second, long-lived copy. Only ever written from a successful fetch, so
+    # whatever it holds was real at some point.
+    cache.set("market:quotes:last", quotes, TTL_MARKET_LAST_GOOD)
     return quotes, False
 
 # Appended to every Gemini prompt. The app renders icons, not glyphs, and its

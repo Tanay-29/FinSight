@@ -85,6 +85,11 @@ cache = TTLCache()
 
 # Market prices move constantly, but not meaningfully within a minute, and this
 # also shields Yahoo from one request per user per Feed open.
+# How long a successful quote fetch stays usable as a fallback. Long, because
+# the alternative when Yahoo throttles is either fabricated numbers or nothing,
+# and hours-old real quotes beat both.
+TTL_MARKET_LAST_GOOD = 12 * 60 * 60
+
 TTL_MARKET_PULSE = 60
 
 # Commentary on the day's market. Identical for every user, so this is the
