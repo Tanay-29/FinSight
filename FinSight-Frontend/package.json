@@ -51,6 +51,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "@types/react": "~19.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.39.5",
