@@ -70,6 +70,27 @@ STYLE_RULES = """
 - Do NOT use em dashes. Use a comma, colon, or semicolon instead."""
 
 
+# --- HEALTH ---
+@app.route('/health', methods=['GET'])
+def health():
+    """
+    Cheap liveness check, deliberately unauthenticated.
+
+    This hosting tier stops the container after a spell with no traffic, and
+    waking it has been measured at over a minute, which is longer than anyone
+    will wait on the first screen of a demo. An uptime pinger can hit this
+    every few minutes to keep the service warm; it needs no token, touches no
+    user data, and makes no model call, so it is cheap enough to hit often.
+
+    Nothing secret is returned. The model name is already in render.yaml.
+    """
+    return jsonify({
+        "status": "ok",
+        "model": GEMINI_MODEL,
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
+    })
+
+
 # --- 0. FLASHCARD GENERATOR ROUTE (POST) ---
 @app.route('/api/generate-flashcards', methods=['POST'])
 @require_auth

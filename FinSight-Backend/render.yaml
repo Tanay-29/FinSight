@@ -10,7 +10,7 @@ services:
     #
     # Nothing here is persisted any more, so a redeploy costs nothing but a cold
     # cache. That is the whole reason the SQLite layer was worth removing.
-    startCommand: gunicorn -w 1 --threads 4 --timeout 60 main:app
+    startCommand: gunicorn -w 1 --threads 4 --timeout 120 main:app
     envVars:
       - key: GEMINI_API_KEY
         sync: false   # You will paste this manually in the Render dashboard

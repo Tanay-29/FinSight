@@ -159,7 +159,15 @@ export const fetchAIAdvice = createAsyncThunk(
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            if (!res.ok) throw new Error(`Server returned ${res.status}`);
+            // friendlyError passes short custom messages straight through, so
+            // a status code here would have reached the user unchanged. It did.
+            if (!res.ok) {
+                throw new Error(
+                    res.status >= 500
+                        ? 'Your coach is waking up. Give it a moment and pull to refresh.'
+                        : 'Could not reach your coach just now.'
+                );
+            }
             const advice: AIAdvice = await res.json();
             return { advice, score };
         } catch (err: any) {
