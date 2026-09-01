@@ -2,7 +2,7 @@
   "expo": {
     "name": "FinSight",
     "slug": "finsight",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,8 @@
         "backgroundColor": "#6366F1"
       },
       "package": "com.finsight.app",
-      "permissions": []
+      "permissions": [],
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
