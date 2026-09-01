@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, Leaf, Wallet,
+    ChevronRight, Leaf, Wallet, CloudOff, Plus,
 } from 'lucide-react-native';
 import { goalIcon } from '../theme/icons';
 import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
@@ -69,11 +69,20 @@ const getCategoryColor = (category: string) => {
  * categories looks the same, and a long Indian category name has the full width
  * of the card to sit in.
  */
-const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: string }[] }> = ({ data }) => {
+const SpendingBarChart: React.FC<{
+    data: { name: string; amount: number; color: string }[];
+    monthLabel: string;
+}> = ({ data, monthLabel }) => {
     if (data.length === 0) {
         return (
-            <View className="py-6 items-center">
-                <Text className="text-text-secondary text-sm">Nothing spent yet this month.</Text>
+            <View className="py-6 px-2 items-center">
+                <Text className="text-text-secondary text-sm text-center">
+                    Nothing logged in {monthLabel} yet.
+                </Text>
+                <Text className="text-text-tertiary text-xs text-center mt-1 leading-4">
+                    This card and the budgets below cover one calendar month, so they
+                    start again on the 1st. Earlier spending is still on the Feed.
+                </Text>
             </View>
         );
     }
@@ -121,9 +130,10 @@ const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: 
 const EditBudgetModal: React.FC<{
     visible: boolean;
     budget: any;
+    error: string | null;
     onClose: () => void;
     onSave: (limit: number) => void;
-}> = ({ visible, budget, onClose, onSave }) => {
+}> = ({ visible, budget, error, onClose, onSave }) => {
     const [limit, setLimit] = React.useState('');
     React.useEffect(() => { if (budget) setLimit(budget.monthlyLimit.toString()); }, [budget]);
     return (
@@ -142,6 +152,10 @@ const EditBudgetModal: React.FC<{
                         keyboardType="numeric"
                         placeholder="Enter amount"
                     />
+                    {error && (
+                        <Text className="text-loss text-sm mb-4 -mt-3">{error}</Text>
+                    )}
+
                     <View className="flex-row justify-end gap-3">
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
                             <Text className="text-text-secondary font-semibold">Cancel</Text>
@@ -167,9 +181,10 @@ const EditBudgetModal: React.FC<{
 
 const CreateBudgetModal: React.FC<{
     visible: boolean;
+    error: string | null;
     onClose: () => void;
     onSave: (categoryId: string, limit: number) => void;
-}> = ({ visible, onClose, onSave }) => {
+}> = ({ visible, error, onClose, onSave }) => {
     // Same list the transaction picker uses, so a budget can always match the
     // category a transaction was filed under.
     const CATEGORIES = CATEGORY_OPTIONS.map((c) => ({ id: c.key, name: c.label }));
@@ -209,6 +224,10 @@ const CreateBudgetModal: React.FC<{
                         keyboardType="numeric"
                         placeholder="Enter amount"
                     />
+                    {error && (
+                        <Text className="text-loss text-sm mb-4 -mt-3">{error}</Text>
+                    )}
+
                     <View className="flex-row justify-end gap-3">
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
                             <Text className="text-text-secondary font-semibold">Cancel</Text>
@@ -236,7 +255,11 @@ export const VitalsScreen: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigation = useNavigation();
 
-    const { items: budgets, loading: budgetsLoading } = useAppSelector((state) => state.budgets);
+    const {
+        items: budgets,
+        loading: budgetsLoading,
+        error: budgetsError,
+    } = useAppSelector((state) => state.budgets);
     const transactions = useAppSelector((state) => state.transactions.items);
     const transactionsLoaded = useAppSelector((state) => state.transactions.loaded);
     const transactionsError = useAppSelector((state) => state.transactions.error);
@@ -315,26 +338,34 @@ export const VitalsScreen: React.FC = () => {
                 format(new Date(t.date), 'yyyy-MM') === currentMonthKey
             )
             .reduce((sum, t) => sum + t.amount, 0);
-        await dispatch(createBudget({ category, monthlyLimit: limit, currentSpend: initialSpend, month: currentMonthKey }));
-        setCreateModalVisible(false);
+        // Only close on success. Closing regardless is what made a failed
+        // save look like a button that did nothing.
+        const result = await dispatch(
+            createBudget({ category, monthlyLimit: limit, currentSpend: initialSpend, month: currentMonthKey })
+        );
+        if (createBudget.fulfilled.match(result)) setCreateModalVisible(false);
     };
 
     const handleUpdateBudget = async (limit: number) => {
         if (selectedBudget?.id) {
-            await dispatch(updateBudgetLimit({ id: selectedBudget.id, limit }));
-            setModalVisible(false);
-            setSelectedBudget(null);
+            const result = await dispatch(updateBudgetLimit({ id: selectedBudget.id, limit }));
+            if (updateBudgetLimit.fulfilled.match(result)) {
+                setModalVisible(false);
+                setSelectedBudget(null);
+            }
         }
     };
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
             <CreateBudgetModal
+                error={createModalVisible ? budgetsError : null}
                 visible={createModalVisible}
                 onClose={() => setCreateModalVisible(false)}
                 onSave={handleCreateBudget}
             />
             <EditBudgetModal
+                error={modalVisible ? budgetsError : null}
                 visible={modalVisible}
                 budget={selectedBudget}
                 onClose={() => setModalVisible(false)}
@@ -362,6 +393,15 @@ export const VitalsScreen: React.FC = () => {
                         </PressableScale>
                     </View>
                 </View>
+
+                {budgetsError && (
+                    <View className="mx-4 mt-2 flex-row items-start bg-white border border-border rounded-xl px-3 py-2.5">
+                        <CloudOff size={14} color="#6B7280" style={{ marginTop: 2 }} />
+                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4">
+                            {budgetsError}
+                        </Text>
+                    </View>
+                )}
 
                 {hasNothingLogged ? (
                     <EmptyState
@@ -456,7 +496,7 @@ export const VitalsScreen: React.FC = () => {
                     those categories. */}
                 <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4">
                     <Text className="text-lg font-semibold text-text-primary mb-3">Category spending</Text>
-                    <SpendingBarChart data={chartData} />
+                    <SpendingBarChart data={chartData} monthLabel={format(new Date(), 'MMMM')} />
                     <TouchableOpacity
                         className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
                         activeOpacity={0.7}
@@ -559,6 +599,16 @@ export const VitalsScreen: React.FC = () => {
                   </>
                 )}
             </ScrollView>
+
+            <PressableScale
+                className="absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                onPress={() => navigation.navigate('AddTransaction' as never)}
+                activeScale={0.92}
+                accessibilityRole="button"
+                accessibilityLabel="Add a transaction"
+            >
+                <Plus color="white" size={24} />
+            </PressableScale>
         </SafeAreaView>
     );
 };

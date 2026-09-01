@@ -78,7 +78,7 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
             className="bg-white border border-border rounded-xl p-4 mx-4"
         >
             <Text className="text-xs font-bold text-text-secondary mb-1 uppercase tracking-wider">
-                This month
+                Last 30 days
             </Text>
             <Text
                 className="text-[32px] leading-10 font-bold text-text-primary"
@@ -97,8 +97,8 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
                     <tone.Icon size={12} color={tone.color} />
                     <Text className={`text-xs font-semibold ml-1 ${tone.text}`}>
                         {comparison.type === 'flat'
-                            ? 'About the same as last month'
-                            : `${comparison.percentage}% ${comparison.type === 'increase' ? 'higher' : 'lower'} than last month`}
+                            ? 'About the same as the 30 days before'
+                            : `${comparison.percentage}% ${comparison.type === 'increase' ? 'higher' : 'lower'} than the 30 days before`}
                     </Text>
                 </View>
             )}

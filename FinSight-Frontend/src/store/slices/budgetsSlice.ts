@@ -87,14 +87,30 @@ const budgetsSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload as string;
             })
+            .addCase(createBudget.pending, (state) => {
+                state.error = null;
+            })
             .addCase(createBudget.fulfilled, (state, action) => {
                 state.items.push(action.payload);
+            })
+            // Writes used to have no rejected case at all, so a budget that
+            // failed to save left no trace anywhere: the thunk rejected, the
+            // store did not change, and the screen closed the dialog as though
+            // it had worked.
+            .addCase(createBudget.rejected, (state, action) => {
+                state.error = action.payload as string;
+            })
+            .addCase(updateBudgetLimit.pending, (state) => {
+                state.error = null;
             })
             .addCase(updateBudgetLimit.fulfilled, (state, action) => {
                 const index = state.items.findIndex(b => b.id === action.payload.id);
                 if (index !== -1) {
                     state.items[index].monthlyLimit = action.payload.limit;
                 }
+            })
+            .addCase(updateBudgetLimit.rejected, (state, action) => {
+                state.error = action.payload as string;
             });
     },
 });

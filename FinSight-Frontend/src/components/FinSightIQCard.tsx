@@ -15,7 +15,7 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw } from 'lucide-react-native';
+import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw, CloudOff } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -160,7 +160,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
 const FinSightIQCard: React.FC = () => {
     const dispatch = useAppDispatch();
     const reduced = useReducedMotion();
-    const { advice, adviceLoading, lastFetchedAt } = useAppSelector((s) => s.iq);
+    const { advice, adviceLoading, adviceError, lastFetchedAt } = useAppSelector((s) => s.iq);
     const transactions  = useAppSelector((s) => s.transactions.items);
     const budgets       = useAppSelector((s) => s.budgets.items);
     const goals         = useAppSelector((s: any) => s.goals?.items ?? []);
@@ -266,6 +266,24 @@ const FinSightIQCard: React.FC = () => {
                     <Skeleton width="95%" height={12} />
                     <View style={{ height: 6 }} />
                     <Skeleton width="70%" height={12} />
+                </View>
+            ) : adviceError ? (
+                // The score above is computed on the phone and is always right.
+                // Only the model's read on it needs the server, so say that
+                // rather than leaving the space blank or spinning for ever.
+                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: '#F9FAFB', borderRadius: 16, flexDirection: 'row', alignItems: 'flex-start' }}>
+                    <CloudOff size={14} color="#9CA3AF" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 17 }}>
+                            {adviceError}
+                        </Text>
+                        <Text
+                            onPress={handleRefresh}
+                            style={{ fontSize: 12, fontWeight: '700', color: '#6366F1', marginTop: 6 }}
+                        >
+                            Try again
+                        </Text>
+                    </View>
                 </View>
             ) : null}
 

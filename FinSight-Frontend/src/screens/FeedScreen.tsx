@@ -1,11 +1,20 @@
 /**
  * FeedScreen - the home tab.
  *
- * Two things here were not real. "This Month" summed every transaction the
- * user had ever logged, so it grew for ever and was only correct in the first
- * month. And the comparison footer was handed a hardcoded zero, so everyone
- * read "0% higher than last month" whatever they had spent. Both are computed
- * from the actual month boundaries now.
+ * Two things here were not real. The headline summed every transaction the
+ * user had ever logged, so it grew for ever, and the comparison footer was
+ * handed a hardcoded zero, so everyone read "0% higher than last month"
+ * whatever they had spent.
+ *
+ * The window is the last 30 days rather than the calendar month. A calendar
+ * month is the honest thing to show only if you open the app in the middle of
+ * one: on the 1st it empties the whole screen, and a student who logged
+ * steadily for four weeks is told they have spent nothing. Thirty days rolling
+ * always has the same amount of history behind it, and the comparison is
+ * against the thirty days before that.
+ *
+ * Budgets stay on calendar months, on the Vitals tab, because a budget is a
+ * monthly commitment and has to line up with the month it was set for.
  *
  * Sync failures used to raise two Alert dialogs on top of the screen, which
  * meant a weak connection greeted the user with a modal they had to dismiss
@@ -39,7 +48,11 @@ export const FeedScreen: React.FC = () => {
     const reduced = useReducedMotion();
 
     const { user } = useAppSelector((state) => state.auth);
-    const { insights: eitmCards, loading: marketLoading } = useAppSelector((state) => state.market);
+    const {
+        insights: eitmCards,
+        loading: marketLoading,
+        error: marketError,
+    } = useAppSelector((state) => state.market);
 
     const transactions = useAppSelector((state) => state.transactions.items);
     const transactionsError = useAppSelector((state) => state.transactions.error);
@@ -84,23 +97,23 @@ export const FeedScreen: React.FC = () => {
         [transactions]
     );
 
-    /** Debits inside one calendar month, counted back from today. */
-    const monthlySpend = useCallback((monthsAgo: number) => {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
-        const end = new Date(now.getFullYear(), now.getMonth() - monthsAgo + 1, 1);
+    /** Debits in the 30-day window ending `windowsAgo` windows back. */
+    const spendInWindow = useCallback((windowsAgo: number) => {
+        const day = 24 * 60 * 60 * 1000;
+        const end = Date.now() - windowsAgo * 30 * day;
+        const start = end - 30 * day;
         return transactions.reduce((acc, t) => {
             if (t.type !== 'debit') return acc;
-            const d = new Date(t.date);
-            return d >= start && d < end ? acc + t.amount : acc;
+            const at = new Date(t.date).getTime();
+            return at >= start && at < end ? acc + t.amount : acc;
         }, 0);
     }, [transactions]);
 
-    const totalSpent = useMemo(() => monthlySpend(0), [monthlySpend]);
+    const totalSpent = useMemo(() => spendInWindow(0), [spendInWindow]);
 
-    /** Null when there is no previous month to compare against. */
+    /** Null when there is nothing in the previous window to compare against. */
     const comparison = useMemo(() => {
-        const previous = monthlySpend(1);
+        const previous = spendInWindow(1);
         if (previous <= 0) return null;
         const delta = ((totalSpent - previous) / previous) * 100;
         if (Math.abs(delta) < 1) return { type: 'flat' as const, percentage: 0 };
@@ -108,7 +121,7 @@ export const FeedScreen: React.FC = () => {
             type: delta > 0 ? ('increase' as const) : ('decrease' as const),
             percentage: Math.abs(Math.round(delta)),
         };
-    }, [monthlySpend, totalSpent]);
+    }, [spendInWindow, totalSpent]);
 
     const weeklyTrend = useMemo(() => {
         const days = Array.from({ length: 7 }, (_, i) => {
@@ -205,6 +218,21 @@ export const FeedScreen: React.FC = () => {
                                         <Skeleton width="100%" height={11} />
                                         <View style={{ height: 6 }} />
                                         <Skeleton width="90%" height={11} />
+                                    </View>
+                                </View>
+                            ) : eitmCards.length === 0 ? (
+                                <View className="mx-4 flex-row items-start bg-white border border-border rounded-2xl px-4 py-3.5">
+                                    <CloudOff size={14} color="#9CA3AF" style={{ marginTop: 2 }} />
+                                    <View className="flex-1 ml-2">
+                                        <Text className="text-xs text-text-secondary leading-4">
+                                            {marketError ?? 'No insights right now.'}
+                                        </Text>
+                                        <Text
+                                            onPress={onRefresh}
+                                            className="text-xs font-bold text-brand-primary mt-1.5"
+                                        >
+                                            Try again
+                                        </Text>
                                     </View>
                                 </View>
                             ) : (

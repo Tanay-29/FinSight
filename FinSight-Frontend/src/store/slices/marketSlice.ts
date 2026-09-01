@@ -8,7 +8,7 @@
  * read those same numbers and say something about them stayed.
  */
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { BACKEND_URL } from '../../config/api';
+import { BACKEND_URL, fetchWithTimeout } from '../../config/api';
 import { friendlyError } from '../../utils/errors';
 
 export interface MarketInsight {
@@ -32,7 +32,7 @@ export const fetchMarketInsight = createAsyncThunk(
     'market/fetchMarketInsight',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/market-insight`);
+            const response = await fetchWithTimeout(`${BACKEND_URL}/api/market-insight`);
             if (!response.ok) throw new Error('Failed to fetch insight');
             return (await response.json()) as MarketInsight[];
         } catch (error) {
