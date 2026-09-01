@@ -87,7 +87,11 @@ def health():
     return jsonify({
         "status": "ok",
         "model": GEMINI_MODEL,
-        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
+        # genai.Client() accepts either name, so checking only one of them
+        # reported a missing key on a service that was answering fine.
+        "gemini_configured": bool(
+            os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        ),
     })
 
 
