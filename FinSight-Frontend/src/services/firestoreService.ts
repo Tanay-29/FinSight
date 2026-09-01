@@ -69,6 +69,19 @@ export interface UserProfile {
     leagueBaselineWeek?: string;
     /** IQ score when the week began, so gain can be measured against it. */
     leagueBaselineScore?: number;
+    /**
+     * FinSight Plus entitlement.
+     *
+     * Carried on the profile rather than in a receipt because no payment is
+     * taken: this is a demonstration of the gating, not a live subscription.
+     * A real build would read this from the store instead.
+     */
+    premium?: {
+        active: boolean;
+        plan: 'monthly' | 'annual' | null;
+        renewsAt: string | null;
+        simulated: boolean;
+    };
 }
 
 export interface FirestoreTransaction {

@@ -16,8 +16,10 @@ import { View, Text, ActivityIndicator } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw, CloudOff } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
+import { selectIsPremium } from '../store/slices/premiumSlice';
 import { AnimatedNumber } from './AnimatedNumber';
 import { PressableScale } from './PressableScale';
 import { Skeleton } from './Skeleton';
@@ -160,6 +162,8 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
 const FinSightIQCard: React.FC = () => {
     const dispatch = useAppDispatch();
     const reduced = useReducedMotion();
+    const navigation = useNavigation<any>();
+    const isPremium = useAppSelector(selectIsPremium);
     const { advice, adviceLoading, adviceError, lastFetchedAt } = useAppSelector((s) => s.iq);
     const transactions  = useAppSelector((s) => s.transactions.items);
     const budgets       = useAppSelector((s) => s.budgets.items);
@@ -183,7 +187,14 @@ const FinSightIQCard: React.FC = () => {
         }
     }, []);
 
+    // The first read of the session is free for everyone, so nobody meets a
+    // paywall before they have seen what is behind it. Asking for another one
+    // is the paid action, because each is a call that costs money to serve.
     const handleRefresh = () => {
+        if (!isPremium && lastFetchedAt) {
+            navigation.navigate('Paywall', { feature: 'ai-coach' });
+            return;
+        }
         dispatch(fetchAIAdvice());
     };
 

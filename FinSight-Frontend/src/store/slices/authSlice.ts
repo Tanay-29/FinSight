@@ -40,7 +40,15 @@ const initialState: AuthState = {
     profileLoading: false,
     profileSettled: false,
     profileError: null,
-    isLoading: false,
+    // True until Firebase reports for the first time.
+    //
+    // This started false, so the very first render already claimed there was
+    // no user, and the navigator drew the sign-in screen. A second later
+    // onAuthStateChanged restored the session and it cut to the dashboard, so
+    // every launch flashed a login screen at someone who was already signed
+    // in. setUser flips this off, and it is called on both branches of the
+    // listener, so nothing can leave the app stuck on the spinner.
+    isLoading: true,
     error: null,
     isAuthenticated: false,
 };

@@ -6,6 +6,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { COLORS } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
 import { setUser, fetchUserProfile } from '../store/slices/authSlice';
+import { setEntitlement } from '../store/slices/premiumSlice';
 import type { AppDispatch, RootState } from '../store/store';
 
 // Screens
@@ -16,6 +17,7 @@ import { LearnPathDetailScreen } from '../screens/LearnPathDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import PaywallScreen from '../screens/PaywallScreen';
 import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
@@ -36,6 +38,12 @@ export const RootNavigator = () => {
     const { user, isLoading, profile, profileLoading, profileSettled, profileError } =
         useSelector((state: RootState) => state.auth);
     const reduced = useReducedMotion();
+
+    // Mirror the stored entitlement into the slice so a restart, or a second
+    // device, knows what this account has without waiting for a purchase.
+    useEffect(() => {
+        dispatch(setEntitlement(profile?.premium ?? null));
+    }, [dispatch, profile?.premium]);
 
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
@@ -131,6 +139,13 @@ export const RootNavigator = () => {
                     <Stack.Screen name="LearnPathDetail" component={LearnPathDetailScreen} />
                     <Stack.Screen name="ModuleReader" component={ModuleReaderScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    {/* Presented as a sheet: it interrupts what the user was
+                        doing and should look like it can be dismissed. */}
+                    <Stack.Screen
+                        name="Paywall"
+                        component={PaywallScreen}
+                        options={{ presentation: 'modal' }}
+                    />
                 </Stack.Group>
             )}
         </Stack.Navigator>

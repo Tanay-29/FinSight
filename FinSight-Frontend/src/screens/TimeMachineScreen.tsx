@@ -27,11 +27,21 @@ import * as haptics from '../utils/haptics';
 
 type Props = NativeStackScreenProps<any, 'TimeMachine'>;
 
-const PRESETS: { label: string; amount: number; frequency: Frequency }[] = [
-    { label: 'Daily coffee', amount: 200, frequency: 'daily' },
-    { label: 'Food delivery', amount: 400, frequency: 'weekly' },
-    { label: 'Streaming stack', amount: 800, frequency: 'monthly' },
-    { label: 'Weekend out', amount: 1500, frequency: 'weekly' },
+/**
+ * A preset names a habit and its rhythm. It does not claim to know what yours
+ * costs.
+ *
+ * These used to set the amount as well, so tapping "Daily coffee" asserted 200
+ * rupees a day and the chip then deselected itself the moment you corrected
+ * it. That made the number look like the point of the exercise, when the point
+ * is your number. The typical figure is offered as the field's placeholder,
+ * which is a suggestion you can ignore rather than a value you have to delete.
+ */
+const PRESETS: { label: string; typical: number; frequency: Frequency }[] = [
+    { label: 'Daily coffee', typical: 200, frequency: 'daily' },
+    { label: 'Food delivery', typical: 400, frequency: 'weekly' },
+    { label: 'Streaming stack', typical: 800, frequency: 'monthly' },
+    { label: 'Weekend out', typical: 1500, frequency: 'weekly' },
 ];
 
 const YEAR_OPTIONS = [5, 10, 20, 30];
@@ -41,8 +51,11 @@ const CHART_W = 300;
 const CHART_H = 150;
 
 const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
-    const [amount, setAmount] = useState('200');
+    const [amount, setAmount] = useState('');
     const [frequency, setFrequency] = useState<Frequency>('daily');
+    // Tracked by label rather than inferred from the amount, so the habit stays
+    // selected while you adjust what it costs you.
+    const [presetLabel, setPresetLabel] = useState<string | null>(null);
     const [years, setYears] = useState(20);
     const [rate, setRate] = useState(12);
 
@@ -76,9 +89,13 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
 
     const applyPreset = (preset: typeof PRESETS[number]) => {
         haptics.tap();
-        setAmount(String(preset.amount));
+        setPresetLabel(preset.label);
         setFrequency(preset.frequency);
+        // The amount is deliberately left alone. Switching habits should not
+        // wipe a figure the user has already typed.
     };
+
+    const activePreset = PRESETS.find((p) => p.label === presetLabel) ?? null;
 
     const monthly = toMonthly(parsed, frequency);
 
@@ -108,7 +125,7 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
                 <View className="flex-row flex-wrap gap-2 mb-5">
                     {PRESETS.map((preset) => {
-                        const active = parsed === preset.amount && frequency === preset.frequency;
+                        const active = presetLabel === preset.label;
                         return (
                             <PressableScale
                                 key={preset.label}
@@ -127,7 +144,7 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                 {/* Amount and frequency */}
                 <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
                     <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
-                        Amount
+                        {activePreset ? `What your ${activePreset.label.toLowerCase()} costs` : 'Amount'}
                     </Text>
                     <View className="flex-row items-center border-b border-gray-100 pb-3 mb-3">
                         <Text className="text-2xl font-bold text-gray-400 mr-1">₹</Text>
@@ -135,12 +152,23 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                             value={amount}
                             onChangeText={setAmount}
                             keyboardType="numeric"
-                            accessibilityLabel="Amount spent"
+                            accessibilityLabel={
+                                activePreset
+                                    ? `What your ${activePreset.label.toLowerCase()} costs each time`
+                                    : 'Amount spent'
+                            }
                             className="flex-1 text-2xl font-bold text-gray-900 p-0"
-                            placeholder="0"
+                            placeholder={activePreset ? String(activePreset.typical) : '0'}
                             placeholderTextColor="#D1D5DB"
                         />
                     </View>
+
+                    {activePreset && parsed === 0 && (
+                        <Text className="text-xs text-gray-400 mb-3 -mt-1">
+                            Put in what yours actually costs. {formatCompactINR(activePreset.typical)} is
+                            just a common figure.
+                        </Text>
+                    )}
                     <View className="flex-row gap-2">
                         {(Object.keys(FREQUENCY_LABELS) as Frequency[]).map((f) => (
                             <TouchableOpacity
@@ -198,6 +226,15 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
 
                 {/* Result */}
+                {parsed === 0 ? (
+                    <View className="bg-white border border-dashed border-gray-200 rounded-3xl p-6 mb-4 items-center">
+                        <TrendingUp size={22} color="#D1D5DB" />
+                        <Text className="text-sm text-gray-400 text-center mt-2.5 leading-5">
+                            Put in what the habit costs you and this shows what the same money
+                            would be worth invested instead.
+                        </Text>
+                    </View>
+                ) : (
                 <View className="bg-indigo-600 rounded-3xl p-5 mb-4">
                     <View className="flex-row items-center mb-1">
                         <TrendingUp size={16} color="#C7D2FE" />
@@ -225,6 +262,7 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                         </View>
                     </View>
                 </View>
+                )}
 
                 {/* Chart */}
                 {parsed > 0 && (

@@ -26,6 +26,7 @@ import {
 import { Module, QuizQuestion, LearningPath } from '../data/courseContent';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { completeModule } from '../store/slices/learningSlice';
+import { selectIsPremium } from '../store/slices/premiumSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
 
@@ -450,6 +451,7 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     const [quizScore, setQuizScore] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [saveFailed, setSaveFailed] = useState(false);
+    const isPremium = useAppSelector(selectIsPremium);
     const [quizAttempt, setQuizAttempt] = useState(0); // increment to retake
     const [celebrating, setCelebrating] = useState(false);
     const [streakSaved, setStreakSaved] = useState(false);
@@ -514,6 +516,12 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     const handleBack = () => navigation.goBack();
 
     const handleFlashcards = () => {
+        // Generating a deck is a model call per module, so it is the paid
+        // action. Reviewing cards that already exist stays free.
+        if (!isPremium) {
+            (navigation as any).navigate('Paywall', { feature: 'flashcards' });
+            return;
+        }
         (navigation as any).navigate('Flashcards', {
             // moduleId and pathId identify the cards in the review schedule.
             moduleId: module.id,

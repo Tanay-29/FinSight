@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
+import premiumReducer from './slices/premiumSlice';
 import transactionsReducer from './slices/transactionsSlice';
 import budgetsReducer from './slices/budgetsSlice';
 import learningReducer from './slices/learningSlice';
@@ -12,6 +13,7 @@ import vitalsIntelReducer from './slices/vitalsIntelSlice';
 export const store = configureStore({
     reducer: {
         auth: authReducer,
+        premium: premiumReducer,
         transactions: transactionsReducer,
         budgets: budgetsReducer,
         learning: learningReducer,
