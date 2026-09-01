@@ -166,12 +166,17 @@ const GoalCard: React.FC<{
                         onPress={() => onDeposit(goal)}
                         accessibilityRole="button"
                     >
-                        {/* The label used to start with a literal "+", which went
-                            when the copy was rewritten and left this button as the
-                            only one of the pair without a mark. */}
-                        <Plus size={14} color={goal.color} />
-                        <Text style={{ color: goal.color }} className="font-bold text-sm ml-1">
-                            Add money
+                        {/* Short enough that it cannot wrap at any font scale.
+                            "Add money" was being clipped to "Add" on narrower
+                            phones, which left the button reading as half a
+                            word beside a plus sign. */}
+                        <Plus size={15} color={goal.color} />
+                        <Text
+                            numberOfLines={1}
+                            style={{ color: goal.color }}
+                            className="font-bold text-sm ml-1.5"
+                        >
+                            Add
                         </Text>
                     </PressableScale>
 
@@ -182,8 +187,10 @@ const GoalCard: React.FC<{
                         className="py-2.5 rounded-xl flex-row justify-center items-center"
                         style={{ backgroundColor: goal.color }}
                     >
-                        <Text className="text-white font-bold text-sm mr-1">Accelerate</Text>
-                        <Zap size={14} color="white" />
+                        <Zap size={15} color="white" />
+                        <Text numberOfLines={1} className="text-white font-bold text-sm ml-1.5">
+                            Speed up
+                        </Text>
                     </PressableScale>
                 </View>
             ) : (

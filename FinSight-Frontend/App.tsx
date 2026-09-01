@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { store } from './src/store/store';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { View, ActivityIndicator } from 'react-native';
+
 import {
   useFonts,
   Inter_400Regular,
@@ -19,7 +19,14 @@ import './src/global.css';
 // NOTE: SMS background listener is disabled (native permissions removed).
 // The Smart Paste feature in AddTransactionScreen handles SMS parsing safely.
 
+// Hold the native splash until the fonts are in.
+//
+// Without this the splash was handed off to a white screen with a spinner on
+// it while Inter loaded and Firebase restored the session, so every launch had
+// a visible seam in it. Fading it out rather than cutting also hides the last
+// few milliseconds of layout.
 SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ duration: 300, fade: true });
 
 // ─── Root component ───────────────────────────────────────────
 
@@ -38,13 +45,9 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' }}>
-        <ActivityIndicator size="large" color="#6366F1" />
-      </View>
-    );
-  }
+  // Nothing is drawn until the fonts are ready. The native splash is still up,
+  // which is a better thing to look at than a spinner on a white screen.
+  if (!fontsLoaded) return null;
 
   return (
     <Provider store={store}>

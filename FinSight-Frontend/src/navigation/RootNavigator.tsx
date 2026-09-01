@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
@@ -18,6 +19,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import PaywallScreen from '../screens/PaywallScreen';
+import IntroScreen from '../screens/IntroScreen';
 import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
@@ -33,11 +35,35 @@ import SwipeCategoriseScreen from '../screens/SwipeCategoriseScreen';
 
 const Stack = createNativeStackNavigator();
 
+/**
+ * Whether the three intro panels have been seen.
+ *
+ * Kept in AsyncStorage rather than on the profile because these run before
+ * anyone has signed in, so there is no profile to write to yet. Undefined
+ * means the answer has not been read off disk, which is different from false
+ * and has to stay different, or the panels flash at returning users on every
+ * launch.
+ */
+const INTRO_SEEN_KEY = 'finsight:intro-seen';
+
 export const RootNavigator = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user, isLoading, profile, profileLoading, profileSettled, profileError } =
         useSelector((state: RootState) => state.auth);
     const reduced = useReducedMotion();
+    const [introSeen, setIntroSeen] = useState<boolean | undefined>(undefined);
+
+    useEffect(() => {
+        AsyncStorage.getItem(INTRO_SEEN_KEY)
+            .then((v) => setIntroSeen(v === '1'))
+            // A storage read that fails should not trap anyone on the intro.
+            .catch(() => setIntroSeen(true));
+    }, []);
+
+    const dismissIntro = () => {
+        setIntroSeen(true);
+        AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => { });
+    };
 
     // Mirror the stored entitlement into the slice so a restart, or a second
     // device, knows what this account has without waiting for a purchase.
@@ -71,7 +97,9 @@ export const RootNavigator = () => {
     // vanished, and with it the only route to the flashcards.
     const awaitingFirstProfile = Boolean(user) && !profileSettled && profileLoading;
 
-    if (isLoading || awaitingFirstProfile) {
+    // Hold the spinner until the intro flag is known too, or the panels appear
+    // for a frame and vanish.
+    if (isLoading || awaitingFirstProfile || introSeen === undefined) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.primary }}>
                 <ActivityIndicator size="large" color="#6366F1" />
@@ -112,7 +140,12 @@ export const RootNavigator = () => {
                 animation: reduced ? 'fade' : 'default',
             }}
         >
-            {!user ? (
+            {!user && !introSeen ? (
+                // ── First run, before anyone has signed in ────────────────
+                <Stack.Screen name="Intro">
+                    {() => <IntroScreen onDone={dismissIntro} />}
+                </Stack.Screen>
+            ) : !user ? (
                 // ── Not logged in ─────────────────────────────────────────
                 <Stack.Screen name="Login" component={LoginScreen} />
             ) : !profile?.onboardingComplete ? (

@@ -55,6 +55,7 @@ const categoryMeta = (key: string) =>
 const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
     const dispatch = useAppDispatch();
     const transactions = useAppSelector((s) => s.transactions.items);
+    const corrections = useAppSelector((s) => s.transactions.corrections);
 
     const [index, setIndex] = useState(0);
     const [picking, setPicking] = useState(false);
@@ -65,20 +66,31 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
     const position = useRef(new Animated.ValueXY()).current;
 
     /**
-     * Transactions worth reviewing: anything the categoriser dumped into a
-     * catch-all, plus anything auto-detected, which is where the keyword bugs
-     * show up. Manual entries are left alone because the user already chose.
+     * Transactions worth reviewing.
+     *
+     * This filtered on nothing but the catch-all category, which made the
+     * screen look broken: a categoriser that works leaves almost nothing in
+     * `other`, so the deck was empty however much the user logged. The whole
+     * point of the screen is checking the guesses, and a guess the parser got
+     * right is exactly the one that never lands in `other`.
+     *
+     * So the deck is anything still uncategorised, plus anything the parser
+     * assigned on its own that the user has not ruled on yet. Once they rule,
+     * the merchant is in `corrections` and it stops coming back. Entries typed
+     * by hand are left alone, because the user already chose.
      */
     const deck = useMemo(
-        () => transactions.filter((t) =>
-            t.type === 'debit' &&
-            // Only what still needs a category. `source === 'auto'` used to be
-            // in here, which meant every imported transaction stayed in the
-            // deck forever: you sorted one, closed the screen, and it was back,
-            // because importing it was what put it there, not its category.
-            (!t.category || normaliseCategory(t.category) === 'other')
-        ),
-        [transactions]
+        () => transactions.filter((t) => {
+            if (t.type !== 'debit') return false;
+
+            const unknown = !t.category || normaliseCategory(t.category) === 'other';
+            if (unknown) return true;
+
+            if (t.source !== 'auto') return false;
+            const merchantKey = (t.merchant ?? '').trim().toLowerCase();
+            return merchantKey.length > 0 && !(merchantKey in corrections);
+        }),
+        [transactions, corrections]
     );
 
     const current = deck[index];
@@ -97,13 +109,26 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
         });
     }, [deck.length, position]);
 
+    /**
+     * Accepting used to change nothing at all, so the card came straight back
+     * the next time the screen opened. Confirming a guess is a ruling, and it
+     * is written down the same way a correction is: the merchant now maps to
+     * this category, which both teaches the parser and takes the card out of
+     * the deck.
+     */
     const accept = useCallback(() => {
+        if (!current?.id) return;
         haptics.success();
         setConfirmed((c) => c + 1);
+        dispatch(updateTransactionCategory({
+            transactionId: current.id,
+            category: normaliseCategory(current.category),
+            merchant: current.merchant ?? '',
+        }));
         Animated.timing(position, {
             toValue: { x: SCREEN_W, y: 0 }, duration: 220, useNativeDriver: false,
         }).start(advance);
-    }, [advance, position]);
+    }, [advance, position, current, dispatch]);
 
     const openPicker = useCallback(() => {
         haptics.tap();

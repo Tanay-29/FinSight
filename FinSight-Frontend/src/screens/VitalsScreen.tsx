@@ -541,29 +541,44 @@ export const VitalsScreen: React.FC = () => {
                     })()}
                 </View>
 
-                {/* Daily/Weekly Spending Pulse. Tapping through goes to the
-                    burn rate, which is the same question asked over a longer
-                    window. */}
-                <TouchableOpacity
-                    className="mx-4 mt-3 flex-row justify-between gap-3"
-                    activeOpacity={0.85}
+                {/* Recent spending.
+                    These were two coloured tiles side by side, wrapped in one
+                    button, so they looked like two destinations and were one.
+                    They are two readings of the same thing, so they sit in one
+                    card with a single way through to the pace screen. */}
+                <PressableScale
+                    className="mx-4 mt-3 bg-white border border-gray-100 rounded-2xl p-4"
                     onPress={() => navigation.navigate('BurnRate' as never)}
                     accessibilityRole="button"
-                    accessibilityLabel="Spending today and this week. Open burn rate."
+                    accessibilityLabel="Recent spending. Open your spending pace."
                 >
-                    <View className="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-                        <Text className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Spent today</Text>
-                        <Text className="text-xl font-bold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
-                            ₹{recentSpending.spentToday.toLocaleString('en-IN')}
-                        </Text>
+                    <View className="flex-row">
+                        <View className="flex-1">
+                            <Text className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                                Today
+                            </Text>
+                            <Text className="text-2xl font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+                                ₹{recentSpending.spentToday.toLocaleString('en-IN')}
+                            </Text>
+                        </View>
+                        <View className="w-px bg-border mx-4" />
+                        <View className="flex-1">
+                            <Text className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                                This week
+                            </Text>
+                            <Text className="text-2xl font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+                                ₹{recentSpending.spentThisWeek.toLocaleString('en-IN')}
+                            </Text>
+                        </View>
                     </View>
-                    <View className="flex-1 bg-teal-50 border border-teal-100 rounded-xl p-4">
-                        <Text className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-1">This week</Text>
-                        <Text className="text-xl font-bold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
-                            ₹{recentSpending.spentThisWeek.toLocaleString('en-IN')}
+
+                    <View className="flex-row items-center justify-end mt-3 pt-3 border-t border-border">
+                        <Text className="text-xs font-semibold text-brand-primary mr-1">
+                            Where the month is heading
                         </Text>
+                        <ChevronRight size={14} color="#6366F1" />
                     </View>
-                </TouchableOpacity>
+                </PressableScale>
 
                 {/* Monthly Budget Summary, and the 50/30/20 view of the same
                     money. */}
