@@ -6,7 +6,7 @@
  *  2. Actionable Savings Engine (surplus detection)
  *  3. 50/30/20 Real-Time Visualiser with threshold alerts
  */
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
     RefreshControl, TextInput, Modal,
@@ -27,6 +27,7 @@ const BUCKET_ICONS = {
     savings: Wallet,
 } as const;
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { resolveMonthlyIncome } from '../utils/income';
 import { loadBurnRate, loadSavingsEngine, loadRule503020 } from '../store/slices/vitalsIntelSlice';
 
 // ── Gauge Bar ─────────────────────────────────────────────────────────────
@@ -102,17 +103,6 @@ const IncomeModal: React.FC<{
 // ── Main Screen ──────────────────────────────────────────────────────────
 
 
-const INCOME_BANDS: Record<string, number> = {
-    under_15k: 12000,
-    '15k_40k': 27500,
-    '40k_80k': 60000,
-    above_80k: 100000,
-    prefer_not: 0,
-};
-
-const incomeFromBand = (band?: string): number =>
-    (band ? INCOME_BANDS[band] : undefined) ?? 0;
-
 const BurnRateScreen: React.FC = () => {
     const dispatch   = useAppDispatch();
     const navigation = useNavigation();
@@ -126,7 +116,26 @@ const BurnRateScreen: React.FC = () => {
     );
     const profile       = useAppSelector((s) => s.auth.profile);
 
-    const [income, setIncome]             = useState(() => incomeFromBand(profile?.incomeRange));
+    const transactions = useAppSelector((s) => s.transactions.items);
+
+    // This used to open on a midpoint of the onboarding band, so a student who
+    // had logged 8,000 of real income was shown a burn rate built on 27,500.
+    // What they actually logged wins; the band is only the fallback.
+    const resolvedIncome = useMemo(
+        () => resolveMonthlyIncome(
+            transactions as any,
+            profile?.incomeRange,
+            new Date().toISOString().slice(0, 7),
+        ),
+        [transactions, profile?.incomeRange]
+    );
+    const [income, setIncome] = useState(() => resolvedIncome.amount);
+
+    // Adopt a logged figure when one appears, unless the user has typed over it.
+    const [incomeTouched, setIncomeTouched] = useState(false);
+    useEffect(() => {
+        if (!incomeTouched && resolvedIncome.amount > 0) setIncome(resolvedIncome.amount);
+    }, [resolvedIncome.amount, incomeTouched]);
     const [incomeModalVisible, setIncomeModalVisible] = useState(false);
     const [refreshing, setRefreshing]     = useState(false);
 
@@ -171,7 +180,9 @@ const BurnRateScreen: React.FC = () => {
             <IncomeModal
                 visible={incomeModalVisible}
                 onClose={() => setIncomeModalVisible(false)}
-                onSave={(n) => { setIncome(n); }}
+                // A figure typed here is the user overriding both the logged
+                // total and the band, so stop adopting either afterwards.
+                onSave={(n) => { setIncomeTouched(true); setIncome(n); }}
                 current={income}
             />
 

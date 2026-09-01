@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarFill } from '../components/BarFill';
+import { resolveMonthlyIncome, savingsRate } from '../utils/income';
 import {
     ChevronLeft, ChevronDown, ChevronUp,
     ShoppingCart, Home, TrendingUp, TrendingDown,
@@ -116,13 +117,18 @@ const GaugeBar: React.FC<{
 const BucketCard: React.FC<{
     bucket: Bucket;
     spend: number;
+    /** Income for the month. The denominator the rule is actually defined on. */
+    basis: number;
     totalSpend: number;
     categoryBreakdown: Record<string, number>;
     expanded: boolean;
     onToggle: () => void;
-}> = ({ bucket, spend, totalSpend, categoryBreakdown, expanded, onToggle }) => {
+}> = ({ bucket, spend, basis, totalSpend, categoryBreakdown, expanded, onToggle }) => {
     const meta = BUCKET_META[bucket];
-    const actualPct = totalSpend > 0 ? (spend / totalSpend) * 100 : 0;
+    // Fifty, thirty and twenty are shares of income. Dividing by spending
+    // instead made the three buckets sum to a hundred whatever the user
+    // earned, so the rule could neither be passed nor failed.
+    const actualPct = basis > 0 ? (spend / basis) * 100 : 0;
     const delta = actualPct - meta.target;
     const isOver = delta > 0;
     const isGood = Math.abs(delta) <= 5; // within 5% is fine
@@ -198,9 +204,9 @@ const BucketCard: React.FC<{
                                 : `${Math.abs(delta).toFixed(1)}% under target`}
                         </Text>
                     </View>
-                    {totalSpend > 0 && (
+                    {basis > 0 && (
                         <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
-                            ₹{Math.abs(((delta / 100) * totalSpend)).toLocaleString('en-IN')}{' '}
+                            ₹{Math.abs(((delta / 100) * basis)).toLocaleString('en-IN')}{' '}
                             {isOver ? 'over' : 'under'}
                         </Text>
                     )}
@@ -249,9 +255,15 @@ const BucketCard: React.FC<{
 const MoneyManagerScreen: React.FC = () => {
     const navigation = useNavigation();
     const transactions = useAppSelector((s) => s.transactions.items);
+    const profile = useAppSelector((s) => s.auth.profile);
     const [expanded, setExpanded] = useState<Bucket | null>('wants');
 
     const thisMonth = format(new Date(), 'yyyy-MM');
+
+    const income = useMemo(
+        () => resolveMonthlyIncome(transactions as any, profile?.incomeRange, thisMonth),
+        [transactions, profile?.incomeRange, thisMonth]
+    );
 
     // Compute bucket totals from this month's debit transactions
     const { buckets, categoryByBucket, totalSpend } = useMemo(() => {
@@ -271,6 +283,13 @@ const MoneyManagerScreen: React.FC = () => {
 
         const totalSpend = buckets.needs + buckets.wants + buckets.savings;
 
+        // Money left in the account is saved just as much as money moved into
+        // a fund is. Counting only investment debits told a student who spent
+        // four of their ten thousand that they had saved nothing.
+        if (income.amount > 0) {
+            buckets.savings = Math.max(income.amount - buckets.needs - buckets.wants, 0);
+        }
+
         // Group categories by bucket
         const categoryByBucket: Record<Bucket, Record<string, number>> = {
             needs: {}, wants: {}, savings: {},
@@ -281,23 +300,39 @@ const MoneyManagerScreen: React.FC = () => {
         });
 
         return { buckets, categoryByBucket, totalSpend };
-    }, [transactions, thisMonth]);
+    }, [transactions, thisMonth, income.amount]);
 
     // Summary insight
     const insight = useMemo(() => {
         if (totalSpend === 0) return null;
-        const wantsPct = (buckets.wants / totalSpend) * 100;
-        const savePct  = (buckets.savings / totalSpend) * 100;
 
+        // Without income there is no denominator, so the only honest thing to
+        // say is what is missing.
+        if (income.amount <= 0) {
+            return {
+                type: 'tip',
+                msg: 'Add what came in this month and these three bars become the real 50/30/20 split. Without it they can only show how your spending divides up, not how much of your income it used.',
+            };
+        }
+
+        const wantsPct = (buckets.wants / income.amount) * 100;
+        const rate = savingsRate(income.amount, buckets.needs + buckets.wants) ?? 0;
+
+        if (rate < 0) {
+            return {
+                type: 'warning',
+                msg: `You spent ₹${Math.abs(Math.round((rate / 100) * income.amount)).toLocaleString('en-IN')} more than came in this month. That gap is the first thing worth closing.`,
+            };
+        }
         if (wantsPct > 35) {
-            const excess = Math.round(((wantsPct - 30) / 100) * totalSpend);
-            return { type: 'warning', msg: `You're spending ${(wantsPct - 30).toFixed(1)}% more than the 30% Wants target. Moving ₹${excess.toLocaleString('en-IN')} to savings would hit the golden ratio.` };
+            const excess = Math.round(((wantsPct - 30) / 100) * income.amount);
+            return { type: 'warning', msg: `Wants took ${wantsPct.toFixed(0)}% of what you earned, against a 30% target. Moving ₹${excess.toLocaleString('en-IN')} of it would put you on the ratio.` };
         }
-        if (savePct < 15) {
-            return { type: 'tip', msg: `Your savings rate is ${savePct.toFixed(1)}%. Aim for at least 20% - even small SIPs compound significantly over time.` };
+        if (rate < 20) {
+            return { type: 'tip', msg: `You kept ${rate.toFixed(0)}% of what came in. Twenty is the number worth aiming at, and small amounts invested regularly do most of the work.` };
         }
-        return { type: 'success', msg: `Great balance! You're close to the 50/30/20 golden ratio. Keep maintaining this discipline.` };
-    }, [buckets, totalSpend]);
+        return { type: 'success', msg: `You kept ${rate.toFixed(0)}% of what came in this month, which is at or above the 20% the rule asks for.` };
+    }, [buckets, totalSpend, income.amount]);
 
     const toggle = (b: Bucket) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -333,16 +368,25 @@ const MoneyManagerScreen: React.FC = () => {
                     marginBottom: 20,
                 }}>
                     <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Total Spend This Month
+                        Spent this month
                     </Text>
                     <Text style={{ fontSize: 36, fontWeight: '900', color: '#FFFFFF', letterSpacing: -1, marginTop: 4 }}>
                         ₹{totalSpend.toLocaleString('en-IN')}
                     </Text>
 
-                    {totalSpend > 0 && (
+                    {/* Both sides of the ledger, and where the income figure
+                        came from, because a banded guess should not be shown
+                        as though it were measured. */}
+                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>
+                        {income.source === 'unknown'
+                            ? 'No income logged this month'
+                            : `of ₹${income.amount.toLocaleString('en-IN')} ${income.source === 'logged' ? 'logged as income' : 'estimated from your profile'}`}
+                    </Text>
+
+                    {income.amount > 0 && (
                         <View style={{ flexDirection: 'row', marginTop: 14, gap: 12 }}>
                             {(['needs', 'wants', 'savings'] as Bucket[]).map((b) => {
-                                const pct = ((buckets[b] / totalSpend) * 100).toFixed(0);
+                                const pct = ((buckets[b] / income.amount) * 100).toFixed(0);
                                 return (
                                     <View key={b} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 10, alignItems: 'center' }}>
                                         <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFFFFF' }}>{pct}%</Text>
@@ -402,6 +446,7 @@ const MoneyManagerScreen: React.FC = () => {
                             key={b}
                             bucket={b}
                             spend={buckets[b]}
+                            basis={income.amount}
                             totalSpend={totalSpend}
                             categoryBreakdown={categoryByBucket[b]}
                             expanded={expanded === b}

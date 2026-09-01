@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    ChevronRight, Leaf, Wallet, CloudOff, Plus,
+    ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank,
 } from 'lucide-react-native';
 import { goalIcon } from '../theme/icons';
 import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
@@ -20,6 +20,7 @@ import { BarFill } from '../components/BarFill';
 import { EmptyState } from '../components/EmptyState';
 import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory } from '../utils/categories';
 import { PressableScale } from '../components/PressableScale';
+import { resolveMonthlyIncome, savingsRate, savingsRateVerdict } from '../utils/income';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
 // ─── Icon helpers (Lucide) ───────────────────────────────────────
@@ -283,10 +284,17 @@ export const VitalsScreen: React.FC = () => {
 
     // Days nothing went out. Counted as wins; see utils/noSpendDays.
     const noSpend = React.useMemo(() => summariseNoSpendDays(transactions), [transactions]);
-    const { user } = useAppSelector((state) => state.auth);
+    const { user, profile } = useAppSelector((state) => state.auth);
     const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
 
     const currentMonthKey = format(new Date(), 'yyyy-MM');
+
+    // The one number that needs both sides of the ledger, and the reason
+    // logging income is worth doing at all.
+    const income = React.useMemo(
+        () => resolveMonthlyIncome(transactions as any, profile?.incomeRange, currentMonthKey),
+        [transactions, profile?.incomeRange, currentMonthKey]
+    );
     const [selectedBudget, setSelectedBudget] = React.useState<any>(null);
     const [modalVisible, setModalVisible] = React.useState(false);
     const [createModalVisible, setCreateModalVisible] = React.useState(false);
@@ -451,6 +459,86 @@ export const VitalsScreen: React.FC = () => {
                             </View>
                         )}
                     </View>
+                </View>
+
+                {/* Savings rate.
+                    Money left in the account counts as saved. Counting only
+                    investment debits told a student who spent four of their
+                    ten thousand that they had saved nothing. */}
+                <View className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4">
+                    <View className="flex-row items-center mb-2">
+                        <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center mr-3">
+                            <PiggyBank color="#6366F1" size={18} />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-sm font-bold text-text-primary">
+                                Kept this month
+                            </Text>
+                            <Text className="text-xs text-text-secondary mt-0.5">
+                                {income.source === 'unknown'
+                                    ? 'Log what came in and this fills itself'
+                                    : income.source === 'estimated'
+                                        ? 'Estimated from your profile until you log income'
+                                        : `of ₹${income.amount.toLocaleString('en-IN')} that came in`}
+                            </Text>
+                        </View>
+                        {(() => {
+                            const rate = savingsRate(income.amount, totalSpent);
+                            if (rate === null) return null;
+                            const verdict = savingsRateVerdict(rate);
+                            return (
+                                <Text
+                                    className={`text-2xl font-bold ${
+                                        verdict.tone === 'good'
+                                            ? 'text-profit'
+                                            : verdict.tone === 'ok'
+                                                ? 'text-alert-amber'
+                                                : 'text-loss'
+                                    }`}
+                                    style={{ fontVariant: ['tabular-nums'] }}
+                                >
+                                    {Math.round(rate)}%
+                                </Text>
+                            );
+                        })()}
+                    </View>
+
+                    {(() => {
+                        const rate = savingsRate(income.amount, totalSpent);
+                        if (rate === null) {
+                            return (
+                                <PressableScale
+                                    onPress={() => navigation.navigate('AddTransaction' as never)}
+                                    accessibilityRole="button"
+                                    className="bg-surface-secondary rounded-xl py-2.5 items-center mt-1"
+                                >
+                                    <Text className="text-sm font-semibold text-brand-primary">
+                                        Add income
+                                    </Text>
+                                </PressableScale>
+                            );
+                        }
+                        const verdict = savingsRateVerdict(rate);
+                        return (
+                            <>
+                                <BarFill
+                                    percent={Math.max(Math.min(rate, 100), 0)}
+                                    height={8}
+                                    fillClassName={
+                                        verdict.tone === 'good'
+                                            ? 'bg-profit'
+                                            : verdict.tone === 'ok'
+                                                ? 'bg-alert-amber'
+                                                : 'bg-alert-critical'
+                                    }
+                                />
+                                <Text className="text-xs text-text-secondary mt-2">
+                                    {verdict.label}. Twenty percent is the figure the 50/30/20 rule
+                                    asks for.
+                                </Text>
+                            </>
+                        );
+                    })()}
                 </View>
 
                 {/* Daily/Weekly Spending Pulse. Tapping through goes to the
