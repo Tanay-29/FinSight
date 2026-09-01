@@ -13,18 +13,6 @@ export interface MarketIndex {
     sparkline: number[];
 }
 
-export interface EITMCardData {
-    id: string;
-    trigger: 'market_event' | 'transaction_spike' | 'policy';
-    headline: string;
-    explanation: string;
-    personalImpact: {
-        holding: string;
-        change: string;
-    };
-    learnMoreLink: string;
-}
-
 export interface Transaction {
     id: string;
     amount: number;

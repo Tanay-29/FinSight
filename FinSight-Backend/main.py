@@ -14,7 +14,6 @@ persists anything now, which is why losing the container costs nothing.
 import os
 from dotenv import load_dotenv
 import json
-import yfinance as yf
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from google import genai
@@ -22,8 +21,7 @@ from google import genai
 from auth import require_auth
 from cache import (
     cache, make_key,
-    TTL_MARKET_PULSE, TTL_MARKET_INSIGHT, TTL_FLASHCARDS, TTL_AI_ADVISOR,
-    TTL_MARKET_LAST_GOOD,
+    TTL_FLASHCARDS, TTL_AI_ADVISOR,
 )
 
 load_dotenv()
@@ -57,62 +55,12 @@ client = genai.Client()
 # answering with its fallback.
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.6-flash')
 
-TICKERS = {
-    "^NSEI": "NIFTY 50",
-    "^BSESN": "SENSEX",
-    "GC=F": "GOLD (Futures)",
-    "INR=X": "USD/INR"
-}
-
-
 def cached_json(payload, hit: bool):
     """Return a JSON response tagged so you can see whether it was cached."""
     response = jsonify(payload)
     response.headers["X-Cache"] = "HIT" if hit else "MISS"
     return response
 
-
-def _fetch_market_quotes():
-    """
-    Live quotes for every ticker, cached briefly.
-
-    Both /api/market-pulse and /api/market-insight need this, so sharing it
-    halves the number of Yahoo requests.
-    """
-    cached = cache.get("market:quotes")
-    if cached is not None:
-        return cached, True
-
-    try:
-        data = yf.Tickers(" ".join(TICKERS.keys()))
-        quotes = []
-        for symbol, name in TICKERS.items():
-            info = data.tickers[symbol].fast_info
-            current_price = info.last_price
-            prev_close = info.previous_close
-            quotes.append({
-                "symbol": symbol,
-                "name": name,
-                "price": current_price,
-                "prev_close": prev_close,
-                "change_percent": ((current_price - prev_close) / prev_close) * 100,
-            })
-    except Exception as exc:
-        # Yahoo rate limits by IP, and a shared host gets throttled far sooner
-        # than a laptop does. Serve the last quotes that were genuinely fetched
-        # rather than inventing numbers: they are real, just not current, and
-        # the caller is told which.
-        stale = cache.get("market:quotes:last")
-        if stale is not None:
-            print(f"[market] yfinance failed ({exc}); serving last known quotes")
-            return stale, True
-        raise
-
-    cache.set("market:quotes", quotes, TTL_MARKET_PULSE)
-    # A second, long-lived copy. Only ever written from a successful fetch, so
-    # whatever it holds was real at some point.
-    cache.set("market:quotes:last", quotes, TTL_MARKET_LAST_GOOD)
-    return quotes, False
 
 # Appended to every Gemini prompt. The app renders icons, not glyphs, and its
 # copy uses no em dashes, so generated text must not reintroduce either.
@@ -201,87 +149,6 @@ Rules:{STYLE_RULES}
             {"question": "What is the difference between saving and investing?",
              "answer": "Saving is keeping money safely (e.g., in a bank) with low returns. Investing is putting money into assets like stocks or mutual funds for higher long-term growth but with some risk."},
         ])
-
-
-# --- 1. MARKET PULSE ROUTE ---
-@app.route('/api/market-pulse', methods=['GET'])
-def get_market_pulse():
-    try:
-        quotes, hit = _fetch_market_quotes()
-
-        market_data = [
-            {
-                "id": str(i),
-                "name": q["name"],
-                "price": f"{q['price']:,.2f}",
-                "change": f"{abs(q['change_percent']):.2f}",
-                "isUp": q["change_percent"] >= 0,
-            }
-            for i, q in enumerate(quotes, start=1)
-        ]
-
-        return cached_json(market_data, hit)
-
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch market data: {str(e)}"}), 500
-
-
-# --- 2. GEMINI AI MARKET INSIGHTS ROUTE ---
-@app.route('/api/market-insight', methods=['GET'])
-def get_market_insight():
-    try:
-        # This commentary is identical for every user, so it is cached globally.
-        # Without this, every Feed open by every user is one Gemini call.
-        cached_insight = cache.get("market:insight")
-        if cached_insight is not None:
-            return cached_json(cached_insight, True)
-
-        quotes, _ = _fetch_market_quotes()
-
-        market_summary = [
-            f"{q['name']} is {'up' if q['change_percent'] >= 0 else 'down'} "
-            f"by {abs(q['change_percent']):.2f}%"
-            for q in quotes
-        ]
-        summary_str = ", ".join(market_summary)
-
-        prompt = f"""
-        You are 'FinSight AI', a friendly financial mentor for Indian college students.
-        Here is today's live market data: {summary_str}.
-
-        Pick the 2 most interesting market movements from that list and write a short, engaging insight for each.
-        Return ONLY a valid JSON array containing exactly 2 objects.
-        Each object MUST have exactly these two keys:
-        1. "title": A short question or statement (e.g., "Why is NIFTY 50 up today?")
-        2. "text": 2-3 sentences explaining the movement in simple English, plus a quick takeaway for a beginner investor.
-
-        Rules:{STYLE_RULES}
-        - Do NOT wrap the output in ```json markdown blocks. Return only the raw JSON array.
-        """
-
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-        )
-        ai_response_text = response.text.strip()
-        
-        if ai_response_text.startswith("```json"):
-            ai_response_text = ai_response_text[7:-3].strip()
-        elif ai_response_text.startswith("```"):
-            ai_response_text = ai_response_text[3:-3].strip()
-
-        insight_data = json.loads(ai_response_text)
-        cache.set("market:insight", insight_data, TTL_MARKET_INSIGHT)
-        return cached_json(insight_data, False)
-
-    except Exception as e:
-        # Not cached, so the next request retries rather than serving this
-        # placeholder for the next 15 minutes.
-        print(f"Error generating AI insight: {e}")
-        return jsonify([{
-            "title": "AI is taking a break",
-            "text": "Market data could not be processed right now. Please check your connection or try again in a minute."
-        }])
 
 
 # --- 3. FINSIGHT IQ AI ADVISOR ROUTE (POST) ---

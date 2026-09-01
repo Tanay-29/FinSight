@@ -56,11 +56,6 @@ export interface UserProfile {
     dailyAnswered?: number;
     dailyCorrect?: number;
     /**
-     * Spend guesses keyed by month ('2026-08'). Bounded by the number of
-     * months the user has been active, so it is safe to keep on the profile.
-     */
-    spendGuesses?: Record<string, { guess: number; actual: number; accuracy: number; guessedAt: string }>;
-    /**
      * Improvement League. Opt-in defaults to off: nothing about a learner is
      * published to a cross-user collection until they turn this on.
      */
