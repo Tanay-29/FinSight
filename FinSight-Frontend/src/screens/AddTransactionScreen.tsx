@@ -22,7 +22,7 @@ import { Sparkles, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-react-n
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addTransaction, fetchCategoryCorrections } from '../store/slices/transactionsSlice';
 import { parseBankSMS } from '../utils/smartCategorizer';
-import { CATEGORIES } from '../utils/categories';
+import { CATEGORIES, INCOME_SOURCES } from '../utils/categories';
 import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
 
@@ -42,7 +42,10 @@ export default function AddTransactionScreen() {
     const [smsText, setSmsText] = useState('');
     const [amount, setAmount] = useState('');
     const [merchant, setMerchant] = useState('');
+    // Spending and income are filed against different lists, so each type
+    // remembers its own choice rather than carrying a nonsensical one across.
     const [category, setCategory] = useState('other');
+    const [incomeSource, setIncomeSource] = useState('allowance');
     const [type, setType] = useState<'debit' | 'credit'>('debit');
     const [isParsed, setIsParsed] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
@@ -63,15 +66,17 @@ export default function AddTransactionScreen() {
         setNotice(null);
         setAmount(extracted.amount.toString());
         setMerchant(extracted.merchant);
-        setCategory(extracted.category);
         setType(extracted.type as 'debit' | 'credit');
+        if (extracted.type === 'debit') setCategory(extracted.category);
         setIsParsed(true);
         haptics.success();
     };
 
     const handleSave = async () => {
         if (!amount || !merchant) {
-            setNotice('An amount and a merchant are both needed to save.');
+            setNotice(type === 'debit'
+                ? 'An amount and a merchant are both needed to save.'
+                : 'An amount and a source are both needed to save.');
             return;
         }
 
@@ -79,7 +84,7 @@ export default function AddTransactionScreen() {
             await dispatch(addTransaction({
                 amount: parseFloat(amount),
                 merchant,
-                category,
+                category: type === 'debit' ? category : incomeSource,
                 type,
                 date: new Date().toISOString(),
                 source: isParsed ? 'auto' : 'manual',
@@ -215,10 +220,12 @@ export default function AddTransactionScreen() {
                             />
                         </View>
                         <View className="flex-1 bg-white border border-border rounded-xl p-3">
-                            <Text className="text-xs text-text-secondary mb-1">Merchant</Text>
+                            <Text className="text-xs text-text-secondary mb-1">
+                                {type === 'debit' ? 'Merchant' : 'From'}
+                            </Text>
                             <TextInput
                                 className="text-lg font-semibold text-text-primary p-0"
-                                placeholder="e.g. Zomato"
+                                placeholder={type === 'debit' ? 'e.g. Zomato' : 'e.g. Dad'}
                                 placeholderTextColor="#9CA3AF"
                                 value={merchant}
                                 onChangeText={setMerchant}
@@ -227,22 +234,31 @@ export default function AddTransactionScreen() {
                     </View>
 
                     <View className="bg-white border border-border rounded-xl p-4 mb-8">
-                        <Text className="text-xs text-text-secondary mb-3">Category</Text>
+                        <Text className="text-xs text-text-secondary mb-3">
+                            {type === 'debit' ? 'Category' : 'Where it came from'}
+                        </Text>
                         <View className="flex-row flex-wrap gap-2">
-                            {CATEGORIES.map(({ key: cat, label }) => (
-                                <PressableScale
-                                    key={cat}
-                                    onPress={() => { haptics.select(); setCategory(cat); }}
-                                    activeScale={0.94}
-                                    accessibilityRole="button"
-                                    accessibilityState={{ selected: category === cat }}
-                                    className={`px-3 py-2 rounded-full border ${category === cat ? 'bg-brand-primary border-brand-primary' : 'bg-surface-secondary border-border'}`}
-                                >
-                                    <Text className={`text-sm ${category === cat ? 'text-white font-bold' : 'text-text-primary'}`}>
-                                        {label}
-                                    </Text>
-                                </PressableScale>
-                            ))}
+                            {(type === 'debit' ? CATEGORIES : INCOME_SOURCES).map(({ key, label }) => {
+                                const selected = type === 'debit' ? category === key : incomeSource === key;
+                                return (
+                                    <PressableScale
+                                        key={key}
+                                        onPress={() => {
+                                            haptics.select();
+                                            if (type === 'debit') setCategory(key);
+                                            else setIncomeSource(key);
+                                        }}
+                                        activeScale={0.94}
+                                        accessibilityRole="button"
+                                        accessibilityState={{ selected }}
+                                        className={`px-3 py-2 rounded-full border ${selected ? 'bg-brand-primary border-brand-primary' : 'bg-surface-secondary border-border'}`}
+                                    >
+                                        <Text className={`text-sm ${selected ? 'text-white font-bold' : 'text-text-primary'}`}>
+                                            {label}
+                                        </Text>
+                                    </PressableScale>
+                                );
+                            })}
                         </View>
                     </View>
                 </ScrollView>

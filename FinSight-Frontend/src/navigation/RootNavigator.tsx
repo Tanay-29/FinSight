@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { COLORS } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
@@ -33,7 +33,8 @@ const Stack = createNativeStackNavigator();
 
 export const RootNavigator = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { user, isLoading, profile, profileLoading } = useSelector((state: RootState) => state.auth);
+    const { user, isLoading, profile, profileLoading, profileSettled, profileError } =
+        useSelector((state: RootState) => state.auth);
     const reduced = useReducedMotion();
 
     useEffect(() => {
@@ -53,11 +54,40 @@ export const RootNavigator = () => {
         return unsubscribe;
     }, [dispatch]);
 
-    // Show spinner while Firebase is restoring session or profile is loading
-    if (isLoading || (user && profileLoading)) {
+    // Block only on the very first profile read.
+    //
+    // This used to be `user && profileLoading`, which meant any mid-session
+    // refresh replaced the whole navigator with a spinner. Finishing a module
+    // refetches the profile to pick up the new streak, so the stack was torn
+    // down and rebuilt at the tabs the moment a quiz ended: the results screen
+    // vanished, and with it the only route to the flashcards.
+    const awaitingFirstProfile = Boolean(user) && !profileSettled && profileLoading;
+
+    if (isLoading || awaitingFirstProfile) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.primary }}>
                 <ActivityIndicator size="large" color="#6366F1" />
+            </View>
+        );
+    }
+
+    // A profile that could not be read is not a profile that does not exist.
+    // Sending this user to onboarding would overwrite the real one.
+    if (user && !profile && profileError) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.primary, paddingHorizontal: 32 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.text.primary, textAlign: 'center' }}>
+                    Could not load your account
+                </Text>
+                <Text style={{ fontSize: 14, color: COLORS.text.secondary, textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+                    {profileError}
+                </Text>
+                <Pressable
+                    onPress={() => dispatch(fetchUserProfile(user.uid))}
+                    style={{ marginTop: 20, backgroundColor: COLORS.brand.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 14 }}
+                >
+                    <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Try again</Text>
+                </Pressable>
             </View>
         );
     }

@@ -161,12 +161,18 @@ const GoalCard: React.FC<{
                 <View className="flex-row gap-3">
                     <PressableScale
                         containerStyle={{ flex: 1 }}
-                        className="py-2.5 rounded-xl border items-center justify-center"
+                        className="py-2.5 rounded-xl border flex-row items-center justify-center"
                         style={{ borderColor: goal.color, backgroundColor: `${goal.color}10` }}
                         onPress={() => onDeposit(goal)}
                         accessibilityRole="button"
                     >
-                        <Text style={{ color: goal.color }} className="font-bold text-sm">Add money</Text>
+                        {/* The label used to start with a literal "+", which went
+                            when the copy was rewritten and left this button as the
+                            only one of the pair without a mark. */}
+                        <Plus size={14} color={goal.color} />
+                        <Text style={{ color: goal.color }} className="font-bold text-sm ml-1">
+                            Add money
+                        </Text>
                     </PressableScale>
 
                     <PressableScale

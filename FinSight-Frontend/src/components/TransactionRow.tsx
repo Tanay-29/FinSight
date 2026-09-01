@@ -7,7 +7,7 @@ import {
 } from 'lucide-react-native';
 import { COLORS } from '../theme/tokens';
 import { format } from 'date-fns';
-import { normaliseCategory } from '../utils/categories';
+import { normaliseCategory, categoryLabel, incomeLabel, isIncomeSource } from '../utils/categories';
 
 interface TransactionRowProps {
     category: string;
@@ -44,9 +44,13 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     source,
     onPress,
 }) => {
-    const key = normaliseCategory(category);
-    const IconComponent = CATEGORY_ICON_MAP[key] || DollarSign;
     const isDebit = type === 'debit';
+    // Income is filed against a source, which no spending icon describes.
+    const key = normaliseCategory(category);
+    const IconComponent = isDebit ? (CATEGORY_ICON_MAP[key] || DollarSign) : DollarSign;
+    const label = isDebit || !isIncomeSource(category)
+        ? categoryLabel(category)
+        : incomeLabel(category);
     const formattedAmount = `${isDebit ? '-' : '+'}₹${amount.toLocaleString('en-IN')}`;
     const formattedTime = format(new Date(date), 'h:mm a');
 
@@ -74,7 +78,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
                 <Text className="text-base font-semibold text-text-primary">{merchant}</Text>
                 <View className="flex-row items-center">
                     <Text className="text-xs text-text-tertiary">
-                        {category.charAt(0).toUpperCase() + category.slice(1)} • {formattedTime}
+                        {label} • {formattedTime}
                     </Text>
                     {source === 'auto' && (
                         <View className="ml-1.5">

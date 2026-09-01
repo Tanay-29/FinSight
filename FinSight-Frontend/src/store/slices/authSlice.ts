@@ -17,6 +17,18 @@ interface AuthState {
     user: AuthUser | null;
     profile: UserProfile | null;
     profileLoading: boolean;
+    /**
+     * True once a profile fetch has settled at least once this session.
+     *
+     * profileLoading alone cannot tell the navigator whether this is the first
+     * load or a refresh, and the navigator has to know: it unmounts the whole
+     * stack while the profile is loading, so treating a mid-session refresh
+     * like a cold start throws away every screen the user had open.
+     */
+    profileSettled: boolean;
+    /** Set when the profile could not be read, so the app does not assume
+     *  a missing profile means the user never onboarded. */
+    profileError: string | null;
     isLoading: boolean;
     error: string | null;
     isAuthenticated: boolean;
@@ -26,6 +38,8 @@ const initialState: AuthState = {
     user: null,
     profile: null,
     profileLoading: false,
+    profileSettled: false,
+    profileError: null,
     isLoading: false,
     error: null,
     isAuthenticated: false,
@@ -188,6 +202,8 @@ const authSlice = createSlice({
             if (!action.payload) {
                 state.profile = null;
                 state.profileLoading = false;
+                state.profileSettled = false;
+                state.profileError = null;
             }
         },
         clearError(state) {
@@ -239,14 +255,22 @@ const authSlice = createSlice({
         builder
             .addCase(fetchUserProfile.pending, (state) => {
                 state.profileLoading = true;
+                state.profileError = null;
             })
             .addCase(fetchUserProfile.fulfilled, (state, action) => {
                 state.profileLoading = false;
+                state.profileSettled = true;
                 state.profile = action.payload;
             })
-            .addCase(fetchUserProfile.rejected, (state) => {
+            // A failed read used to fall through to onboarding, which sent a
+            // user of six months back through the five setup questions because
+            // their train went into a tunnel. It records the failure instead,
+            // and the navigator offers a retry.
+            .addCase(fetchUserProfile.rejected, (state, action) => {
                 state.profileLoading = false;
-                // Non-fatal - fall through to onboarding
+                state.profileSettled = true;
+                state.profileError =
+                    (action.payload as string) ?? 'Could not load your account. Check your connection.';
             });
 
         // Complete Onboarding

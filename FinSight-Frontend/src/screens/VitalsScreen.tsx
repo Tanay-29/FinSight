@@ -182,16 +182,22 @@ const EditBudgetModal: React.FC<{
 const CreateBudgetModal: React.FC<{
     visible: boolean;
     error: string | null;
+    /** Categories that already have a budget this month. */
+    taken: string[];
     onClose: () => void;
     onSave: (categoryId: string, limit: number) => void;
-}> = ({ visible, error, onClose, onSave }) => {
+}> = ({ visible, error, taken, onClose, onSave }) => {
     // Same list the transaction picker uses, so a budget can always match the
-    // category a transaction was filed under.
-    const CATEGORIES = CATEGORY_OPTIONS.map((c) => ({ id: c.key, name: c.label }));
+    // category a transaction was filed under, minus the ones already budgeted.
+    const CATEGORIES = CATEGORY_OPTIONS
+        .filter((c) => !taken.includes(c.key))
+        .map((c) => ({ id: c.key, name: c.label }));
     const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('dining');
     const [limit, setLimit] = React.useState('');
     React.useEffect(() => {
-        if (visible) { setSelectedCategoryId('dining'); setLimit(''); }
+        if (visible) { setSelectedCategoryId(CATEGORIES[0]?.id ?? ''); setLimit(''); }
+        // CATEGORIES is derived from props and stable while the dialog is open.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visible]);
 
     return (
@@ -203,6 +209,12 @@ const CreateBudgetModal: React.FC<{
                 <View className="bg-white w-[85%] rounded-2xl p-6">
                     <Text className="text-xl font-bold text-text-primary mb-4">New budget</Text>
                     <Text className="text-sm text-text-secondary mb-2">Category</Text>
+                    {CATEGORIES.length === 0 && (
+                        <Text className="text-sm text-text-tertiary mb-4 leading-5">
+                            Every category already has a budget this month. Tap one in the
+                            list to change its limit.
+                        </Text>
+                    )}
                     <View className="flex-row flex-wrap gap-2 mb-4">
                         {CATEGORIES.map((cat) => (
                             <TouchableOpacity
@@ -359,6 +371,7 @@ export const VitalsScreen: React.FC = () => {
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
             <CreateBudgetModal
+                taken={monthBudgets.map((b) => normaliseCategory(b.category))}
                 error={createModalVisible ? budgetsError : null}
                 visible={createModalVisible}
                 onClose={() => setCreateModalVisible(false)}
@@ -577,7 +590,7 @@ export const VitalsScreen: React.FC = () => {
 
                                 return (
                                     <TouchableOpacity
-                                        key={budget.category}
+                                        key={budget.id ?? budget.category}
                                         onPress={() => { setSelectedBudget(budget); setModalVisible(true); }}
                                     >
                                         <BudgetBar

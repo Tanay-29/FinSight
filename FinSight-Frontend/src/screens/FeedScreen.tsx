@@ -19,28 +19,32 @@
  * Sync failures used to raise two Alert dialogs on top of the screen, which
  * meant a weak connection greeted the user with a modal they had to dismiss
  * before they could look at anything. They are a quiet inline line now.
+ *
+ * The AI insight carousel is gone. It was the last piece of the market feature
+ * that was cut earlier: a row of model-written notes about gold futures and
+ * the rupee, on the home screen of an app whose whole subject is what this
+ * particular student spent. It read the market, not the user, so nothing in it
+ * could ever be about them. It also put a second call to a sleeping server in
+ * front of the first screen anyone sees.
+ *
+ * The AI that stayed is the one in the IQ card, which reads their own
+ * transactions, budgets and goals and says something only true of them.
  */
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
-import { Plus, Bot, Wallet, CloudOff } from 'lucide-react-native';
+import { Plus, Wallet, CloudOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { fetchBudgets } from '../store/slices/budgetsSlice';
-import { fetchMarketInsight } from '../store/slices/marketSlice';
-import { EITMCard } from '../components/EITMCard';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import { EmptyState } from '../components/EmptyState';
 import { PressableScale } from '../components/PressableScale';
-import { Skeleton } from '../components/Skeleton';
 import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
-
-/** Card width plus its right margin, so the carousel lands on a card edge. */
-const INSIGHT_SNAP = 320 + 12;
 
 export const FeedScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -48,12 +52,6 @@ export const FeedScreen: React.FC = () => {
     const reduced = useReducedMotion();
 
     const { user } = useAppSelector((state) => state.auth);
-    const {
-        insights: eitmCards,
-        loading: marketLoading,
-        error: marketError,
-    } = useAppSelector((state) => state.market);
-
     const transactions = useAppSelector((state) => state.transactions.items);
     const transactionsError = useAppSelector((state) => state.transactions.error);
     const budgetsError = useAppSelector((state) => state.budgets.error);
@@ -67,7 +65,6 @@ export const FeedScreen: React.FC = () => {
     const syncFailed = Boolean(transactionsError || budgetsError);
 
     useEffect(() => {
-        dispatch(fetchMarketInsight());
         dispatch(fetchTransactions());
         dispatch(fetchBudgets());
     }, [dispatch]);
@@ -76,7 +73,7 @@ export const FeedScreen: React.FC = () => {
         setRefreshing(true);
         Promise.all([
             dispatch(fetchTransactions()),
-            dispatch(fetchMarketInsight()),
+            dispatch(fetchBudgets()),
         ]).then(() => setRefreshing(false));
     }, [dispatch]);
 
@@ -197,58 +194,6 @@ export const FeedScreen: React.FC = () => {
                 ) : (
                     <>
                         <FinSightIQCard />
-
-                        <View className="mt-5">
-                            <View className="px-4 mb-2 flex-row items-center">
-                                <Bot size={12} color="#6366F1" />
-                                <Text className="text-[10px] font-bold tracking-widest text-brand-primary uppercase ml-1">
-                                    AI insights
-                                </Text>
-                            </View>
-
-                            {marketLoading && eitmCards.length === 0 ? (
-                                // A placeholder shaped like the card that is coming,
-                                // rather than a line of text about Dalal Street.
-                                <View className="flex-row px-4">
-                                    <View className="w-80 mr-3 bg-white rounded-2xl border border-border p-4">
-                                        <Skeleton width="35%" height={10} />
-                                        <View style={{ height: 12 }} />
-                                        <Skeleton width="80%" height={16} />
-                                        <View style={{ height: 10 }} />
-                                        <Skeleton width="100%" height={11} />
-                                        <View style={{ height: 6 }} />
-                                        <Skeleton width="90%" height={11} />
-                                    </View>
-                                </View>
-                            ) : eitmCards.length === 0 ? (
-                                <View className="mx-4 flex-row items-start bg-white border border-border rounded-2xl px-4 py-3.5">
-                                    <CloudOff size={14} color="#9CA3AF" style={{ marginTop: 2 }} />
-                                    <View className="flex-1 ml-2">
-                                        <Text className="text-xs text-text-secondary leading-4">
-                                            {marketError ?? 'No insights right now.'}
-                                        </Text>
-                                        <Text
-                                            onPress={onRefresh}
-                                            className="text-xs font-bold text-brand-primary mt-1.5"
-                                        >
-                                            Try again
-                                        </Text>
-                                    </View>
-                                </View>
-                            ) : (
-                                <ScrollView
-                                    horizontal
-                                    showsHorizontalScrollIndicator={false}
-                                    contentContainerStyle={{ paddingHorizontal: 16 }}
-                                    decelerationRate="fast"
-                                    snapToInterval={INSIGHT_SNAP}
-                                >
-                                    {eitmCards.map((insightItem, index) => (
-                                        <EITMCard key={index} insight={insightItem} />
-                                    ))}
-                                </ScrollView>
-                            )}
-                        </View>
 
                         <View className="mt-4">
                             <FinancialVitals

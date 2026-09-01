@@ -4,7 +4,6 @@ import transactionsReducer from './slices/transactionsSlice';
 import budgetsReducer from './slices/budgetsSlice';
 import learningReducer from './slices/learningSlice';
 import goalsReducer from './slices/goalsSlice';
-import marketReducer from './slices/marketSlice';
 import iqReducer from './slices/iqSlice';
 import reviewsReducer from './slices/reviewsSlice';
 // Phase 1: Execution + Intelligence Layer
@@ -17,7 +16,6 @@ export const store = configureStore({
         budgets: budgetsReducer,
         learning: learningReducer,
         goals: goalsReducer,
-        market: marketReducer,
         iq: iqReducer,
         reviews: reviewsReducer,
         vitalsIntel: vitalsIntelReducer,

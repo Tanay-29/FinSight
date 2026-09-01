@@ -48,6 +48,50 @@ export const CATEGORIES: { key: Category; label: string }[] = [
 
 export const CATEGORY_KEYS: Category[] = CATEGORIES.map((c) => c.key);
 
+/**
+ * Where money came in from.
+ *
+ * The add-transaction form offered the eleven spending categories whatever the
+ * type was, so income had to be filed under Dining or Shopping, which is not a
+ * thing that means anything. Income needs a different question - not "what did
+ * you buy" but "where did this come from" - and a much shorter list: a student
+ * has three or four sources, not eleven.
+ *
+ * These are stored in the same `category` field. Nothing double counts,
+ * because every spending figure in the app filters on type === 'debit' before
+ * it looks at the category at all.
+ */
+export type IncomeSource =
+    | 'allowance'
+    | 'salary'
+    | 'freelance'
+    | 'scholarship'
+    | 'refund'
+    | 'gift'
+    | 'other_income';
+
+export const INCOME_SOURCES: { key: IncomeSource; label: string }[] = [
+    { key: 'allowance', label: 'From family' },
+    { key: 'salary', label: 'Salary' },
+    { key: 'freelance', label: 'Freelance' },
+    { key: 'scholarship', label: 'Scholarship' },
+    { key: 'refund', label: 'Refund' },
+    { key: 'gift', label: 'Gift' },
+    { key: 'other_income', label: 'Something else' },
+];
+
+const INCOME_KEYS = new Set<string>(INCOME_SOURCES.map((s) => s.key));
+
+/** True when a stored category names an income source rather than a spend. */
+export const isIncomeSource = (raw: string | null | undefined): boolean =>
+    INCOME_KEYS.has((raw ?? '').trim().toLowerCase());
+
+/** Display label for an income source, falling back to a readable string. */
+export function incomeLabel(raw: string | null | undefined): string {
+    const key = (raw ?? '').trim().toLowerCase();
+    return INCOME_SOURCES.find((s) => s.key === key)?.label ?? 'Income';
+}
+
 /** Spellings that already exist in stored data, and what they really mean. */
 const ALIASES: Record<string, Category> = {
     health: 'healthcare',

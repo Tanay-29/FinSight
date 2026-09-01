@@ -171,19 +171,42 @@ export async function deleteTransaction(
 
 // ─── Budgets ─────────────────────────────────────────────────
 
-/** Set or update a budget for a category */
+/**
+ * The document id for one category's budget in one month.
+ *
+ * A user can only have one budget per category per month, so that fact is
+ * encoded in the key rather than left to the caller to enforce. This function
+ * was called setBudget and documented as "set or update", but it used addDoc,
+ * which always writes a new document: setting an Entertainment budget twice
+ * left two Entertainment budgets in the same month, and the screen rendered
+ * both under the same React key.
+ */
+const budgetDocId = (month: string, category: string) =>
+    `${month}_${category.trim().toLowerCase()}`;
+
+/** Create or replace the budget for one category in one month. */
 export async function setBudget(
     userId: string,
     budget: Omit<FirestoreBudget, 'id'>
 ): Promise<string> {
-    const ref = await addDoc(
-        collection(db, 'users', userId, 'budgets'),
-        budget
+    const id = budgetDocId(budget.month, budget.category);
+    await setDoc(
+        doc(db, 'users', userId, 'budgets', id),
+        { ...budget, category: budget.category.trim().toLowerCase() },
+        { merge: true }
     );
-    return ref.id;
+    return id;
 }
 
-/** Get budgets for a given month */
+/**
+ * Budgets for a given month, at most one per category.
+ *
+ * Accounts created before the id above will still hold duplicates written by
+ * the old addDoc path, so the read collapses them: for each category the
+ * highest limit wins, and its spend is the highest recorded against any of
+ * them. Deleting the losers is left alone deliberately, because a read should
+ * not destroy data.
+ */
 export async function getBudgets(
     userId: string,
     month: string
@@ -193,7 +216,25 @@ export async function getBudgets(
         where('month', '==', month)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreBudget));
+    const all = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreBudget));
+
+    const byCategory = new Map<string, FirestoreBudget>();
+    for (const b of all) {
+        const key = (b.category ?? '').trim().toLowerCase();
+        const existing = byCategory.get(key);
+        if (!existing) {
+            byCategory.set(key, b);
+            continue;
+        }
+        byCategory.set(key, {
+            ...existing,
+            // Prefer the canonical id when one of the duplicates has it.
+            id: existing.id === budgetDocId(month, key) ? existing.id : b.id,
+            monthlyLimit: Math.max(existing.monthlyLimit, b.monthlyLimit),
+            currentSpend: Math.max(existing.currentSpend ?? 0, b.currentSpend ?? 0),
+        });
+    }
+    return [...byCategory.values()];
 }
 
 /** Subscribe to budgets in real-time */
