@@ -1,108 +1,177 @@
 /**
- * GuessSpendScreen
+ * GuessSpendScreen - which did you spend more on?
  *
- * Before showing the monthly total, ask the learner to guess it. People
- * reliably underestimate their own spending, and the gap between the guess and
- * the truth teaches more than the truth alone would.
+ * This asked for a number before: "how much have you spent this month?" The
+ * question had no anchor. Nobody can judge whether 5,000 is a sensible guess
+ * for their own month, so the answer was a shrug; being told you were 300 out
+ * gave you an accuracy percentage and nothing to do about it; and a new
+ * account had no total worth guessing at.
  *
- * Playable once per month. The guess is kept so the learner can watch their
- * own calibration improve, which is the actual skill being trained.
+ * A comparison is answerable, has a right answer, and when you get it wrong it
+ * names the exact category you were underrating. The reveal shows the number
+ * of purchases beside each total, because that is the part people are wrong
+ * about: one memorable 900 rupee order beats thirty forgettable 60 rupee ones
+ * in the memory, and loses badly in the ledger.
+ *
+ * Round selection is in utils/spendQuiz, and it matters more than this screen
+ * does: a pair that is nearly tied is a coin flip dressed as a question.
  */
 import React, { useMemo, useState } from 'react';
-import {
-    View, Text, ScrollView, TouchableOpacity, TextInput, StatusBar,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PressableScale } from '../components/PressableScale';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-    ArrowLeft, Target, TrendingDown, TrendingUp, Check, History,
-} from 'lucide-react-native';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { patchProfile } from '../store/slices/authSlice';
-import { scoreGuess, formatCompactINR } from '../utils/projections';
-import AnimatedNumber from '../components/AnimatedNumber';
+import { ArrowLeft, Scale, Check, X, Lightbulb, RotateCcw } from 'lucide-react-native';
+import { useAppSelector } from '../store/hooks';
+import { PressableScale } from '../components/PressableScale';
+import { BarFill } from '../components/BarFill';
+import { EmptyState } from '../components/EmptyState';
 import Confetti from '../components/Confetti';
+import { formatCompactINR } from '../utils/projections';
+import {
+    categoryTotals, buildRounds, blindSpot, averagePurchase,
+    CategoryTotal, QuizRound,
+} from '../utils/spendQuiz';
 import * as haptics from '../utils/haptics';
 
 type Props = NativeStackScreenProps<any, 'GuessSpend'>;
 
-const GRADE_STYLE: Record<string, { color: string; bg: string; border: string; line: string }> = {
-    'spot on': { color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', line: 'You know exactly where your money goes.' },
-    'close': { color: '#0284C7', bg: '#F0F9FF', border: '#BAE6FD', line: 'Good instincts. You are roughly tracking reality.' },
-    'off': { color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', line: 'Not far off, but the gap is worth a look.' },
-    'way off': { color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', line: 'This is the gap most people have. Now you can see it.' },
-};
+const ROUND_COUNT = 5;
+const WINDOW_DAYS = 30;
+
+/** One side of the question, before the answer is known. */
+const ChoiceButton: React.FC<{
+    option: CategoryTotal;
+    onPress: () => void;
+}> = ({ option, onPress }) => (
+    <PressableScale
+        onPress={onPress}
+        containerStyle={{ flex: 1 }}
+        accessibilityRole="button"
+        accessibilityLabel={`I spent more on ${option.label}`}
+        className="bg-white border-2 border-gray-100 rounded-2xl py-7 px-3 items-center justify-center"
+    >
+        <Text className="text-base font-bold text-gray-900 text-center" numberOfLines={2}>
+            {option.label}
+        </Text>
+    </PressableScale>
+);
+
+/** One side after the reveal, with the number that settles it. */
+const RevealRow: React.FC<{
+    option: CategoryTotal;
+    max: number;
+    isTruth: boolean;
+    wasPicked: boolean;
+    delay: number;
+}> = ({ option, max, isTruth, wasPicked, delay }) => (
+    <View className="mb-3">
+        <View className="flex-row items-center mb-1.5">
+            <Text className="text-sm font-bold text-gray-900 flex-1" numberOfLines={1}>
+                {option.label}
+            </Text>
+            {wasPicked && (
+                <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-2">
+                    your pick
+                </Text>
+            )}
+            <Text className="text-sm font-extrabold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
+                {formatCompactINR(option.amount)}
+            </Text>
+        </View>
+
+        <BarFill
+            percent={Math.max((option.amount / max) * 100, 3)}
+            height={10}
+            color={isTruth ? '#6366F1' : '#D1D5DB'}
+            trackClassName="bg-gray-100"
+            delay={delay}
+        />
+
+        {/* The count is the lesson. A big total made of many small buys is the
+            one people never see coming. */}
+        <Text className="text-xs text-gray-400 mt-1.5">
+            {option.count} purchase{option.count === 1 ? '' : 's'}, averaging{' '}
+            {formatCompactINR(averagePurchase(option))}
+        </Text>
+    </View>
+);
 
 const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
-    const dispatch = useAppDispatch();
-    const { user, profile } = useAppSelector((s) => s.auth);
     const transactions = useAppSelector((s) => s.transactions.items);
+    const reduced = useReducedMotion();
 
-    const [guess, setGuess] = useState('');
-    const [revealed, setRevealed] = useState(false);
-    const [celebrating, setCelebrating] = useState(false);
-
-    const monthKey = new Date().toISOString().slice(0, 7);
-
-    /** Total debits in the current month. */
-    const actual = useMemo(
-        () => transactions
-            .filter((t) => t.type === 'debit' && (t.date || '').slice(0, 7) === monthKey)
-            .reduce((sum, t) => sum + (t.amount || 0), 0),
-        [transactions, monthKey]
+    const totals = useMemo(
+        () => categoryTotals(transactions as any, WINDOW_DAYS),
+        [transactions]
     );
 
-    const alreadyPlayed = profile?.spendGuesses?.[monthKey];
-    const result = useMemo(() => {
-        if (alreadyPlayed && !revealed) {
-            return scoreGuess(alreadyPlayed.guess, alreadyPlayed.actual);
-        }
-        return revealed ? scoreGuess(parseFloat(guess) || 0, actual) : null;
-    }, [alreadyPlayed, revealed, guess, actual]);
+    // Rebuilt only when the deck is restarted, so answering does not reshuffle
+    // the questions underneath the player.
+    const [deckSeed, setDeckSeed] = useState(0);
+    const rounds = useMemo(
+        () => buildRounds(totals, ROUND_COUNT),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [totals, deckSeed]
+    );
 
-    const previous = useMemo(() => {
-        const all = profile?.spendGuesses ?? {};
-        return Object.entries(all)
-            .filter(([month]) => month !== monthKey)
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .slice(0, 3);
-    }, [profile?.spendGuesses, monthKey]);
+    const [index, setIndex] = useState(0);
+    const [answers, setAnswers] = useState<(CategoryTotal | null)[]>([]);
+    const [picked, setPicked] = useState<CategoryTotal | null>(null);
+    const [celebrating, setCelebrating] = useState(false);
 
-    const reveal = () => {
-        const value = parseFloat(guess);
-        if (!Number.isFinite(value) || value < 0) return;
+    const round: QuizRound | undefined = rounds[index];
+    const finished = rounds.length > 0 && index >= rounds.length;
 
-        const scored = scoreGuess(value, actual);
-        setRevealed(true);
+    const truth = round
+        ? (round.left.amount >= round.right.amount ? round.left : round.right)
+        : null;
+    const wasRight = picked !== null && truth !== null && picked.key === truth.key;
 
-        if (scored.grade === 'spot on' || scored.grade === 'close') {
-            haptics.celebrate();
-            setCelebrating(true);
-        } else {
-            haptics.warn();
-        }
+    const score = useMemo(
+        () => answers.reduce((sum, pick, i) => {
+            const r = rounds[i];
+            if (!pick || !r) return sum;
+            const t = r.left.amount >= r.right.amount ? r.left : r.right;
+            return sum + (pick.key === t.key ? 1 : 0);
+        }, 0),
+        [answers, rounds]
+    );
 
-        if (user?.uid) {
-            dispatch(patchProfile({
-                uid: user.uid,
-                patch: {
-                    spendGuesses: {
-                        ...(profile?.spendGuesses ?? {}),
-                        [monthKey]: {
-                            guess: value,
-                            actual,
-                            accuracy: scored.accuracy,
-                            guessedAt: new Date().toISOString(),
-                        },
-                    },
-                },
-            }));
+    const worst = useMemo(() => blindSpot(rounds, answers), [rounds, answers]);
+
+    const choose = (option: CategoryTotal) => {
+        if (picked || !truth) return;
+        setPicked(option);
+        setAnswers((prev) => {
+            const next = [...prev];
+            next[index] = option;
+            return next;
+        });
+        if (option.key === truth.key) haptics.success();
+        else haptics.warn();
+    };
+
+    const next = () => {
+        haptics.tap();
+        setPicked(null);
+        setIndex((i) => i + 1);
+        if (index + 1 >= rounds.length) {
+            const finalScore = score;
+            if (finalScore >= Math.ceil(rounds.length * 0.8)) {
+                haptics.celebrate();
+                setCelebrating(true);
+            }
         }
     };
 
-    const showResult = revealed || !!alreadyPlayed;
-    const style = result ? GRADE_STYLE[result.grade] : GRADE_STYLE['close'];
+    const restart = () => {
+        haptics.tap();
+        setDeckSeed((s) => s + 1);
+        setIndex(0);
+        setAnswers([]);
+        setPicked(null);
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'bottom']}>
@@ -113,133 +182,81 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                     onPress={() => navigation.goBack()}
                     accessibilityRole="button"
                     accessibilityLabel="Go back"
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3"
                 >
                     <ArrowLeft size={18} color="#374151" />
                 </TouchableOpacity>
                 <View className="flex-1">
-                    <Text className="text-base font-extrabold text-gray-900">Guess your spend</Text>
-                    <Text className="text-xs text-gray-400">Once a month, no peeking</Text>
+                    <Text className="text-base font-extrabold text-gray-900">Which was more?</Text>
+                    <Text className="text-xs text-gray-400">
+                        Your own spending, last {WINDOW_DAYS} days
+                    </Text>
                 </View>
+                {rounds.length > 0 && !finished && (
+                    <Text className="text-xs font-bold text-gray-400">
+                        {index + 1} / {rounds.length}
+                    </Text>
+                )}
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-                {actual === 0 && !showResult ? (
-                    <View className="bg-white rounded-2xl border border-gray-100 p-6 items-center mt-8">
-                        <Target size={32} color="#D1D5DB" />
-                        <Text className="text-base font-bold text-gray-900 mt-3 text-center">
-                            Nothing to guess yet
-                        </Text>
-                        <Text className="text-sm text-gray-500 mt-1.5 text-center leading-5">
-                            Log a few transactions this month, then come back and test yourself.
-                        </Text>
-                    </View>
-                ) : !showResult ? (
-                    <>
-                        <View className="items-center mb-6 mt-2">
-                            <View className="w-16 h-16 rounded-3xl bg-indigo-50 items-center justify-center mb-4">
-                                <Target size={30} color="#6366F1" />
-                            </View>
-                            <Text className="text-xl font-extrabold text-gray-900 text-center">
-                                How much have you spent this month?
+                {rounds.length === 0 ? (
+                    <EmptyState
+                        icon={<Scale color="#6366F1" size={34} />}
+                        title="Not enough to compare yet"
+                        body={
+                            totals.length < 2
+                                ? `This game pits two of your own categories against each other, so it needs spending in at least two of them over the last ${WINDOW_DAYS} days.`
+                                : 'Your categories are all within a few percent of each other right now, so every question would be a coin flip. Log a bit more and come back.'
+                        }
+                        actionLabel="Add an expense"
+                        onAction={() => navigation.navigate('AddTransaction' as never)}
+                    />
+                ) : finished ? (
+                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(300)}>
+                        <View className="bg-white rounded-3xl border border-gray-100 p-6 items-center mb-4">
+                            <Text className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                                You got
                             </Text>
-                            <Text className="text-sm text-gray-500 text-center mt-2 leading-5">
-                                No scrolling back through your transactions. Just your gut.
+                            <Text className="text-5xl font-extrabold text-gray-900 mt-1">
+                                {score} of {rounds.length}
                             </Text>
-                        </View>
-
-                        <View className="bg-white rounded-2xl border-2 border-indigo-100 p-5 mb-4">
-                            <View className="flex-row items-center justify-center">
-                                <Text className="text-3xl font-bold text-gray-300 mr-1">₹</Text>
-                                <TextInput
-                                    value={guess}
-                                    onChangeText={setGuess}
-                                    keyboardType="numeric"
-                                    autoFocus
-                                    accessibilityLabel="Your guess"
-                                    className="text-4xl font-extrabold text-gray-900 p-0 min-w-[140px]"
-                                    placeholder="0"
-                                    placeholderTextColor="#E5E7EB"
-                                />
-                            </View>
-                        </View>
-
-                        <PressableScale
-                            onPress={reveal}
-                            disabled={!guess || parseFloat(guess) <= 0}
-                            accessibilityRole="button"
-                            className={`rounded-2xl py-4 items-center ${guess && parseFloat(guess) > 0 ? 'bg-indigo-600' : 'bg-gray-200'}`}
-                        >
-                            <Text className="text-white font-bold text-base">Reveal the truth</Text>
-                        </PressableScale>
-                    </>
-                ) : result ? (
-                    <>
-                        <View
-                            className="rounded-3xl p-5 mb-4 items-center"
-                            style={{ backgroundColor: style.bg, borderWidth: 1, borderColor: style.border }}
-                        >
-                            <Text className="text-xs font-bold uppercase tracking-widest" style={{ color: style.color }}>
-                                {result.grade}
-                            </Text>
-                            <AnimatedNumber
-                                value={result.accuracy}
-                                format={(v) => `${Math.round(v)}%`}
-                                className="text-5xl font-extrabold mt-1"
-                                style={{ color: style.color }}
-                            />
-                            <Text className="text-xs mt-1" style={{ color: style.color }}>accurate</Text>
-                            <Text className="text-sm text-center mt-3 leading-5" style={{ color: style.color }}>
-                                {style.line}
+                            <Text className="text-sm text-gray-500 text-center mt-3 leading-5">
+                                {score === rounds.length
+                                    ? 'You know your own spending better than most people know theirs.'
+                                    : score === 0
+                                        ? 'Every one of those went the other way. That is worth knowing, and it is fixable.'
+                                        : 'The ones you missed are the useful part. Those are the categories you are not seeing.'}
                             </Text>
                         </View>
 
-                        <View className="flex-row gap-3 mb-4">
-                            <View className="flex-1 bg-white rounded-2xl border border-gray-100 p-4">
-                                <Text className="text-xs text-gray-400 mb-1">You guessed</Text>
-                                <Text className="text-lg font-bold text-gray-900">
-                                    {formatCompactINR(result.guess)}
-                                </Text>
-                            </View>
-                            <View className="flex-1 bg-white rounded-2xl border border-gray-100 p-4">
-                                <Text className="text-xs text-gray-400 mb-1">You actually spent</Text>
-                                <Text className="text-lg font-bold text-gray-900">
-                                    {formatCompactINR(result.actual)}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 flex-row items-center">
-                            {result.underestimated
-                                ? <TrendingUp size={20} color="#DC2626" />
-                                : <TrendingDown size={20} color="#059669" />}
-                            <Text className="text-sm text-gray-700 ml-3 flex-1 leading-5">
-                                {result.difference === 0
-                                    ? 'Exactly right. That is rare.'
-                                    : result.underestimated
-                                        ? `You spent ${formatCompactINR(result.difference)} more than you thought. Underestimating is the normal direction, and it is how budgets quietly break.`
-                                        : `You spent ${formatCompactINR(result.difference)} less than you thought. Overestimating usually means you are already paying attention.`}
-                            </Text>
-                        </View>
-
-                        {previous.length > 0 && (
-                            <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-                                <View className="flex-row items-center mb-3">
-                                    <History size={14} color="#9CA3AF" />
-                                    <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1.5">
-                                        Your past guesses
+                        {worst && (
+                            <View className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 flex-row items-start">
+                                <Lightbulb size={18} color="#D97706" style={{ marginTop: 1 }} />
+                                <View className="flex-1 ml-3">
+                                    <Text className="text-sm font-bold text-amber-900">
+                                        {worst.label} is bigger than you think
+                                    </Text>
+                                    <Text className="text-xs text-amber-800 mt-1 leading-5">
+                                        {formatCompactINR(worst.amount)} across {worst.count} purchase
+                                        {worst.count === 1 ? '' : 's'}, averaging{' '}
+                                        {formatCompactINR(averagePurchase(worst))}. Small amounts are
+                                        easy to forget and they add up faster than one large buy you
+                                        remember making.
                                     </Text>
                                 </View>
-                                {previous.map(([month, entry]) => (
-                                    <View key={month} className="flex-row justify-between py-1.5">
-                                        <Text className="text-sm text-gray-600">{month}</Text>
-                                        <Text className="text-sm font-semibold text-gray-900">
-                                            {entry.accuracy}% accurate
-                                        </Text>
-                                    </View>
-                                ))}
                             </View>
                         )}
+
+                        <PressableScale
+                            onPress={restart}
+                            accessibilityRole="button"
+                            className="bg-white border border-gray-200 rounded-2xl py-4 items-center flex-row justify-center mb-3"
+                        >
+                            <RotateCcw size={16} color="#6B7280" />
+                            <Text className="text-gray-700 font-bold text-base ml-2">Play again</Text>
+                        </PressableScale>
 
                         <PressableScale
                             onPress={() => { haptics.tap(); navigation.goBack(); }}
@@ -249,11 +266,76 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                             <Check size={18} color="white" />
                             <Text className="text-white font-bold text-base ml-2">Done</Text>
                         </PressableScale>
-
-                        <Text className="text-xs text-gray-400 text-center mt-4">
-                            Come back next month to see if your instincts have sharpened.
+                    </Animated.View>
+                ) : round && truth ? (
+                    <Animated.View
+                        key={index}
+                        entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260)}
+                    >
+                        <Text className="text-xl font-extrabold text-gray-900 text-center mt-2">
+                            Which did you spend more on?
                         </Text>
-                    </>
+                        <Text className="text-sm text-gray-500 text-center mt-2 mb-6 leading-5">
+                            No checking. Go with what you remember.
+                        </Text>
+
+                        {!picked ? (
+                            <View className="flex-row gap-3">
+                                <ChoiceButton option={round.left} onPress={() => choose(round.left)} />
+                                <ChoiceButton option={round.right} onPress={() => choose(round.right)} />
+                            </View>
+                        ) : (
+                            <Animated.View entering={FadeIn.duration(reduced ? 120 : 220)}>
+                                <View
+                                    className={`rounded-2xl p-4 mb-4 flex-row items-center ${
+                                        wasRight
+                                            ? 'bg-emerald-50 border border-emerald-100'
+                                            : 'bg-red-50 border border-red-100'
+                                    }`}
+                                >
+                                    {wasRight
+                                        ? <Check size={18} color="#059669" strokeWidth={3} />
+                                        : <X size={18} color="#DC2626" strokeWidth={3} />}
+                                    <Text
+                                        className={`text-sm font-semibold ml-2 flex-1 ${
+                                            wasRight ? 'text-emerald-800' : 'text-red-800'
+                                        }`}
+                                    >
+                                        {wasRight
+                                            ? `Right, ${truth.label} was more.`
+                                            : `Actually ${truth.label} was more.`}
+                                    </Text>
+                                </View>
+
+                                <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+                                    <RevealRow
+                                        option={round.left}
+                                        max={Math.max(round.left.amount, round.right.amount)}
+                                        isTruth={round.left.key === truth.key}
+                                        wasPicked={picked.key === round.left.key}
+                                        delay={0}
+                                    />
+                                    <RevealRow
+                                        option={round.right}
+                                        max={Math.max(round.left.amount, round.right.amount)}
+                                        isTruth={round.right.key === truth.key}
+                                        wasPicked={picked.key === round.right.key}
+                                        delay={80}
+                                    />
+                                </View>
+
+                                <PressableScale
+                                    onPress={next}
+                                    accessibilityRole="button"
+                                    className="bg-indigo-600 rounded-2xl py-4 items-center"
+                                >
+                                    <Text className="text-white font-bold text-base">
+                                        {index + 1 < rounds.length ? 'Next' : 'See how you did'}
+                                    </Text>
+                                </PressableScale>
+                            </Animated.View>
+                        )}
+                    </Animated.View>
                 ) : null}
             </ScrollView>
 

@@ -284,9 +284,9 @@ export const LearnScreen: React.FC = () => {
                         <Target size={20} color="#F43F5E" />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Guess your spend</Text>
+                        <Text className="text-base font-bold text-gray-900">Which was more?</Text>
                         <Text className="text-xs text-gray-500 mt-0.5">
-                            How closely do you actually know your own spending?
+                            Two of your own categories, head to head. Find your blind spot
                         </Text>
                     </View>
                     <ChevronRight size={18} color="#F43F5E" />
