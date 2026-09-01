@@ -356,7 +356,7 @@ const Step5Risk: React.FC<{
 
 const OnboardingScreen: React.FC = () => {
     const dispatch = useAppDispatch();
-    const { user } = useAppSelector((state) => state.auth);
+    const { user, error } = useAppSelector((state) => state.auth);
 
     const reduced = useReducedMotion();
     const [step, setStep] = useState(1);
@@ -410,7 +410,7 @@ const OnboardingScreen: React.FC = () => {
     const handleFinish = async () => {
         if (!user?.uid) return;
         setSaving(true);
-        await dispatch(completeOnboarding({
+        const result = await dispatch(completeOnboarding({
             uid: user.uid,
             data: {
                 age: Number(data.age),
@@ -421,7 +421,10 @@ const OnboardingScreen: React.FC = () => {
             },
         }));
         setSaving(false);
-        haptics.success();
+        // The buzz used to fire whether or not the save landed, which told a
+        // user their answers were in at the exact moment they were lost.
+        if (completeOnboarding.fulfilled.match(result)) haptics.success();
+        else haptics.error();
         // RootNavigator re-renders automatically when profile.onboardingComplete = true
     };
 
@@ -492,6 +495,12 @@ const OnboardingScreen: React.FC = () => {
                         {step === 5 && <Step5Risk data={data} onChange={updateData} />}
                     </Animated.View>
                 </ScrollView>
+
+                {error && (
+                    <View className="px-6 pb-1">
+                        <Text className="text-loss text-sm leading-5">{error}</Text>
+                    </View>
+                )}
 
                 {/* Navigation buttons */}
                 <View className="px-6 pb-4 flex-row gap-3">

@@ -201,9 +201,10 @@ const GoalCard: React.FC<{
 const DepositModal: React.FC<{
     visible: boolean;
     goal: FirestoreGoal | null;
+    error: string | null;
     onClose: () => void;
     onConfirm: (amount: number) => void;
-}> = ({ visible, goal, onClose, onConfirm }) => {
+}> = ({ visible, goal, error, onClose, onConfirm }) => {
     const [amount, setAmount] = useState('');
     const quickAmounts = [500, 1000, 2000, 5000];
 
@@ -268,6 +269,10 @@ const DepositModal: React.FC<{
                         />
                     </View>
 
+                    {error && (
+                        <Text className="text-loss text-sm mb-4 leading-5">{error}</Text>
+                    )}
+
                     <View className="flex-row gap-3">
                         <TouchableOpacity
                             className="flex-1 border border-border rounded-xl py-3 items-center"
@@ -309,9 +314,10 @@ const GOAL_COLORS = [
 
 const AddGoalModal: React.FC<{
     visible: boolean;
+    error: string | null;
     onClose: () => void;
     onSave: (goal: Omit<FirestoreGoal, 'id'>) => void;
-}> = ({ visible, onClose, onSave }) => {
+}> = ({ visible, error, onClose, onSave }) => {
     const [title, setTitle] = useState('');
     const [target, setTarget] = useState('');
     // Defaults to three months out: far enough to be a goal, near enough to
@@ -470,6 +476,10 @@ const AddGoalModal: React.FC<{
                         />
                     )}
 
+                    {error && (
+                        <Text className="text-loss text-sm mb-4 leading-5">{error}</Text>
+                    )}
+
                     <View className="flex-row gap-3">
                         <TouchableOpacity
                             className="flex-1 border border-border rounded-xl py-3 items-center"
@@ -553,8 +563,13 @@ export const GoalsScreen: React.FC = () => {
     }, [dispatch]);
 
     const handleCreateGoal = async (goal: Omit<FirestoreGoal, 'id'>) => {
-        await dispatch(createGoal(goal));
-        setAddModalVisible(false);
+        // Closing regardless is what made a failed save look like a button
+        // that did nothing at all.
+        const result = await dispatch(createGoal(goal));
+        if (createGoal.fulfilled.match(result)) {
+            haptics.commit();
+            setAddModalVisible(false);
+        }
     };
 
     const handleDeposit = (goal: FirestoreGoal) => {
@@ -564,9 +579,11 @@ export const GoalsScreen: React.FC = () => {
 
     const handleConfirmDeposit = async (amount: number) => {
         if (!selectedGoal?.id) return;
-        await dispatch(depositToGoal({ goalId: selectedGoal.id, amount }));
-        setDepositModalVisible(false);
-        setSelectedGoal(null);
+        const result = await dispatch(depositToGoal({ goalId: selectedGoal.id, amount }));
+        if (depositToGoal.fulfilled.match(result)) {
+            setDepositModalVisible(false);
+            setSelectedGoal(null);
+        }
     };
 
     const handleDelete = async (goalId: string) => {
@@ -577,11 +594,13 @@ export const GoalsScreen: React.FC = () => {
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
             {/* Modals */}
             <AddGoalModal
+                error={addModalVisible ? error : null}
                 visible={addModalVisible}
                 onClose={() => setAddModalVisible(false)}
                 onSave={handleCreateGoal}
             />
             <DepositModal
+                error={depositModalVisible ? error : null}
                 visible={depositModalVisible}
                 goal={selectedGoal}
                 onClose={() => setDepositModalVisible(false)}
@@ -628,9 +647,8 @@ export const GoalsScreen: React.FC = () => {
                         className="mx-4 mt-2 flex-row items-center bg-white border border-border rounded-xl px-3 py-2.5"
                     >
                         <CloudOff size={14} color="#6B7280" />
-                        <Text className="text-xs text-text-secondary ml-2 flex-1">
-                            Your goals could not sync just now. Recent changes are saved on this
-                            device and will go up when the connection is back.
+                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4">
+                            {error}
                         </Text>
                     </Animated.View>
                 )}

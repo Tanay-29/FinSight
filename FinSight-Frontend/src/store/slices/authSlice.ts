@@ -244,12 +244,36 @@ const authSlice = createSlice({
             });
 
         // Logout
-        builder.addCase(logOutUser.fulfilled, (state) => {
-            state.user = null;
-            state.profile = null;
-            state.isAuthenticated = false;
-            state.isLoading = false;
-        });
+        builder
+            .addCase(logOutUser.fulfilled, (state) => {
+                state.user = null;
+                state.profile = null;
+                state.isAuthenticated = false;
+                state.isLoading = false;
+                state.profileSettled = false;
+                state.profileError = null;
+            })
+            .addCase(logOutUser.rejected, (state, action) => {
+                // A sign-out that did not happen has to say so, or the user
+                // walks away from a shared laptop believing they are out.
+                state.error = (action.payload as string)
+                    ?? 'Could not sign you out. Check your connection and try again.';
+            });
+
+        // Completing onboarding.
+        //
+        // This had no rejected case, so a first-run save that failed left the
+        // new user on the last question with a success buzz, no message, and
+        // no way forward: the navigator only moves them on once the profile
+        // says onboardingComplete, and it never would.
+        builder
+            .addCase(completeOnboarding.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(completeOnboarding.rejected, (state, action) => {
+                state.error = (action.payload as string)
+                    ?? 'Could not save your answers. Check your connection and try again.';
+            });
 
         // Fetch Profile
         builder

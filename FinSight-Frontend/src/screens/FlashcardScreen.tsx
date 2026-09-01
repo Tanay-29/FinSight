@@ -395,7 +395,15 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                     keyPoints: keyPoints ?? [],
                 }),
             });
-            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+            // friendlyError passes short custom messages straight through, so
+            // this has to read as a sentence rather than a status code.
+            if (!res.ok) {
+                throw new Error(
+                    res.status >= 500
+                        ? 'The card generator is not responding. Try again in a moment.'
+                        : 'Could not build cards for this module.'
+                );
+            }
             const data: Flashcard[] = await res.json();
             loadDeck(data.map((c) => ({ ...c, moduleId, moduleTitle, pathId })));
         } catch (e: any) {

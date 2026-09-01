@@ -122,23 +122,48 @@ const goalsSlice = createSlice({
                 state.error = action.payload as string;
             });
 
-        // Create
-        builder.addCase(createGoal.fulfilled, (state, action) => {
-            state.items.unshift(action.payload);
-        });
+        // Writes.
+        //
+        // None of these had a rejected case. A goal that failed to save, a
+        // deposit that never landed and a delete that did not happen all left
+        // the store untouched and said nothing, so the screen carried on as
+        // though the write had worked. Every one of them records its failure
+        // now, and the screens keep their dialogs open until the write lands.
+        builder
+            .addCase(createGoal.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(createGoal.fulfilled, (state, action) => {
+                state.items.unshift(action.payload);
+            })
+            .addCase(createGoal.rejected, (state, action) => {
+                state.error = action.payload as string;
+            });
 
-        // Deposit
-        builder.addCase(depositToGoal.fulfilled, (state, action) => {
-            const idx = state.items.findIndex((g) => g.id === action.payload.goalId);
-            if (idx !== -1) {
-                state.items[idx].savedAmount = action.payload.savedAmount;
-            }
-        });
+        builder
+            .addCase(depositToGoal.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(depositToGoal.fulfilled, (state, action) => {
+                const idx = state.items.findIndex((g) => g.id === action.payload.goalId);
+                if (idx !== -1) {
+                    state.items[idx].savedAmount = action.payload.savedAmount;
+                }
+            })
+            .addCase(depositToGoal.rejected, (state, action) => {
+                state.error = action.payload as string;
+            });
 
-        // Remove
-        builder.addCase(removeGoal.fulfilled, (state, action) => {
-            state.items = state.items.filter((g) => g.id !== action.payload);
-        });
+        builder
+            .addCase(removeGoal.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(removeGoal.fulfilled, (state, action) => {
+                state.items = state.items.filter((g) => g.id !== action.payload);
+            })
+            .addCase(removeGoal.rejected, (state, action) => {
+                state.error = action.payload as string;
+            });
     },
 });
 

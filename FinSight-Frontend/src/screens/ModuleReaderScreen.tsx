@@ -19,7 +19,7 @@ import { PressableScale } from '../components/PressableScale';
 import { BarFill } from '../components/BarFill';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-    ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb,
+    ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb, CloudOff,
     Trophy, Flame, BookOpen, Star, RefreshCw, CheckCircle2, BrainCircuit,
     Snowflake,
 } from 'lucide-react-native';
@@ -272,10 +272,16 @@ const DonePhase: React.FC<{
     streakSaved: boolean;
     moduleName: string;
     isSaving: boolean;
+    /** Set when the completion write did not land. */
+    saveFailed: boolean;
+    onRetrySave: () => void;
     onBack: () => void;
     onRetake: () => void;
     onFlashcards: () => void;
-}> = ({ score, total, badgeEarned, streak, streakSaved, moduleName, isSaving, onBack, onRetake, onFlashcards }) => {
+}> = ({
+    score, total, badgeEarned, streak, streakSaved, moduleName,
+    isSaving, saveFailed, onRetrySave, onBack, onRetake, onFlashcards,
+}) => {
     const pct = Math.round((score / total) * 100);
     const perfect = score === total;
     const passed = pct >= 60;
@@ -355,11 +361,32 @@ const DonePhase: React.FC<{
                 </View>
             )}
 
-            {/* Saving state */}
+            {/* Saving state.
+                A completion that did not reach Firestore used to say nothing:
+                the screen showed the badge and the streak, the next module
+                stayed locked, and the reason was never on screen. */}
             {isSaving && (
                 <View className="mt-4 flex-row items-center">
                     <ActivityIndicator size="small" color="#6366F1" />
-                    <Text className="text-xs text-gray-400 ml-2">Saving your progress…</Text>
+                    <Text className="text-xs text-gray-400 ml-2">Saving your progress</Text>
+                </View>
+            )}
+
+            {saveFailed && !isSaving && (
+                <View className="mt-4 mx-4 bg-amber-50 border border-amber-100 rounded-2xl p-3.5 flex-row items-start">
+                    <CloudOff size={15} color="#D97706" style={{ marginTop: 1 }} />
+                    <View className="flex-1 ml-2.5">
+                        <Text className="text-xs text-amber-900 leading-4">
+                            You finished this, but it did not save, so the next module stays
+                            locked until it does.
+                        </Text>
+                        <Text
+                            onPress={onRetrySave}
+                            style={{ fontSize: 12, fontWeight: '700', color: '#B45309', marginTop: 6 }}
+                        >
+                            Try saving again
+                        </Text>
+                    </View>
                 </View>
             )}
 
@@ -422,9 +449,29 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     const [phase, setPhase] = useState<Phase>('reading');
     const [quizScore, setQuizScore] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [saveFailed, setSaveFailed] = useState(false);
     const [quizAttempt, setQuizAttempt] = useState(0); // increment to retake
     const [celebrating, setCelebrating] = useState(false);
     const [streakSaved, setStreakSaved] = useState(false);
+
+    const saveCompletion = useCallback(async () => {
+        if (!user?.uid || !path?.id || !module?.id) return;
+        setIsSaving(true);
+        setSaveFailed(false);
+        const result = await dispatch(completeModule({
+            userId: user.uid,
+            pathId: path.id,
+            moduleId: module.id,
+            totalModules: path.modules?.length ?? 1,
+        }));
+        setIsSaving(false);
+
+        if (completeModule.fulfilled.match(result)) {
+            setStreakSaved(result.payload.streakUpdate?.savedByFreeze ?? false);
+        } else {
+            setSaveFailed(true);
+        }
+    }, [user, path, module, dispatch]);
 
     // Declared before the early return below: hooks must run on every render.
     const handleQuizFinish = useCallback(async (score: number) => {
@@ -432,27 +479,14 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
         setPhase('done');
 
         // Mark complete in Firestore regardless of score (reading = learning)
-        if (user?.uid && path?.id && module?.id) {
-            setIsSaving(true);
-            const result = await dispatch(completeModule({
-                userId: user.uid,
-                pathId: path.id,
-                moduleId: module.id,
-                totalModules: path.modules?.length ?? 1,
-            }));
-            setIsSaving(false);
-
-            if (completeModule.fulfilled.match(result)) {
-                setStreakSaved(result.payload.streakUpdate?.savedByFreeze ?? false);
-            }
-        }
+        await saveCompletion();
 
         // Celebrate the finish, harder for a perfect run.
         const total = module?.quiz?.length ?? 0;
         if (total > 0 && score === total) haptics.celebrate();
         else haptics.success();
         setCelebrating(true);
-    }, [user, path, module, dispatch]);
+    }, [module, saveCompletion]);
 
     if (!module || !path) {
         return (
@@ -553,6 +587,8 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
                     streakSaved={streakSaved}
                     moduleName={module.title}
                     isSaving={isSaving}
+                    saveFailed={saveFailed}
+                    onRetrySave={saveCompletion}
                     onBack={handleBack}
                     onRetake={handleRetake}
                     onFlashcards={handleFlashcards}

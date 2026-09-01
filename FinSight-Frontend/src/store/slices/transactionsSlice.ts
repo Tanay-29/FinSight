@@ -209,6 +209,11 @@ const transactionsSlice = createSlice({
         builder
             .addCase(removeTransaction.fulfilled, (state, action) => {
                 state.items = state.items.filter((item) => item.id !== action.payload);
+            })
+            // Without this a delete that failed left the row on screen with no
+            // explanation, which reads as the tap not registering.
+            .addCase(removeTransaction.rejected, (state, action) => {
+                state.error = action.payload as string;
             });
 
         // Category correction, applied optimistically so the deck stays snappy
