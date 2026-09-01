@@ -11,10 +11,11 @@ import {
     Alert,
     ActivityIndicator,
     Platform,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, Trash2, PiggyBank, Target, TrendingUp, CheckCircle, CalendarDays, Star, Zap } from 'lucide-react-native';
+import { Plus, Trash2, PiggyBank, TrendingUp, CheckCircle, CalendarDays, Star, Zap, CloudOff } from 'lucide-react-native';
 import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
@@ -24,6 +25,11 @@ import {
     removeGoal,
 } from '../store/slices/goalsSlice';
 import { FirestoreGoal } from '../services/firestoreService';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import { EmptyState } from '../components/EmptyState';
+import { BarFill } from '../components/BarFill';
+import { PressableScale } from '../components/PressableScale';
+import * as haptics from '../utils/haptics';
 import { addMonths, differenceInDays, format, parseISO } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
 
@@ -88,7 +94,7 @@ const GoalCard: React.FC<{
 
                 <TouchableOpacity
                     onPress={() =>
-                        Alert.alert('Delete Goal', `Remove "${goal.title}"?`, [
+                        Alert.alert('Delete goal', `Remove "${goal.title}"?`, [
                             { text: 'Cancel', style: 'cancel' },
                             {
                                 text: 'Delete',
@@ -98,6 +104,9 @@ const GoalCard: React.FC<{
                         ])
                     }
                     className="p-2"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete the goal ${goal.title}`}
                 >
                     <Trash2 color="#9CA3AF" size={16} />
                 </TouchableOpacity>
@@ -116,22 +125,16 @@ const GoalCard: React.FC<{
                 </Text>
             </View>
 
-            {/* Progress Bar */}
-            <View className="h-3 bg-surface-tertiary rounded-full overflow-hidden mb-2">
-                <View
-                    className="h-full rounded-full"
-                    style={{
-                        width: `${progress}%`,
-                        backgroundColor: isComplete ? '#10B981' : goal.color,
-                    }}
-                />
-            </View>
+            <BarFill
+                percent={progress}
+                height={12}
+                color={isComplete ? '#10B981' : goal.color}
+                style={{ marginBottom: 8 }}
+            />
 
-            {/* Stats row */}
-            <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-xs text-text-tertiary">
-                    {Math.round(progress)}% saved
-                </Text>
+            {/* The bar already says what percentage is saved, so the only line
+                worth spending here is the one it cannot show. */}
+            <View className="flex-row justify-end items-center mb-4">
                 {!isComplete && remaining > 0 && (
                     <Text className="text-xs text-text-tertiary">
                         ₹{remaining.toLocaleString('en-IN')} to go
@@ -156,31 +159,31 @@ const GoalCard: React.FC<{
             {/* Action buttons */}
             {!isComplete ? (
                 <View className="flex-row gap-3">
-                    {/* Standard Add Money Button */}
-                    <TouchableOpacity
-                        className="flex-1 py-2.5 rounded-xl border items-center justify-center"
+                    <PressableScale
+                        containerStyle={{ flex: 1 }}
+                        className="py-2.5 rounded-xl border items-center justify-center"
                         style={{ borderColor: goal.color, backgroundColor: `${goal.color}10` }}
                         onPress={() => onDeposit(goal)}
-                        activeOpacity={0.8}
+                        accessibilityRole="button"
                     >
-                        <Text style={{ color: goal.color }} className="font-bold text-sm">+ Add Money</Text>
-                    </TouchableOpacity>
+                        <Text style={{ color: goal.color }} className="font-bold text-sm">Add money</Text>
+                    </PressableScale>
 
-                    {/* NEW: Accelerate Goal Button */}
-                    <TouchableOpacity
+                    <PressableScale
+                        containerStyle={{ flex: 1 }}
                         onPress={() => (navigation as any).navigate('GoalAcceleration', { goalId: goal.id })}
-                        className="flex-1 py-2.5 rounded-xl flex-row justify-center items-center shadow-sm"
+                        accessibilityRole="button"
+                        className="py-2.5 rounded-xl flex-row justify-center items-center"
                         style={{ backgroundColor: goal.color }}
                     >
                         <Text className="text-white font-bold text-sm mr-1">Accelerate</Text>
                         <Zap size={14} color="white" />
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
             ) : (
                 <View className="bg-profit-bg rounded-xl py-2.5 items-center flex-row justify-center">
                     <CheckCircle color="#10B981" size={16} />
-                    <Text className="text-profit font-semibold text-sm ml-2">Completed!</Text>
-                    <Star size={14} color="#10B981" style={{ marginLeft: 4 }} />
+                    <Text className="text-profit font-semibold text-sm ml-2">Completed</Text>
                 </View>
             )}
         </View>
@@ -204,7 +207,10 @@ const DepositModal: React.FC<{
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <View className="flex-1 justify-end bg-black/40">
+            <KeyboardAvoidingView
+                className="flex-1 justify-end bg-black/40"
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
                 <View className="bg-white rounded-t-3xl p-6">
                     <View className="flex-row items-center mb-1">
                         {React.createElement(goalIcon(goal?.icon), { size: 20, color: goal?.color ?? '#6366F1' })}
@@ -220,10 +226,13 @@ const DepositModal: React.FC<{
                     {/* Quick amounts */}
                     <View className="flex-row gap-2 mb-4">
                         {quickAmounts.map((q) => (
-                            <TouchableOpacity
+                            <PressableScale
                                 key={q}
-                                className="flex-1 border border-border rounded-xl py-2 items-center"
-                                onPress={() => setAmount(String(q))}
+                                containerStyle={{ flex: 1 }}
+                                activeScale={0.94}
+                                accessibilityRole="button"
+                                className="border border-border rounded-xl py-2 items-center"
+                                onPress={() => { haptics.select(); setAmount(String(q)); }}
                                 style={
                                     amount === String(q)
                                         ? { borderColor: goal?.color, backgroundColor: `${goal?.color}15` }
@@ -236,7 +245,7 @@ const DepositModal: React.FC<{
                                 >
                                     ₹{q.toLocaleString('en-IN')}
                                 </Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         ))}
                     </View>
 
@@ -260,25 +269,27 @@ const DepositModal: React.FC<{
                         >
                             <Text className="text-text-secondary font-semibold">Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            className="flex-1 rounded-xl py-3 items-center"
+                        <PressableScale
+                            containerStyle={{ flex: 1 }}
+                            className="rounded-xl py-3 items-center"
                             style={{
                                 backgroundColor:
                                     !amount || parseFloat(amount) <= 0
                                         ? '#E5E7EB'
                                         : goal?.color ?? '#6366F1',
                             }}
+                            accessibilityRole="button"
                             onPress={() => {
                                 const val = parseFloat(amount);
-                                if (val > 0) onConfirm(val);
+                                if (val > 0) { haptics.commit(); onConfirm(val); }
                             }}
                             disabled={!amount || parseFloat(amount) <= 0}
                         >
                             <Text className="text-white font-bold">Confirm</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
@@ -333,7 +344,10 @@ const AddGoalModal: React.FC<{
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <View className="flex-1 justify-end bg-black/40">
+            <KeyboardAvoidingView
+                className="flex-1 justify-end bg-black/40"
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
                 <View className="bg-white rounded-t-3xl p-6">
                     <Text className="text-xl font-bold text-text-primary mb-5">
                         New Savings Goal
@@ -457,17 +471,18 @@ const AddGoalModal: React.FC<{
                         >
                             <Text className="text-text-secondary font-semibold">Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            className="flex-1 rounded-xl py-3 items-center"
+                        <PressableScale
+                            containerStyle={{ flex: 1 }}
+                            className="rounded-xl py-3 items-center"
                             style={{ backgroundColor: selectedColor }}
                             onPress={handleSave}
-                            activeOpacity={0.85}
+                            accessibilityRole="button"
                         >
-                            <Text className="text-white font-bold">Create Goal</Text>
-                        </TouchableOpacity>
+                            <Text className="text-white font-bold">Create goal</Text>
+                        </PressableScale>
                     </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
@@ -484,7 +499,7 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
         <View className="mx-4 mt-3 bg-brand-primary rounded-2xl p-4">
             <View className="flex-row justify-between items-center mb-3">
                 <View>
-                    <Text className="text-white/70 text-xs mb-0.5">Total Saved</Text>
+                    <Text className="text-white/70 text-xs mb-0.5">Total saved</Text>
                     <Text className="text-white text-2xl font-bold">
                         ₹{totalSaved.toLocaleString('en-IN')}
                     </Text>
@@ -508,13 +523,7 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
                 </View>
             </View>
 
-            {/* Overall progress bar */}
-            <View className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <View
-                    className="h-full bg-white rounded-full"
-                    style={{ width: `${overallPct}%` }}
-                />
-            </View>
+            <BarFill percent={overallPct} trackClassName="bg-white/20" fillClassName="bg-white" />
         </View>
     );
 };
@@ -524,6 +533,7 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
 export const GoalsScreen: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigation = useNavigation();
+    const reduced = useReducedMotion();
     const { items: goals, loading, error } = useAppSelector((state) => state.goals);
     const { user } = useAppSelector((state) => state.auth);
     const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
@@ -535,12 +545,6 @@ export const GoalsScreen: React.FC = () => {
     useEffect(() => {
         dispatch(fetchGoals());
     }, [dispatch]);
-
-    useEffect(() => {
-        if (error) {
-            Alert.alert('Database Error', error + '\n\nPlease check your Firebase Security Rules.');
-        }
-    }, [error]);
 
     const handleCreateGoal = async (goal: Omit<FirestoreGoal, 'id'>) => {
         await dispatch(createGoal(goal));
@@ -587,82 +591,87 @@ export const GoalsScreen: React.FC = () => {
                 <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
                     <View>
                         <Text className="text-2xl font-bold text-text-primary">
-                            Savings Goals
+                            Savings goals
                         </Text>
                         <Text className="text-sm text-text-secondary">
-                            Track and grow your financial dreams
+                            {goals.length === 0
+                                ? 'Nothing set yet'
+                                : `${goals.length} goal${goals.length === 1 ? '' : 's'} on the go`}
                         </Text>
                     </View>
                     <View className="flex-row items-center gap-3">
                         {loading && <ActivityIndicator size="small" color="#6366F1" />}
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => navigation.navigate('Profile' as never)}
-                            activeOpacity={0.8}
+                            activeScale={0.92}
+                            accessibilityRole="button"
+                            accessibilityLabel="Your profile"
                             className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
                         >
                             <Text className="text-white font-bold text-base">{userInitial}</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </View>
 
-                {/* Squad Goals: the shared counterpart to the private goals below */}
+                {/* A save that did not reach Firestore is worth saying once,
+                    quietly. It used to be an Alert telling the user to go and
+                    check their Firebase security rules. */}
+                {error && (
+                    <Animated.View
+                        entering={FadeIn.duration(200)}
+                        className="mx-4 mt-2 flex-row items-center bg-white border border-border rounded-xl px-3 py-2.5"
+                    >
+                        <CloudOff size={14} color="#6B7280" />
+                        <Text className="text-xs text-text-secondary ml-2 flex-1">
+                            Your goals could not sync just now. Recent changes are saved on this
+                            device and will go up when the connection is back.
+                        </Text>
+                    </Animated.View>
+                )}
 
-                {/* Round-up and bill splitting. Both are ways money moves
-                    towards or between people's savings, which is the question
-                    this tab answers. They were previously tiles on Vitals. */}
-
-
-                {/* Summary Banner (only if goals exist) */}
                 {goals.length > 0 && <SummaryBanner goals={goals} />}
 
                 {/* Goals list */}
                 <View className="mt-4">
                     {goals.length > 0 ? (
-                        goals.map((goal) => (
-                            <GoalCard
+                        goals.map((goal, i) => (
+                            <Animated.View
                                 key={goal.id}
-                                goal={goal}
-                                onDeposit={handleDeposit}
-                                onDelete={handleDelete}
-                            />
+                                entering={
+                                    reduced
+                                        ? FadeIn.duration(160)
+                                        : FadeInDown.duration(260).delay(i * 55)
+                                }
+                            >
+                                <GoalCard
+                                    goal={goal}
+                                    onDeposit={handleDeposit}
+                                    onDelete={handleDelete}
+                                />
+                            </Animated.View>
                         ))
                     ) : (
-                        // Empty state
-                        <View className="items-center py-16 px-8">
-                            <View className="w-20 h-20 rounded-full bg-brand-primary/10 items-center justify-center mb-4">
-                                <PiggyBank color="#6366F1" size={36} />
-                            </View>
-                            <Text className="text-xl font-bold text-text-primary mb-2 text-center">
-                                No goals yet
-                            </Text>
-                            <Text className="text-sm text-text-secondary text-center leading-5 mb-6">
-                                Set a savings goal - whether it's a vacation, emergency fund, or
-                                new gadget - and track your progress here.
-                            </Text>
-                            <TouchableOpacity
-                                className="bg-brand-primary px-8 py-3 rounded-2xl flex-row items-center"
-                                onPress={() => setAddModalVisible(true)}
-                                activeOpacity={0.85}
-                            >
-                                <Plus color="white" size={18} />
-                                <Text className="text-white font-bold ml-2">
-                                    Create First Goal
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
+                        <EmptyState
+                            icon={<PiggyBank color="#6366F1" size={36} />}
+                            title="No goals yet"
+                            body="Set one savings goal, a trip, an emergency fund, a new phone, and this screen tracks how close you are and what it takes each month."
+                            actionLabel="Create your first goal"
+                            onAction={() => setAddModalVisible(true)}
+                        />
                     )}
                 </View>
             </ScrollView>
 
-            {/* FAB */}
             {goals.length > 0 && (
-                <TouchableOpacity
+                <PressableScale
                     className="absolute bottom-6 right-6 bg-brand-primary w-14 h-14 rounded-full items-center justify-center shadow-lg"
                     onPress={() => setAddModalVisible(true)}
-                    activeOpacity={0.85}
+                    activeScale={0.92}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add a goal"
                 >
                     <Plus color="white" size={24} />
-                </TouchableOpacity>
+                </PressableScale>
             )}
         </SafeAreaView>
     );

@@ -17,6 +17,7 @@ import {
     Dimensions, StatusBar, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PressableScale } from '../components/PressableScale';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, Check, X as XIcon, Sparkles, Utensils, ShoppingBag,
@@ -198,14 +199,13 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         {confirmed} confirmed, {corrected} corrected. Your spending charts just
                         got more accurate.
                     </Text>
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={() => { haptics.tap(); navigation.goBack(); }}
-                        activeOpacity={0.85}
                         accessibilityRole="button"
                         className="bg-indigo-600 rounded-2xl py-4 px-10 mt-8"
                     >
                         <Text className="text-white font-bold text-base">Done</Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
             ) : picking ? (
                 <ScrollView contentContainerStyle={{ padding: 20 }}>

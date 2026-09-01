@@ -12,6 +12,7 @@ import {
     LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BarFill } from '../components/BarFill';
 import {
     ChevronLeft, ChevronDown, ChevronUp,
     ShoppingCart, Home, TrendingUp, TrendingDown,
@@ -133,6 +134,12 @@ const BucketCard: React.FC<{
         .filter(([, v]) => v > 0)
         .sort(([, a], [, b]) => b - a);
 
+    // The breakdown bars used to be drawn at the category's share of total
+    // spending multiplied by three, which meant anything above a third of the
+    // month filled the bar and two very different categories looked the same.
+    // They are drawn relative to the largest category in this bucket instead.
+    const largestCat = cats.length > 0 ? cats[0][1] : 1;
+
     return (
         <View style={{
             backgroundColor: '#FFFFFF',
@@ -207,8 +214,8 @@ const BucketCard: React.FC<{
                     <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
                         Breakdown
                     </Text>
-                    {cats.map(([cat, amt]) => {
-                        const catPct = totalSpend > 0 ? (amt / totalSpend) * 100 : 0;
+                    {cats.map(([cat, amt], i) => {
+                        const catPct = (amt / largestCat) * 100;
                         return (
                             <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                                 <View style={{ flex: 1 }}>
@@ -220,9 +227,13 @@ const BucketCard: React.FC<{
                                             ₹{amt.toLocaleString('en-IN')}
                                         </Text>
                                     </View>
-                                    <View style={{ height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, overflow: 'hidden' }}>
-                                        <View style={{ height: '100%', width: `${Math.min(catPct * 3, 100)}%`, backgroundColor: meta.color + 'A0', borderRadius: 2 }} />
-                                    </View>
+                                    <BarFill
+                                        percent={Math.max(catPct, 2)}
+                                        height={4}
+                                        color={meta.color + 'A0'}
+                                        trackClassName="bg-gray-100"
+                                        delay={i * 40}
+                                    />
                                 </View>
                             </View>
                         );
@@ -305,7 +316,7 @@ const MoneyManagerScreen: React.FC = () => {
                     <ChevronLeft size={20} color="#111827" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Money Manager</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Money manager</Text>
                     <Text style={{ fontSize: 12, color: '#9CA3AF' }}>50 / 30 / 20 Rule · {format(new Date(), 'MMMM yyyy')}</Text>
                 </View>
             </View>

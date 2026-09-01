@@ -5,12 +5,16 @@
  * writes an actual file, and deleting the account really deletes it.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, Switch, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { BarFill } from '../components/BarFill';
+import { PressableScale } from '../components/PressableScale';
+import { COLORS } from '../theme/tokens';
 import Constants from 'expo-constants';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight,
+    Trash2, Flame, ChevronRight, ChevronLeft,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
@@ -28,14 +32,18 @@ const SettingsRow: React.FC<{
     danger?: boolean;
     disabled?: boolean;
 }> = ({ icon, label, hint, onPress, rightElement, danger, disabled }) => (
-    <TouchableOpacity
+    // A settings row marks press with its own background rather than scaling,
+    // for the same reason a transaction row does.
+    <Pressable
         className="flex-row items-center px-4 py-3.5 border-b border-border"
         onPress={onPress ? () => { haptics.tap(); onPress(); } : undefined}
         disabled={disabled || !onPress}
-        activeOpacity={onPress ? 0.7 : 1}
         accessibilityRole="button"
         accessibilityLabel={label}
-        style={disabled ? { opacity: 0.5 } : undefined}
+        style={({ pressed }) => ({
+            opacity: disabled ? 0.5 : 1,
+            backgroundColor: pressed && onPress ? COLORS.surface.secondary : 'transparent',
+        })}
     >
         <View className="w-8 h-8 rounded-lg bg-surface-secondary items-center justify-center mr-3">
             {icon}
@@ -47,10 +55,11 @@ const SettingsRow: React.FC<{
             {hint ? <Text className="text-xs text-text-tertiary mt-0.5">{hint}</Text> : null}
         </View>
         {rightElement ?? <ChevronRight size={16} color="#9CA3AF" />}
-    </TouchableOpacity>
+    </Pressable>
 );
 
 export const ProfileScreen: React.FC = () => {
+    const navigation = useNavigation();
     const { user, profile } = useAppSelector((state) => state.auth);
     const goals = useAppSelector((state) => state.goals.items);
     const dispatch = useAppDispatch();
@@ -103,7 +112,7 @@ export const ProfileScreen: React.FC = () => {
     };
 
     const handleLogout = () => {
-        Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+        Alert.alert('Sign out', 'Sign out of FinSight on this device?', [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Sign Out', style: 'destructive', onPress: () => dispatch(logOutUser()) },
         ]);
@@ -154,8 +163,16 @@ export const ProfileScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 80 }}
             >
-                {/* Header */}
-                <View className="px-4 pt-4 pb-2">
+                <View className="px-4 pt-4 pb-2 flex-row items-center">
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        className="mr-2 -ml-1"
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Go back"
+                    >
+                        <ChevronLeft size={26} color="#111827" />
+                    </TouchableOpacity>
                     <Text className="text-2xl font-bold text-text-primary">Profile</Text>
                 </View>
 
@@ -185,7 +202,7 @@ export const ProfileScreen: React.FC = () => {
                     <View className="flex-row items-center mb-3">
                         <Target size={20} color="#6366F1" />
                         <Text className="text-lg font-semibold text-text-primary ml-2">
-                            Primary Goal
+                            Primary goal
                         </Text>
                     </View>
 
@@ -203,17 +220,14 @@ export const ProfileScreen: React.FC = () => {
                             <Text className="text-sm text-text-secondary mb-3">
                                 Target: ₹{primaryGoal.targetAmount.toLocaleString('en-IN')}
                             </Text>
-                            <View className="h-2 bg-white rounded-full overflow-hidden">
-                                <View
-                                    className="h-full bg-profit rounded-full"
-                                    style={{
-                                        width: `${Math.min(
-                                            (primaryGoal.savedAmount / primaryGoal.targetAmount) * 100,
-                                            100
-                                        )}%`,
-                                    }}
-                                />
-                            </View>
+                            <BarFill
+                                percent={Math.min(
+                                    (primaryGoal.savedAmount / primaryGoal.targetAmount) * 100,
+                                    100
+                                )}
+                                trackClassName="bg-white"
+                                fillClassName="bg-profit"
+                            />
                             <Text
                                 className="text-xs text-text-tertiary mt-1"
                                 style={{ fontVariant: ['tabular-nums'] }}
@@ -232,9 +246,6 @@ export const ProfileScreen: React.FC = () => {
                     )}
                 </View>
 
-                {/* Year in review. A look back at the account belongs beside
-                    the account, not in the middle of this month's numbers. */}
-
                 {/* Settings */}
                 <View className="mx-4 mt-4 bg-white border border-border rounded-xl overflow-hidden">
                     <View className="px-4 py-3 border-b border-border">
@@ -243,7 +254,7 @@ export const ProfileScreen: React.FC = () => {
 
                     <SettingsRow
                         icon={<Bell size={16} color="#6B7280" />}
-                        label="Budget Alerts"
+                        label="Budget alerts"
                         hint="Warn me when a category nears its limit"
                         rightElement={
                             <Switch
@@ -256,7 +267,7 @@ export const ProfileScreen: React.FC = () => {
                     />
                     <SettingsRow
                         icon={<RefreshCw size={16} color="#6B7280" />}
-                        label="Auto Expense Tracking"
+                        label="Read pasted bank messages"
                         hint="Detect amount and category from pasted bank SMS"
                         rightElement={
                             <Switch
@@ -269,12 +280,12 @@ export const ProfileScreen: React.FC = () => {
                     />
                     <SettingsRow
                         icon={<Lock size={16} color="#6B7280" />}
-                        label="Privacy and Data"
+                        label="Privacy and data"
                         onPress={handlePrivacy}
                     />
                     <SettingsRow
                         icon={<Upload size={16} color="#6B7280" />}
-                        label="Export Data (JSON)"
+                        label="Export your data"
                         hint="Save a copy of everything FinSight stores"
                         onPress={handleExport}
                         disabled={exporting}
@@ -287,12 +298,12 @@ export const ProfileScreen: React.FC = () => {
                     <SettingsRow
                         icon={<Info size={16} color="#6B7280" />}
                         label="About FinSight"
-                        hint={`Version ${appVersion}`}
+                        hint="What this app is, and what it is not"
                         onPress={handleAbout}
                     />
                     <SettingsRow
                         icon={<Trash2 size={16} color="#EF4444" />}
-                        label="Delete Account"
+                        label="Delete account"
                         danger
                         onPress={handleDeleteAccount}
                         disabled={deleting}
@@ -304,20 +315,16 @@ export const ProfileScreen: React.FC = () => {
                     />
                 </View>
 
-                {/* Sign Out */}
-                <TouchableOpacity
+                <PressableScale
                     className="mx-4 mt-4 bg-white border border-border rounded-xl p-4 items-center"
                     onPress={handleLogout}
-                    activeOpacity={0.8}
                     accessibilityRole="button"
                 >
-                    <Text className="text-base font-semibold text-loss">Sign Out</Text>
-                </TouchableOpacity>
+                    <Text className="text-base font-semibold text-loss">Sign out</Text>
+                </PressableScale>
 
-                {/* App Info */}
                 <View className="items-center py-6">
                     <Text className="text-xs text-text-tertiary">FinSight v{appVersion}</Text>
-                    <Text className="text-xs text-text-tertiary">Made with care in India</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>

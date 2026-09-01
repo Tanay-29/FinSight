@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { BarFill } from './BarFill';
 
 interface BudgetBarProps {
     category: string;
@@ -17,7 +18,6 @@ export const BudgetBar: React.FC<BudgetBarProps> = ({
     const percentage = (spent / limit) * 100;
     const isSafe = percentage < 80;
     const isWarning = percentage >= 80 && percentage < 100;
-    const isExceeded = percentage >= 100;
 
     const barColor = isSafe
         ? 'bg-profit'
@@ -61,12 +61,7 @@ export const BudgetBar: React.FC<BudgetBarProps> = ({
                 </Text>
             </View>
 
-            <View className="h-2 bg-surface-tertiary rounded-full overflow-hidden">
-                <View
-                    className={`h-full rounded-full ${barColor}`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                />
-            </View>
+            <BarFill percent={Math.min(percentage, 100)} fillClassName={barColor} />
         </View>
     );
 };

@@ -218,7 +218,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                     <ChevronLeft size={20} color="#111827" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Leaky Spend</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Leaky spend</Text>
                     <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Recurring charges · Last 90 days</Text>
                 </View>
             </View>

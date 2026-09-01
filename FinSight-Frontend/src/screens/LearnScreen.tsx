@@ -10,10 +10,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import {
-    BookOpen, Award, Flame, Search, HelpCircle, GraduationCap,
-    ChevronRight, Trophy, Target, Sparkles, BrainCircuit, Snowflake,
+    BookOpen, Flame, Search, HelpCircle, GraduationCap,
+    ChevronRight, Trophy, Target, BrainCircuit, Snowflake,
     Layers, Hourglass,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -21,7 +22,9 @@ import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/s
 import { fetchDueCards, selectDueCount, selectMasteredCount, selectTrackedCount } from '../store/slices/reviewsSlice';
 import { GLOSSARY, COURSE_CONTENT } from '../data/courseContent';
 import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
-import AnimatedNumber from '../components/AnimatedNumber';
+import { AnimatedNumber } from '../components/AnimatedNumber';
+import { BarFill } from '../components/BarFill';
+import { PressableScale } from '../components/PressableScale';
 import { streakAtRisk, MAX_FREEZES } from '../utils/streak';
 import * as haptics from '../utils/haptics';
 
@@ -36,6 +39,7 @@ const GOAL_PATH_PRIORITY: Record<string, string> = {
 export const LearnScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const dispatch = useAppDispatch();
+    const reduced = useReducedMotion();
 
     const { user, profile } = useAppSelector((s) => s.auth);
     const { paths, glossary, progress, loading, progressLoading, streak } = useAppSelector((s) => s.learning);
@@ -119,18 +123,22 @@ export const LearnScreen: React.FC = () => {
                 {/* ── Header ──────────────────────────────────── */}
                 <View className="px-4 pt-4 pb-3 flex-row justify-between items-center bg-white border-b border-gray-100">
                     <View>
-                        <Text className="text-2xl font-bold text-gray-900">Learning Hub</Text>
+                        <Text className="text-2xl font-bold text-gray-900">Learn</Text>
                         <Text className="text-sm text-gray-500 mt-0.5">
-                            Build financial knowledge, one module at a time
+                            {totalDone === 0
+                                ? 'Courses, practice and a glossary'
+                                : `${totalDone} module${totalDone === 1 ? '' : 's'} done so far`}
                         </Text>
                     </View>
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={() => { haptics.tap(); navigation.navigate('Profile'); }}
-                        activeOpacity={0.8}
+                        activeScale={0.92}
+                        accessibilityRole="button"
+                        accessibilityLabel="Your profile"
                         className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
                     >
                         <Text className="text-white font-bold text-base">{userInitial}</Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
 
                 {/* ── Stats Row ──────────────────────────────── */}
@@ -267,9 +275,8 @@ export const LearnScreen: React.FC = () => {
                     Practise
                 </Text>
 
-                <TouchableOpacity
+                <PressableScale
                     onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
-                    activeOpacity={0.85}
                     accessibilityRole="button"
                     className="mx-4 mt-2 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
                 >
@@ -277,17 +284,16 @@ export const LearnScreen: React.FC = () => {
                         <Target size={20} color="#F43F5E" />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Guess Your Spend</Text>
+                        <Text className="text-base font-bold text-gray-900">Guess your spend</Text>
                         <Text className="text-xs text-gray-500 mt-0.5">
                             How closely do you actually know your own spending?
                         </Text>
                     </View>
                     <ChevronRight size={18} color="#F43F5E" />
-                </TouchableOpacity>
+                </PressableScale>
 
-                <TouchableOpacity
+                <PressableScale
                     onPress={() => { haptics.tap(); navigation.navigate('SwipeCategorise'); }}
-                    activeOpacity={0.85}
                     accessibilityRole="button"
                     className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
                 >
@@ -301,11 +307,10 @@ export const LearnScreen: React.FC = () => {
                         </Text>
                     </View>
                     <ChevronRight size={18} color="#0EA5E9" />
-                </TouchableOpacity>
+                </PressableScale>
 
-                <TouchableOpacity
+                <PressableScale
                     onPress={() => { haptics.tap(); navigation.navigate('TimeMachine'); }}
-                    activeOpacity={0.85}
                     accessibilityRole="button"
                     className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
                 >
@@ -319,21 +324,8 @@ export const LearnScreen: React.FC = () => {
                         </Text>
                     </View>
                     <ChevronRight size={18} color="#10B981" />
-                </TouchableOpacity>
+                </PressableScale>
 
-
-                {/* ── Personalised Banner ─────────────────────── */}
-                {profile?.appGoals && profile.appGoals.length > 0 && (
-                    <View className="mx-4 mt-4 bg-indigo-600 rounded-2xl px-4 py-3.5 flex-row items-center">
-                        <Sparkles size={18} color="white" />
-                        <View className="flex-1 ml-3">
-                            <Text className="text-white font-bold text-sm">Recommended for you</Text>
-                            <Text className="text-indigo-200 text-xs mt-0.5">
-                                Based on your onboarding goals
-                            </Text>
-                        </View>
-                    </View>
-                )}
 
                 {/* ── Tab Switcher ────────────────────────────── */}
                 <View className="flex-row mx-4 mt-4 bg-gray-100 rounded-xl p-1">
@@ -378,18 +370,24 @@ export const LearnScreen: React.FC = () => {
                                 </Text>
                             </View>
                         ) : (
-                            displayPaths.map((path) => {
+                            displayPaths.map((path, i) => {
                                 const { completed, total } = getPathProgress(path.id);
                                 const pBadge = progress[path.id ?? '']?.badgeEarned ?? false;
                                 const pPct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
                                 return (
-                                    <TouchableOpacity
+                                    <Animated.View
                                         key={path.id}
-                                        activeOpacity={0.85}
+                                        entering={
+                                            reduced
+                                                ? FadeIn.duration(160)
+                                                : FadeInDown.duration(260).delay(i * 60)
+                                        }
+                                    >
+                                    <PressableScale
                                         onPress={() => { haptics.tap(); navigation.navigate('LearnPathDetail', { path }); }}
+                                        accessibilityRole="button"
                                         className="mb-4 bg-white rounded-2xl border border-gray-100 overflow-hidden"
-                                        style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}
                                     >
                                         {/* Top accent bar */}
                                         <View style={{ height: 3, backgroundColor: pBadge ? '#10B981' : pPct > 0 ? '#6366F1' : '#E5E7EB' }} />
@@ -418,31 +416,27 @@ export const LearnScreen: React.FC = () => {
                                                 </Text>
                                             </View>
 
-                                            {/* Progress bar */}
-                                            <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
-                                                <View
-                                                    style={{
-                                                        width: `${pPct}%`,
-                                                        backgroundColor: pPct === 100 ? '#10B981' : '#6366F1',
-                                                    }}
-                                                    className="h-full rounded-full"
-                                                />
-                                            </View>
+                                            <BarFill
+                                                percent={pPct}
+                                                height={6}
+                                                color={pPct === 100 ? '#10B981' : '#6366F1'}
+                                                trackClassName="bg-gray-100"
+                                                delay={i * 60}
+                                                style={{ marginBottom: 12 }}
+                                            />
 
-                                            {/* CTA */}
-                                            <View className="flex-row items-center justify-between">
-                                                <Text className="text-xs text-gray-400">
-                                                    {pPct === 0 ? 'Not started' : pPct === 100 ? 'Completed' : `${pPct}% complete`}
+                                            {/* The bar and the "3/8 done" line above
+                                                already carry the percentage, so this
+                                                row is only the next action. */}
+                                            <View className="flex-row items-center justify-end">
+                                                <Text className="text-xs font-semibold text-indigo-600 mr-1">
+                                                    {pPct === 0 ? 'Start' : pPct === 100 ? 'Review' : 'Continue'}
                                                 </Text>
-                                                <View className="flex-row items-center">
-                                                    <Text className="text-xs font-semibold text-indigo-600 mr-1">
-                                                        {pPct === 0 ? 'Start' : pPct === 100 ? 'Review' : 'Continue'}
-                                                    </Text>
-                                                    <ChevronRight size={14} color="#6366F1" />
-                                                </View>
+                                                <ChevronRight size={14} color="#6366F1" />
                                             </View>
                                         </View>
-                                    </TouchableOpacity>
+                                    </PressableScale>
+                                    </Animated.View>
                                 );
                             })
                         )}
@@ -457,7 +451,7 @@ export const LearnScreen: React.FC = () => {
                             <Search size={16} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 py-3 pl-2 text-sm text-gray-700"
-                                placeholder="Search terms…"
+                                placeholder="Search terms"
                                 placeholderTextColor="#D1D5DB"
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}

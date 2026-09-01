@@ -10,12 +10,14 @@
  * On completion → updateDoc to Firestore → dispatch completeOnboarding
  * → RootNavigator sees onboardingComplete: true → renders MainTabs
  */
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView, TextInput,
-    KeyboardAvoidingView, Platform, ActivityIndicator,
-    Animated, Dimensions,
+    KeyboardAvoidingView, Platform, ActivityIndicator, ViewStyle,
 } from 'react-native';
+import Animated, {
+    FadeIn, FadeInRight, FadeInLeft, useReducedMotion,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Wallet, PiggyBank, TrendingUp, GraduationCap,
@@ -24,8 +26,9 @@ import {
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { completeOnboarding } from '../store/slices/authSlice';
+import { PressableScale } from '../components/PressableScale';
+import * as haptics from '../utils/haptics';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const TOTAL_STEPS = 5;
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -45,7 +48,8 @@ interface OnboardingData {
 // ─── SelectCard - reusable single/multi select card ──────────────
 
 const SelectCard: React.FC<{
-    icon: React.ReactNode;
+    /** Omitted by steps whose options read fine without one. */
+    icon?: React.ReactNode;
     title: string;
     subtitle?: string;
     selected: boolean;
@@ -65,12 +69,14 @@ const SelectCard: React.FC<{
         accessibilityRole="button"
         accessibilityState={{ selected }}
     >
-        <View
-            style={{ backgroundColor: selected ? accent : '#F3F4F6' }}
-            className="w-11 h-11 rounded-xl items-center justify-center mr-3"
-        >
-            {icon}
-        </View>
+        {icon && (
+            <View
+                style={{ backgroundColor: selected ? accent : '#F3F4F6' }}
+                className="w-11 h-11 rounded-xl items-center justify-center mr-3"
+            >
+                {icon}
+            </View>
+        )}
         <View className="flex-1">
             <Text
                 style={{ color: selected ? accent : '#1F2937' }}
@@ -274,32 +280,13 @@ const Step4Income: React.FC<{
                 Used only to suggest realistic budget templates. We never see your exact income.
             </Text>
             {OPTIONS.map((opt) => (
-                <TouchableOpacity
+                <SelectCard
                     key={opt.value}
+                    title={opt.label}
+                    subtitle={opt.sub}
+                    selected={data.incomeRange === opt.value}
                     onPress={() => onChange({ incomeRange: opt.value })}
-                    activeOpacity={0.8}
-                    style={{
-                        borderWidth: data.incomeRange === opt.value ? 2 : 1,
-                        borderColor: data.incomeRange === opt.value ? '#6366F1' : '#E5E7EB',
-                        backgroundColor: data.incomeRange === opt.value ? '#EEF2FF' : '#FFFFFF',
-                    }}
-                    className="rounded-2xl px-5 py-3.5 mb-3 flex-row items-center"
-                >
-                    <View className="flex-1">
-                        <Text
-                            style={{ color: data.incomeRange === opt.value ? '#4F46E5' : '#1F2937' }}
-                            className="text-base font-semibold"
-                        >
-                            {opt.label}
-                        </Text>
-                        <Text className="text-xs text-gray-400 mt-0.5">{opt.sub}</Text>
-                    </View>
-                    {data.incomeRange === opt.value && (
-                        <View className="w-6 h-6 rounded-full bg-indigo-600 items-center justify-center">
-                            <Check size={13} color="white" strokeWidth={3} />
-                        </View>
-                    )}
-                </TouchableOpacity>
+                />
             ))}
         </View>
     );
@@ -371,12 +358,15 @@ const OnboardingScreen: React.FC = () => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth);
 
+    const reduced = useReducedMotion();
     const [step, setStep] = useState(1);
+    // Which way the step last moved, so the incoming panel enters from the
+    // side the user pushed it from. Without this, back reads as forward.
+    const [direction, setDirection] = useState<'forward' | 'back'>('forward');
     const [saving, setSaving] = useState(false);
-    const progressAnim = useRef(new Animated.Value(1 / TOTAL_STEPS)).current;
 
     const [data, setData] = useState<OnboardingData>({
-        age: user?.displayName ? '' : '',
+        age: '',
         experienceLevel: null,
         appGoals: [],
         incomeRange: null,
@@ -401,13 +391,9 @@ const OnboardingScreen: React.FC = () => {
     const goNext = () => {
         if (!canProceed()) return;
         if (step < TOTAL_STEPS) {
-            const next = step + 1;
-            setStep(next);
-            Animated.timing(progressAnim, {
-                toValue: next / TOTAL_STEPS,
-                duration: 300,
-                useNativeDriver: false,
-            }).start();
+            haptics.tap();
+            setDirection('forward');
+            setStep(step + 1);
         } else {
             handleFinish();
         }
@@ -415,13 +401,9 @@ const OnboardingScreen: React.FC = () => {
 
     const goBack = () => {
         if (step > 1) {
-            const prev = step - 1;
-            setStep(prev);
-            Animated.timing(progressAnim, {
-                toValue: prev / TOTAL_STEPS,
-                duration: 300,
-                useNativeDriver: false,
-            }).start();
+            haptics.tap();
+            setDirection('back');
+            setStep(step - 1);
         }
     };
 
@@ -439,6 +421,7 @@ const OnboardingScreen: React.FC = () => {
             },
         }));
         setSaving(false);
+        haptics.success();
         // RootNavigator re-renders automatically when profile.onboardingComplete = true
     };
 
@@ -450,16 +433,11 @@ const OnboardingScreen: React.FC = () => {
         'Risk profile',
     ];
 
-    const progressWidth = progressAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0%', '100%'],
-    });
-
     return (
         <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
             <KeyboardAvoidingView
                 className="flex-1"
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 {/* Progress bar */}
                 <View className="px-6 pt-4">
@@ -472,9 +450,18 @@ const OnboardingScreen: React.FC = () => {
                         </Text>
                     </View>
                     <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        {/* Width, not scaleX: the fill is childless and clipped,
+                            so nothing re-lays-out, and the rounded cap survives. */}
                         <Animated.View
-                            style={{ width: progressWidth }}
                             className="h-full bg-indigo-500 rounded-full"
+                            style={[
+                                { width: `${(step / TOTAL_STEPS) * 100}%` },
+                                {
+                                    transitionProperty: ['width'],
+                                    transitionDuration: reduced ? 0 : 300,
+                                    transitionTimingFunction: 'ease-out',
+                                } as ViewStyle,
+                            ]}
                         />
                     </View>
                 </View>
@@ -486,11 +473,24 @@ const OnboardingScreen: React.FC = () => {
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={{ paddingBottom: 24 }}
                 >
-                    {step === 1 && <Step1Age data={data} onChange={updateData} />}
-                    {step === 2 && <Step2Experience data={data} onChange={updateData} />}
-                    {step === 3 && <Step3Goals data={data} onChange={updateData} />}
-                    {step === 4 && <Step4Income data={data} onChange={updateData} />}
-                    {step === 5 && <Step5Risk data={data} onChange={updateData} />}
+                    {/* Keyed on step so each panel is a real mount, which is what
+                        gives the entrance something to animate. */}
+                    <Animated.View
+                        key={step}
+                        entering={
+                            reduced
+                                ? FadeIn.duration(160)
+                                : direction === 'forward'
+                                    ? FadeInRight.duration(260)
+                                    : FadeInLeft.duration(260)
+                        }
+                    >
+                        {step === 1 && <Step1Age data={data} onChange={updateData} />}
+                        {step === 2 && <Step2Experience data={data} onChange={updateData} />}
+                        {step === 3 && <Step3Goals data={data} onChange={updateData} />}
+                        {step === 4 && <Step4Income data={data} onChange={updateData} />}
+                        {step === 5 && <Step5Risk data={data} onChange={updateData} />}
+                    </Animated.View>
                 </ScrollView>
 
                 {/* Navigation buttons */}
@@ -505,12 +505,13 @@ const OnboardingScreen: React.FC = () => {
                         </TouchableOpacity>
                     )}
 
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={goNext}
                         disabled={!canProceed() || saving}
-                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        containerStyle={{ flex: 1 }}
                         style={{ opacity: canProceed() && !saving ? 1 : 0.45 }}
-                        className="flex-1 flex-row items-center justify-center bg-indigo-600 rounded-2xl py-4"
+                        className="flex-row items-center justify-center bg-indigo-600 rounded-2xl py-4"
                     >
                         {saving ? (
                             <ActivityIndicator color="white" />
@@ -522,7 +523,7 @@ const OnboardingScreen: React.FC = () => {
                                 <ChevronRight size={18} color="white" />
                             </>
                         )}
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>

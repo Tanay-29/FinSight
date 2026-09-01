@@ -20,6 +20,8 @@ import Animated, { useReducedMotion } from 'react-native-reanimated';
 interface PressableScaleProps extends Omit<PressableProps, 'style'> {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
+    /** Goes on the Pressable itself. Needed when the button has to flex. */
+    containerStyle?: StyleProp<ViewStyle>;
     className?: string;
     /** How far it dips. 0.97 for most things, 0.94 for something small. */
     activeScale?: number;
@@ -28,6 +30,7 @@ interface PressableScaleProps extends Omit<PressableProps, 'style'> {
 export const PressableScale: React.FC<PressableScaleProps> = ({
     children,
     style,
+    containerStyle,
     className,
     activeScale = 0.97,
     disabled,
@@ -43,6 +46,7 @@ export const PressableScale: React.FC<PressableScaleProps> = ({
 
     return (
         <Pressable
+            style={containerStyle}
             disabled={disabled}
             onPressIn={(e) => { setPressed(true); onPressIn?.(e); }}
             onPressOut={(e) => { setPressed(false); onPressOut?.(e); }}

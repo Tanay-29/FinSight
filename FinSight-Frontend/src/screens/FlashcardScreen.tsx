@@ -21,10 +21,12 @@ import {
     Animated, Dimensions, ActivityIndicator, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ReAnimated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { PressableScale } from '../components/PressableScale';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-    ArrowLeft, RotateCcw, Check, X as XIcon,
-    BrainCircuit, ChevronLeft, ChevronRight,
+    ArrowLeft, Check, X as XIcon,
+    BrainCircuit, ChevronLeft,
     Lightbulb, RefreshCw, Trophy,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -74,13 +76,18 @@ const FlipCard: React.FC<{
         outputRange: ['180deg', '360deg'],
     });
 
+    const reduced = useReducedMotion();
+
     const handleFlip = () => {
+        const next = !flipped;
+        setFlipped(next);
+        haptics.tap();
         Animated.spring(flipAnim, {
-            toValue: flipped ? 0 : 180,
+            toValue: next ? 180 : 0,
             friction: 8,
             tension: 50,
             useNativeDriver: true,
-        }).start(() => setFlipped((f) => !f));
+        }).start();
     };
 
     return (
@@ -168,33 +175,40 @@ const FlipCard: React.FC<{
                 </Animated.View>
             </TouchableOpacity>
 
-            {/* Action buttons - only visible after flip */}
+            {/* Only offered once the answer has been seen. */}
             {flipped && (
-                <View style={{ flexDirection: 'row', gap: 16, marginTop: 24 }}>
-                    <TouchableOpacity
+                <ReAnimated.View
+                    entering={FadeIn.duration(reduced ? 120 : 220)}
+                    style={{ flexDirection: 'row', gap: 16, marginTop: 24 }}
+                >
+                    <PressableScale
                         onPress={onReview}
+                        containerStyle={{ flex: 1 }}
+                        accessibilityRole="button"
                         style={{
-                            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                             paddingVertical: 14, borderRadius: 16, gap: 8,
                             backgroundColor: '#FEF2F2', borderWidth: 1.5, borderColor: '#FECACA',
                         }}
                     >
                         <XIcon size={18} color="#EF4444" />
-                        <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }}>Review Again</Text>
-                    </TouchableOpacity>
+                        <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }}>Show me again</Text>
+                    </PressableScale>
 
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={onGotIt}
+                        containerStyle={{ flex: 1 }}
+                        accessibilityRole="button"
                         style={{
-                            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                             paddingVertical: 14, borderRadius: 16, gap: 8,
                             backgroundColor: '#ECFDF5', borderWidth: 1.5, borderColor: '#BBF7D0',
                         }}
                     >
                         <Check size={18} color="#10B981" />
-                        <Text style={{ color: '#10B981', fontWeight: '700', fontSize: 14 }}>Got It!</Text>
-                    </TouchableOpacity>
-                </View>
+                        <Text style={{ color: '#10B981', fontWeight: '700', fontSize: 14 }}>Got it</Text>
+                    </PressableScale>
+                </ReAnimated.View>
             )}
         </View>
     );
@@ -287,7 +301,7 @@ const ResultsScreen: React.FC<{
             {/* Actions */}
             <View style={{ width: '100%', gap: 10, marginTop: 24 }}>
                 {reviewCount > 0 && (
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={onReviewOnly}
                         style={{
                             backgroundColor: '#6366F1', borderRadius: 16,
@@ -295,9 +309,9 @@ const ResultsScreen: React.FC<{
                         }}
                     >
                         <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>
-                            Practice {reviewCount} Weak Card{reviewCount > 1 ? 's' : ''}
+                            Practise {reviewCount} weak card{reviewCount > 1 ? 's' : ''}
                         </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 )}
                 <TouchableOpacity
                     onPress={onRestart}
@@ -309,13 +323,14 @@ const ResultsScreen: React.FC<{
                     }}
                 >
                     <RefreshCw size={16} color="#6B7280" />
-                    <Text style={{ color: '#374151', fontWeight: '600', fontSize: 14 }}>Restart All Cards</Text>
+                    <Text style={{ color: '#374151', fontWeight: '600', fontSize: 14 }}>Restart all cards</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={onBack}
-                    style={{ paddingVertical: 12, alignItems: 'center' }}
+                    style={{ paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 2 }}
                 >
-                    <Text style={{ color: '#9CA3AF', fontWeight: '500', fontSize: 14 }}>← Back to Module</Text>
+                    <ChevronLeft size={15} color="#9CA3AF" />
+                    <Text style={{ color: '#9CA3AF', fontWeight: '500', fontSize: 14 }}>Back to the module</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>
@@ -400,7 +415,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
      * and the slice already surfaces the error.
      */
     const answer = (correct: boolean) => {
-        correct ? haptics.success() : haptics.warn();
+        if (correct) haptics.success(); else haptics.warn();
         const card = cards[currentCardOriginalIndex];
         if (card?.moduleId) {
             dispatch(answerCard({
@@ -512,13 +527,13 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                     <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', marginBottom: 24 }}>
                         {error}
                     </Text>
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={fetchCards}
                         style={{ backgroundColor: '#6366F1', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                     >
                         <RefreshCw size={16} color="white" />
                         <Text style={{ color: 'white', fontWeight: '700' }}>Try Again</Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
             ) : phase === 'cards' && cards.length > 0 && activeDeck.length > 0 ? (
                 <ScrollView

@@ -1,39 +1,31 @@
+/**
+ * FinancialVitals - the month's spending in one card on the Feed.
+ *
+ * This used to be a two-column split: total and a sparkline on the left, a
+ * "Top Spends" column on the right holding two category bars squeezed into
+ * half the screen width. That right column was a worse copy of the Vitals tab,
+ * which is one tap away and shows every category at full width. It went.
+ *
+ * The footer used to read "0% higher than last month" for everyone, because
+ * the Feed passed a hardcoded zero. It now takes a real comparison, or null
+ * when there is no previous month to compare against, and renders nothing in
+ * that case rather than inventing a number.
+ */
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { Svg, Polyline } from 'react-native-svg';
-import {
-    Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
-    TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
-    TrendingDown,
-} from 'lucide-react-native';
-import { CategorySpending } from '../data/courseContent';
-import { normaliseCategory } from '../utils/categories';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 
 interface FinancialVitalsProps {
     totalSpent: number;
-    categories: CategorySpending[];
     weeklyTrend: number[];
-    comparison: { type: 'increase' | 'decrease'; percentage: number };
+    /** Null when the user has no spending in the previous month. */
+    comparison: { type: 'increase' | 'decrease' | 'flat'; percentage: number } | null;
 }
 
-const CATEGORY_ICON_MAP: Record<string, React.ComponentType<any>> = {
-    dining: Utensils,
-    shopping: ShoppingBag,
-    transport: Car,
-    groceries: ShoppingCart,
-    utilities: Zap,
-    entertainment: Film,
-    investments: TrendingUp,
-    health: Heart,
-    healthcare: Heart,
-    education: BookOpen,
-    housing: Home,
-    rent: Home,
-    miscellaneous: Package,
-};
-
 const SpendingTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
-    if (data.length === 0) return null;
+    if (data.length < 2) return null;
     const min = Math.min(...data) * 0.8;
     const max = Math.max(...data) * 1.1;
     const range = max - min || 1;
@@ -63,95 +55,53 @@ const SpendingTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
     );
 };
 
-const CategoryBar: React.FC<{
-    category: CategorySpending;
-    maxAmount: number;
-}> = ({ category, maxAmount }) => {
-    const percentage = (category.amount / maxAmount) * 100;
-    const key = normaliseCategory(category.name);
-    const IconComponent = CATEGORY_ICON_MAP[key] || DollarSign;
-
-    return (
-        <TouchableOpacity className="flex-row items-center py-2" activeOpacity={0.7}>
-            <View className="w-6 h-6 rounded-md bg-surface-secondary items-center justify-center mr-2">
-                <IconComponent size={14} color="#6B7280" />
-            </View>
-            <View className="flex-1">
-                <View className="flex-row justify-between mb-1">
-                    <Text className="text-sm font-medium text-text-primary">
-                        {category.name}
-                    </Text>
-                    <Text
-                        className="text-sm font-bold text-text-primary"
-                        style={{ fontVariant: ['tabular-nums'] }}
-                    >
-                        ₹{category.amount.toLocaleString('en-IN')}
-                    </Text>
-                </View>
-                <View className="h-2 bg-surface-tertiary rounded-full overflow-hidden">
-                    <View
-                        className="h-full rounded-full bg-brand-primary"
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
-                    />
-                </View>
-            </View>
-            <Text className="text-xs text-text-tertiary ml-2 w-10 text-right">
-                {category.percentage}%
-            </Text>
-        </TouchableOpacity>
-    );
-};
-
 export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
     totalSpent,
-    categories,
     weeklyTrend,
     comparison,
 }) => {
-    const maxAmount = Math.max(...categories.map((c) => c.amount));
-    const isIncrease = comparison.type === 'increase';
-    const IconComp = isIncrease ? TrendingUp : TrendingDown;
-    const iconColor = isIncrease ? '#F59E0B' : '#10B981';
+    const reduced = useReducedMotion();
+
+    const tone =
+        comparison === null || comparison.type === 'flat'
+            ? { Icon: Minus, color: '#6B7280', text: 'text-text-secondary' }
+            : comparison.type === 'increase'
+                ? { Icon: TrendingUp, color: '#F59E0B', text: 'text-alert-amber' }
+                : { Icon: TrendingDown, color: '#10B981', text: 'text-profit' };
 
     return (
-        <View className="bg-white border border-border rounded-xl p-4 mx-4">
-            <View className="flex-row justify-between">
-                {/* Left side: Total & Trend */}
-                <View className="flex-1 mr-4">
-                    <Text className="text-xs font-bold text-text-secondary mb-1 uppercase tracking-wider">This Month</Text>
-                    <Text
-                        className="text-2xl font-bold text-text-primary mb-2"
-                        style={{ fontVariant: ['tabular-nums'] }}
-                    >
-                        ₹{totalSpent.toLocaleString('en-IN')}
+        // The card fades in once when the Feed first paints. It is the number
+        // the screen exists to show, so it is worth arriving rather than
+        // appearing.
+        <Animated.View
+            entering={FadeIn.duration(reduced ? 160 : 320)}
+            className="bg-white border border-border rounded-xl p-4 mx-4"
+        >
+            <Text className="text-xs font-bold text-text-secondary mb-1 uppercase tracking-wider">
+                This month
+            </Text>
+            <Text
+                className="text-[32px] leading-10 font-bold text-text-primary"
+                style={{ fontVariant: ['tabular-nums'] }}
+            >
+                ₹{totalSpent.toLocaleString('en-IN')}
+            </Text>
+
+            <Text className="text-xs text-text-tertiary mt-3 mb-1">Last 7 days</Text>
+            <View className="h-14 w-full opacity-70">
+                <SpendingTrendChart data={weeklyTrend} />
+            </View>
+
+            {comparison && (
+                <View className="mt-3 pt-3 border-t border-border flex-row items-center">
+                    <tone.Icon size={12} color={tone.color} />
+                    <Text className={`text-xs font-semibold ml-1 ${tone.text}`}>
+                        {comparison.type === 'flat'
+                            ? 'About the same as last month'
+                            : `${comparison.percentage}% ${comparison.type === 'increase' ? 'higher' : 'lower'} than last month`}
                     </Text>
-                    <View className="h-12 w-full opacity-70">
-                        <SpendingTrendChart data={weeklyTrend} />
-                    </View>
                 </View>
-
-                {/* Right side: Top Categories */}
-                <View className="flex-1 justify-center border-l border-border pl-4">
-                    <Text className="text-xs font-bold text-text-secondary mb-2 uppercase tracking-wider">Top Spends</Text>
-                    {categories.slice(0, 2).map((category) => (
-                        <CategoryBar
-                            key={category.name}
-                            category={category}
-                            maxAmount={maxAmount}
-                        />
-                    ))}
-                </View>
-            </View>
-
-            {/* Comparison Footer */}
-            <View className="mt-3 pt-3 border-t border-border flex-row items-center">
-                <IconComp size={12} color={iconColor} />
-                <Text
-                    className={`text-xs font-semibold ml-1 ${isIncrease ? 'text-alert-amber' : 'text-profit'}`}
-                >
-                    {comparison.percentage}% {isIncrease ? 'higher' : 'lower'} than last month
-                </Text>
-            </View>
-        </View>
+            )}
+        </Animated.View>
     );
 };

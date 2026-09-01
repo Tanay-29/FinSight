@@ -12,6 +12,7 @@ import {
     RefreshControl, TextInput, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PressableScale } from '../components/PressableScale';
 import { useNavigation } from '@react-navigation/native';
 import {
     ChevronLeft, Flame, TrendingDown, TrendingUp, Zap,
@@ -77,7 +78,7 @@ const IncomeModal: React.FC<{
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
                 <View style={{ backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: '85%' }}>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 }}>Set Monthly Income</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 }}>Set your monthly income</Text>
                     <Text style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 16 }}>Used to compute your 50/30/20 ratios and savings rate.</Text>
                     <TextInput
                         style={{ backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 20 }}
@@ -86,12 +87,12 @@ const IncomeModal: React.FC<{
                         onChangeText={setValue}
                         placeholder="e.g. 50000"
                     />
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={() => { const n = parseFloat(value); if (n > 0) onSave(n); onClose(); }}
                         style={{ backgroundColor: '#6366F1', borderRadius: 12, padding: 14, alignItems: 'center' }}
                     >
-                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>Save Income</Text>
-                    </TouchableOpacity>
+                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>Save income</Text>
+                    </PressableScale>
                 </View>
             </View>
         </Modal>
@@ -184,7 +185,7 @@ const BurnRateScreen: React.FC = () => {
                         <ChevronLeft size={20} color="#111827" />
                     </TouchableOpacity>
                     <View>
-                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827' }}>Financial Intelligence</Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827' }}>Financial intelligence</Text>
                         <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Burn Rate · Savings · 50/30/20</Text>
                     </View>
                 </View>
@@ -273,7 +274,7 @@ const BurnRateScreen: React.FC = () => {
                             {/* Top Categories */}
                             {burnRate.top_categories.length > 0 && (
                                 <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 12 }}>Top Spending Categories</Text>
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 12 }}>Top categories</Text>
                                     {burnRate.top_categories.map((cat, i) => (
                                         <View key={cat.category} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                             <Text style={{ fontSize: 13, color: '#6B7280', textTransform: 'capitalize', flex: 1 }}>
@@ -308,7 +309,7 @@ const BurnRateScreen: React.FC = () => {
                                     </View>
                                     {savingsEngine.savings_rate !== null && (
                                         <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={{ fontSize: 11, color: '#065F46' }}>Savings Rate</Text>
+                                            <Text style={{ fontSize: 11, color: '#065F46' }}>Savings rate</Text>
                                             <Text style={{ fontSize: 22, fontWeight: '800', color: '#059669' }}>{savingsEngine.savings_rate.toFixed(1)}%</Text>
                                         </View>
                                     )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
@@ -51,10 +51,17 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     const formattedTime = format(new Date(date), 'h:mm a');
 
     return (
-        <TouchableOpacity
-            className="flex-row items-center px-4 py-3 bg-white border-b border-border"
+        // A full-bleed row that shrinks under the finger looks like it is
+        // detaching from the list, so press is marked by the row's own
+        // background instead. Same confirmation, no movement.
+        <Pressable
+            className="flex-row items-center px-4 py-3 border-b border-border"
+            style={({ pressed }) => ({
+                backgroundColor: pressed ? COLORS.surface.secondary : '#FFFFFF',
+            })}
             onPress={onPress}
-            activeOpacity={0.7}
+            disabled={!onPress}
+            pressRetentionOffset={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessible
             accessibilityLabel={`${merchant}, ${formattedAmount}, ${category}`}
             accessibilityRole="button"
@@ -83,6 +90,6 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
             >
                 {formattedAmount}
             </Text>
-        </TouchableOpacity>
+        </Pressable>
     );
 };

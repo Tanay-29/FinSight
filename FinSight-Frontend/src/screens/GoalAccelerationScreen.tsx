@@ -17,6 +17,9 @@ import {
     Animated, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as haptics from '../utils/haptics';
+import { PressableScale } from '../components/PressableScale';
+import { BarFill } from '../components/BarFill';
 import {
     ChevronLeft, Clock, TrendingUp, ShieldCheck, Zap,
     PiggyBank, Calendar, Minus, Plus, AlertCircle, Landmark,
@@ -160,12 +163,12 @@ const GoalAccelerationScreen: React.FC = () => {
                     <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center' }}>
                         Create a savings goal first, then come back to simulate your investment strategy.
                     </Text>
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={() => navigation.goBack()}
                         style={{ marginTop: 24, backgroundColor: '#6366F1', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}
                     >
-                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>Go Back</Text>
-                    </TouchableOpacity>
+                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>Go back</Text>
+                    </PressableScale>
                 </View>
             </SafeAreaView>
         );
@@ -183,7 +186,7 @@ const GoalAccelerationScreen: React.FC = () => {
                     <ChevronLeft size={20} color="#111827" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Accelerate Goal</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Accelerate this goal</Text>
                     <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Compound interest simulator</Text>
                 </View>
             </View>
@@ -242,10 +245,7 @@ const GoalAccelerationScreen: React.FC = () => {
                         </Text>
                     </View>
 
-                    {/* Progress bar */}
-                    <View style={{ height: 8, backgroundColor: '#F3F4F6', borderRadius: 4, overflow: 'hidden' }}>
-                        <View style={{ height: '100%', width: `${progress}%`, backgroundColor: goal.color, borderRadius: 4 }} />
-                    </View>
+                    <BarFill percent={progress} color={goal.color} trackClassName="bg-gray-100" />
                     <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6 }}>
                         ₹{Math.max(goal.targetAmount - goal.savedAmount, 0).toLocaleString('en-IN')} remaining
                     </Text>
@@ -279,13 +279,12 @@ const GoalAccelerationScreen: React.FC = () => {
                             <Text style={{ fontSize: 12, color: '#9CA3AF' }}>per month</Text>
                         </View>
 
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => setMonthlyContrib((v) => v + step)}
                             style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center' }}
-                            activeOpacity={0.7}
                         >
                             <Plus size={20} color="white" />
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
 
                     {/* Quick presets */}
@@ -293,7 +292,7 @@ const GoalAccelerationScreen: React.FC = () => {
                         {[2000, 5000, 10000, 20000].map((v) => (
                             <TouchableOpacity
                                 key={v}
-                                onPress={() => setMonthlyContrib(v)}
+                                onPress={() => { haptics.select(); setMonthlyContrib(v); }}
                                 style={{
                                     paddingHorizontal: 12, paddingVertical: 6,
                                     borderRadius: 20, borderWidth: 1.5,

@@ -11,10 +11,12 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    Animated, Dimensions, ActivityIndicator,
-    StatusBar,
+    Animated, ActivityIndicator, StatusBar,
 } from 'react-native';
+import ReAnimated, { FadeIn, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PressableScale } from '../components/PressableScale';
+import { BarFill } from '../components/BarFill';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb,
@@ -26,8 +28,6 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { completeModule } from '../store/slices/learningSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-
-const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ const ReadingPhase: React.FC<{
         <View className="mx-4 mt-4">
             <View className="flex-row items-center mb-3">
                 <Lightbulb size={16} color="#F59E0B" />
-                <Text className="text-sm font-bold text-gray-800 ml-1.5">Key Takeaways</Text>
+                <Text className="text-sm font-bold text-gray-800 ml-1.5">Key takeaways</Text>
             </View>
             {module.keyPoints.map((point, idx) => (
                 <View
@@ -92,15 +92,14 @@ const ReadingPhase: React.FC<{
 
         {/* Start Quiz CTA */}
         <View className="mx-4 mt-6">
-            <TouchableOpacity
+            <PressableScale
                 onPress={onStartQuiz}
-                activeOpacity={0.85}
                 className="bg-indigo-600 rounded-2xl py-4 flex-row items-center justify-center"
             >
                 <Star size={18} color="white" />
-                <Text className="text-white font-bold text-base ml-2">Test Your Knowledge</Text>
+                <Text className="text-white font-bold text-base ml-2">Test what you got</Text>
                 <ChevronRight size={18} color="white" className="ml-1" />
-            </TouchableOpacity>
+            </PressableScale>
             <Text className="text-center text-xs text-gray-400 mt-2">3 quick questions</Text>
         </View>
     </ScrollView>
@@ -116,7 +115,7 @@ const QuizPhase: React.FC<{
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [answered, setAnswered] = useState(false);
     const [score, setScore] = useState(0);
-    const slideAnim = useRef(new Animated.Value(0)).current;
+    const reduced = useReducedMotion();
 
     const q = questions[qIndex];
     const isCorrect = selectedOption === q.answerIndex;
@@ -134,22 +133,15 @@ const QuizPhase: React.FC<{
     };
 
     const handleNext = () => {
-        // Slide out current, slide in next
-        Animated.sequence([
-            Animated.timing(slideAnim, { toValue: -SCREEN_W, duration: 200, useNativeDriver: true }),
-        ]).start(() => {
-            if (qIndex + 1 < questions.length) {
-                setQIndex((i) => i + 1);
-                setSelectedOption(null);
-                setAnswered(false);
-                slideAnim.setValue(SCREEN_W);
-                Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-            } else {
-                const finalScore = isCorrect ? score + 1 : score;
-                // +1 because state update is async
-                onFinish(selectedOption === q.answerIndex ? score + 1 : score);
-            }
-        });
+        if (qIndex + 1 < questions.length) {
+            setQIndex((i) => i + 1);
+            setSelectedOption(null);
+            setAnswered(false);
+        } else {
+            // The score for this last answer has not landed in state yet, so
+            // count it here rather than reading a value that is one behind.
+            onFinish(isCorrect ? score + 1 : score);
+        }
     };
 
     const getOptionStyle = (idx: number) => {
@@ -179,29 +171,35 @@ const QuizPhase: React.FC<{
                         Question {qIndex + 1} of {questions.length}
                     </Text>
                     <Text className="text-xs text-indigo-500 font-semibold">
-                        {score} pts
+                        {score} correct
                     </Text>
                 </View>
-                <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <View
-                        style={{ width: `${((qIndex) / questions.length) * 100}%` }}
-                        className="h-full bg-indigo-500 rounded-full"
-                    />
-                </View>
+                <BarFill
+                    percent={((qIndex + (answered ? 1 : 0)) / questions.length) * 100}
+                    height={6}
+                    trackClassName="bg-gray-100"
+                    fillClassName="bg-indigo-500"
+                />
             </View>
 
-            {/* Question */}
-            <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+            {/* Keyed on the question index so each one is a real mount. */}
+            <ReAnimated.View
+                key={qIndex}
+                entering={reduced ? FadeIn.duration(160) : SlideInRight.duration(240)}
+            >
                 <View className="mx-4 bg-white rounded-2xl p-5 border border-gray-100 mb-4" style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
                     <Text className="text-base font-bold text-gray-900 leading-6">{q.question}</Text>
                 </View>
 
                 {/* Options */}
                 {q.options.map((option, idx) => (
-                    <TouchableOpacity
+                    <PressableScale
                         key={idx}
                         onPress={() => handleSelect(idx)}
-                        activeOpacity={answered ? 1 : 0.7}
+                        disabled={answered}
+                        activeScale={0.985}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Option ${['A', 'B', 'C', 'D'][idx]}. ${option}`}
                         style={[{ borderWidth: answered && idx === q.answerIndex ? 2 : 1 }, getOptionStyle(idx)]}
                         className="mx-4 mb-3 rounded-xl px-4 py-3.5 flex-row items-center"
                     >
@@ -228,7 +226,7 @@ const QuizPhase: React.FC<{
                         <Text style={{ color: getOptionTextColor(idx) }} className="text-sm flex-1 leading-5">
                             {option}
                         </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 ))}
 
                 {/* Explanation */}
@@ -249,18 +247,17 @@ const QuizPhase: React.FC<{
 
                 {/* Next button */}
                 {answered && (
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={handleNext}
-                        activeOpacity={0.85}
                         className="mx-4 mt-5 bg-indigo-600 rounded-2xl py-4 flex-row items-center justify-center"
                     >
                         <Text className="text-white font-bold text-base mr-2">
-                            {qIndex + 1 < questions.length ? 'Next Question' : 'See Results'}
+                            {qIndex + 1 < questions.length ? 'Next question' : 'See results'}
                         </Text>
                         <ChevronRight size={18} color="white" />
-                    </TouchableOpacity>
+                    </PressableScale>
                 )}
-            </Animated.View>
+            </ReAnimated.View>
         </ScrollView>
     );
 };
@@ -283,11 +280,10 @@ const DonePhase: React.FC<{
     const perfect = score === total;
     const passed = pct >= 60;
 
-    // Simple scale animation
-    const scaleAnim = useRef(new Animated.Value(0.5)).current;
+    const scaleAnim = useRef(new Animated.Value(0.92)).current;
     React.useEffect(() => {
-        Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
-    }, []);
+        Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 70, useNativeDriver: true }).start();
+    }, [scaleAnim]);
 
     return (
         <ScrollView
@@ -392,14 +388,13 @@ const DonePhase: React.FC<{
                     <ChevronRight size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                <PressableScale
                     onPress={onBack}
-                    activeOpacity={0.85}
                     className="bg-indigo-600 rounded-2xl py-4 flex-row items-center justify-center"
                 >
                     <CheckCircle2 size={18} color="white" />
                     <Text className="text-white font-bold text-base ml-2">Back to Course</Text>
-                </TouchableOpacity>
+                </PressableScale>
 
                 <TouchableOpacity
                     onPress={onRetake}
@@ -468,7 +463,6 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     const pathProgress = progress[path.id || ''];
-    const isAlreadyComplete = pathProgress?.completedModules?.includes(module.id) ?? false;
     const badgeEarned = pathProgress?.badgeEarned ?? false;
     const streak = profile?.streak ?? 0;
 
@@ -494,12 +488,6 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
             moduleContent: module.content,
             keyPoints: module.keyPoints ?? [],
         });
-    };
-
-    const PHASE_LABELS: Record<Phase, string> = {
-        reading: 'Read',
-        quiz: 'Quiz',
-        done: 'Complete',
     };
 
     return (

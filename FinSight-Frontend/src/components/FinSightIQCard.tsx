@@ -1,23 +1,26 @@
 /**
  * FinSightIQCard.tsx
  *
- * The hero card on the Feed screen. Shows:
- *   - Animated semi-circular gauge (0–1000 score)
- *   - Grade label (Novice → Expert)
- *   - AI "Sensei" mood bubble
- *   - Collapsible 3 Level-Up Quests
+ * The hero card on the Feed. A gauge showing the behavioural score out of
+ * 1000, the model's read on it, and the three things worth doing next.
  *
- * All text is English-only.
+ * The score used to be drawn as SvgText driven by a core Animated spring with
+ * a listener calling setState on every frame. That is a React render per frame
+ * during the exact moment the Feed is mounting everything else, and SvgText
+ * ignores font weight on Android so the number rendered thin there and heavy
+ * on iOS. It is a real Text node over the gauge now, counted up by the same
+ * AnimatedNumber the rest of the app uses.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import {
-    View, Text, TouchableOpacity,
-    Animated, ActivityIndicator,
-} from 'react-native';
-import Svg, { Path, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
+import React, { useEffect } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
+import { AnimatedNumber } from './AnimatedNumber';
+import { PressableScale } from './PressableScale';
+import { Skeleton } from './Skeleton';
 
 // ─── Gauge config ─────────────────────────────────────────────
 
@@ -26,11 +29,6 @@ const RADIUS = 80;
 const STROKE = 12;
 const CX = GAUGE_SIZE / 2;
 const CY = GAUGE_SIZE / 2;
-
-// Semi-arc: from 210° to -30° (clockwise, bottom-left to bottom-right)
-const startAngle = 210 * (Math.PI / 180);
-const endAngle   = 330 * (Math.PI / 180); // 360-30
-const ARC_LENGTH = (330 - 210 + 360) % 360; // 240 degrees
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
     const rad = (angleDeg - 90) * (Math.PI / 180);
@@ -69,20 +67,6 @@ const QUEST_ICONS = [
 // ─── Arc Gauge ────────────────────────────────────────────────
 
 const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
-    const anim = useRef(new Animated.Value(0)).current;
-    const [displayScore, setDisplayScore] = useState(0);
-
-    useEffect(() => {
-        Animated.spring(anim, {
-            toValue: score,
-            useNativeDriver: false,
-            tension: 40,
-            friction: 8,
-        }).start();
-        anim.addListener(({ value }) => setDisplayScore(Math.round(value)));
-        return () => anim.removeAllListeners();
-    }, [score]);
-
     const grade = getGrade(score);
 
     // Compute the fill arc end angle
@@ -146,27 +130,24 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                     />
                 )}
 
-                {/* Score text */}
-                <SvgText
-                    x={CX}
-                    y={CY - 4}
-                    textAnchor="middle"
-                    fontSize="32"
-                    fontWeight="900"
-                    fill="#111827"
-                >
-                    {displayScore}
-                </SvgText>
-                <SvgText
-                    x={CX}
-                    y={CY + 20}
-                    textAnchor="middle"
-                    fontSize="11"
-                    fill="#9CA3AF"
-                >
-                    / 1000
-                </SvgText>
             </Svg>
+
+            {/* Real text over the gauge rather than SvgText, which renders at
+                the wrong weight on Android whatever fontWeight it is given. */}
+            <View
+                pointerEvents="none"
+                style={{
+                    position: 'absolute', top: 0, left: 0, right: 0,
+                    height: GAUGE_SIZE * 0.75, alignItems: 'center', justifyContent: 'center',
+                }}
+            >
+                <AnimatedNumber
+                    value={score}
+                    style={{ fontSize: 34, fontWeight: '800', color: '#111827', fontVariant: ['tabular-nums'] }}
+                />
+                <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>/ 1000</Text>
+            </View>
+
             <Text style={{ fontSize: 14, fontWeight: '700', color: grade.color, marginTop: -12 }}>
                 {grade.label}
             </Text>
@@ -178,7 +159,8 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
 
 const FinSightIQCard: React.FC = () => {
     const dispatch = useAppDispatch();
-    const { score, advice, adviceLoading, lastFetchedAt } = useAppSelector((s) => s.iq);
+    const reduced = useReducedMotion();
+    const { advice, adviceLoading, lastFetchedAt } = useAppSelector((s) => s.iq);
     const transactions  = useAppSelector((s) => s.transactions.items);
     const budgets       = useAppSelector((s) => s.budgets.items);
     const goals         = useAppSelector((s: any) => s.goals?.items ?? []);
@@ -207,7 +189,9 @@ const FinSightIQCard: React.FC = () => {
 
 
     return (
-        <View style={{
+        <Animated.View
+            entering={reduced ? FadeIn.duration(180) : FadeIn.duration(320)}
+            style={{
             marginHorizontal: 16, marginTop: 12, marginBottom: 4,
             backgroundColor: '#FFFFFF',
             borderRadius: 24,
@@ -228,19 +212,21 @@ const FinSightIQCard: React.FC = () => {
                     <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' }}>
                         <BrainCircuit size={18} color="#6366F1" />
                     </View>
-                    <View>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }}>FinSight IQ</Text>
-                    </View>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }}>FinSight IQ</Text>
                 </View>
-                <TouchableOpacity
+                <PressableScale
                     onPress={handleRefresh}
                     disabled={adviceLoading}
+                    activeScale={0.9}
+                    accessibilityRole="button"
+                    accessibilityLabel="Get a fresh read on your score"
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' }}
                 >
                     {adviceLoading
                         ? <ActivityIndicator size="small" color="#6366F1" />
                         : <RefreshCw size={15} color="#9CA3AF" />}
-                </TouchableOpacity>
+                </PressableScale>
             </View>
 
             {/* Gauge */}
@@ -274,8 +260,12 @@ const FinSightIQCard: React.FC = () => {
                     </View>
                 </View>
             ) : adviceLoading ? (
-                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: '#F9FAFB', borderRadius: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Analyzing your finances...</Text>
+                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: '#F9FAFB', borderRadius: 16 }}>
+                    <Skeleton width="30%" height={11} />
+                    <View style={{ height: 10 }} />
+                    <Skeleton width="95%" height={12} />
+                    <View style={{ height: 6 }} />
+                    <Skeleton width="70%" height={12} />
                 </View>
             ) : null}
 
@@ -329,8 +319,7 @@ const FinSightIQCard: React.FC = () => {
                     })}
                 </View>
             ) : null}
-
-        </View>
+        </Animated.View>
     );
 };
 

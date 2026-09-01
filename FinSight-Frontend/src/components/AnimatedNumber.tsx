@@ -10,6 +10,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Text, TextProps } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 /** Fast at first, easing out at the end. */
 function easeOutCubic(t: number): number {
@@ -21,7 +22,7 @@ interface AnimatedNumberProps extends TextProps {
     duration?: number;
     /** Turns the animated value into what the user reads. */
     format?: (value: number) => string;
-    /** Skip the animation, for example when reducing motion. */
+    /** Force the animation off. Reduced motion turns it off on its own. */
     animate?: boolean;
 }
 
@@ -36,6 +37,8 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
     animate = true,
     ...textProps
 }) => {
+    const reduced = useReducedMotion();
+    const running = animate && !reduced;
     const [displayed, setDisplayed] = useState(0);
     const frameRef = useRef<number | null>(null);
     const fromRef = useRef(0);
@@ -43,7 +46,7 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
     useEffect(() => {
         // Nothing to drive when animation is off: the value is rendered
         // directly below, so no state update is needed here.
-        if (!animate) return;
+        if (!running) return;
 
         // Animate from wherever the counter currently sits, so a value that
         // updates mid-flight continues smoothly instead of restarting at zero.
@@ -70,9 +73,9 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
         return () => {
             if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
         };
-    }, [value, duration, animate]);
+    }, [value, duration, running]);
 
-    return <Text {...textProps}>{format(animate ? displayed : value)}</Text>;
+    return <Text {...textProps}>{format(running ? displayed : value)}</Text>;
 };
 
 export default AnimatedNumber;

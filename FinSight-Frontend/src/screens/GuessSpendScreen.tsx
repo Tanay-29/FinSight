@@ -13,6 +13,7 @@ import {
     View, Text, ScrollView, TouchableOpacity, TextInput, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PressableScale } from '../components/PressableScale';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, Target, TrendingDown, TrendingUp, Check, History,
@@ -117,7 +118,7 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                     <ArrowLeft size={18} color="#374151" />
                 </TouchableOpacity>
                 <View className="flex-1">
-                    <Text className="text-base font-extrabold text-gray-900">Guess Your Spend</Text>
+                    <Text className="text-base font-extrabold text-gray-900">Guess your spend</Text>
                     <Text className="text-xs text-gray-400">Once a month, no peeking</Text>
                 </View>
             </View>
@@ -163,15 +164,14 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                             </View>
                         </View>
 
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={reveal}
                             disabled={!guess || parseFloat(guess) <= 0}
-                            activeOpacity={0.85}
                             accessibilityRole="button"
                             className={`rounded-2xl py-4 items-center ${guess && parseFloat(guess) > 0 ? 'bg-indigo-600' : 'bg-gray-200'}`}
                         >
                             <Text className="text-white font-bold text-base">Reveal the truth</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </>
                 ) : result ? (
                     <>
@@ -241,15 +241,14 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                             </View>
                         )}
 
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => { haptics.tap(); navigation.goBack(); }}
-                            activeOpacity={0.85}
                             accessibilityRole="button"
                             className="bg-indigo-600 rounded-2xl py-4 items-center flex-row justify-center"
                         >
                             <Check size={18} color="white" />
                             <Text className="text-white font-bold text-base ml-2">Done</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
 
                         <Text className="text-xs text-gray-400 text-center mt-4">
                             Come back next month to see if your instincts have sharpened.

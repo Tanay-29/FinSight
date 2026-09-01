@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, ActivityIndicator } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { COLORS } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
 import { setUser, fetchUserProfile } from '../store/slices/authSlice';
 import type { AppDispatch, RootState } from '../store/store';
@@ -32,6 +34,7 @@ const Stack = createNativeStackNavigator();
 export const RootNavigator = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user, isLoading, profile, profileLoading } = useSelector((state: RootState) => state.auth);
+    const reduced = useReducedMotion();
 
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
@@ -53,14 +56,24 @@ export const RootNavigator = () => {
     // Show spinner while Firebase is restoring session or profile is loading
     if (isLoading || (user && profileLoading)) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.primary }}>
                 <ActivityIndicator size="large" color="#6366F1" />
             </View>
         );
     }
 
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+            screenOptions={{
+                headerShown: false,
+                // Without an explicit background the native stack composites each
+                // push over the window's own colour, which flashes on Android.
+                contentStyle: { backgroundColor: COLORS.surface.primary },
+                // The platform's own push is the right transition. Reduced motion
+                // keeps the change legible but drops the travel.
+                animation: reduced ? 'fade' : 'default',
+            }}
+        >
             {!user ? (
                 // ── Not logged in ─────────────────────────────────────────
                 <Stack.Screen name="Login" component={LoginScreen} />
@@ -74,32 +87,20 @@ export const RootNavigator = () => {
                     <Stack.Screen name="GoalAcceleration" component={GoalAccelerationScreen} />
                     <Stack.Screen name="MoneyManager" component={MoneyManagerScreen} />
                     <Stack.Screen name="SubscriptionTracker" component={SubscriptionTrackerScreen} />
-                    <Stack.Screen name="Flashcards" component={FlashcardScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Flashcards" component={FlashcardScreen} />
                     {/* Phase 1: Execution + Intelligence Layer */}
-                    <Stack.Screen name="BurnRate" component={BurnRateScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="TimeMachine" component={TimeMachineScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="GuessSpend" component={GuessSpendScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="SwipeCategorise" component={SwipeCategoriseScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="BurnRate" component={BurnRateScreen} />
+                    <Stack.Screen name="TimeMachine" component={TimeMachineScreen} />
+                    <Stack.Screen name="GuessSpend" component={GuessSpendScreen} />
+                    <Stack.Screen name="SwipeCategorise" component={SwipeCategoriseScreen} />
                     <Stack.Screen
                         name="AddTransaction"
                         component={AddTransactionScreen}
-                        options={{ presentation: 'modal', headerShown: false }}
+                        options={{ presentation: 'modal' }}
                     />
-                    <Stack.Screen
-                        name="LearnPathDetail"
-                        component={LearnPathDetailScreen}
-                        options={{ presentation: 'card', headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name="ModuleReader"
-                        component={ModuleReaderScreen}
-                        options={{ presentation: 'card', headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name="Profile"
-                        component={ProfileScreen}
-                        options={{ presentation: 'card', headerShown: false }}
-                    />
+                    <Stack.Screen name="LearnPathDetail" component={LearnPathDetailScreen} />
+                    <Stack.Screen name="ModuleReader" component={ModuleReaderScreen} />
+                    <Stack.Screen name="Profile" component={ProfileScreen} />
                 </Stack.Group>
             )}
         </Stack.Navigator>

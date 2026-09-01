@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-    Modal, TextInput,
+    Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
@@ -17,8 +16,10 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { BudgetBar } from '../components/BudgetBar';
+import { BarFill } from '../components/BarFill';
 import { EmptyState } from '../components/EmptyState';
 import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory } from '../utils/categories';
+import { PressableScale } from '../components/PressableScale';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
 // ─── Icon helpers (Lucide) ───────────────────────────────────────
@@ -69,18 +70,6 @@ const getCategoryColor = (category: string) => {
  * of the card to sit in.
  */
 const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: string }[] }> = ({ data }) => {
-    const reduced = useReducedMotion();
-    const [grown, setGrown] = useState(false);
-
-    // Bars sweep out once when the card appears. They are childless and their
-    // width is a percentage of a fixed-height track, so this does not reflow
-    // anything around them.
-    useEffect(() => {
-        if (reduced) { setGrown(true); return; }
-        const t = setTimeout(() => setGrown(true), 60);
-        return () => clearTimeout(t);
-    }, [reduced]);
-
     if (data.length === 0) {
         return (
             <View className="py-6 items-center">
@@ -94,7 +83,7 @@ const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: 
 
     return (
         <View>
-            {data.map((item) => {
+            {data.map((item, i) => {
                 const share = Math.round((item.amount / total) * 100);
                 return (
                     <View key={item.name} className="mb-3.5">
@@ -113,19 +102,13 @@ const SpendingBarChart: React.FC<{ data: { name: string; amount: number; color: 
                             </Text>
                         </View>
 
-                        <View className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
-                            <Animated.View
-                                style={{
-                                    height: '100%',
-                                    borderRadius: 999,
-                                    backgroundColor: item.color,
-                                    width: grown ? `${Math.max((item.amount / maxAmount) * 100, 2)}%` : '0%',
-                                    transitionProperty: 'width',
-                                    transitionDuration: reduced ? 0 : 520,
-                                    transitionTimingFunction: 'ease-out',
-                                } as never}
-                            />
-                        </View>
+                        {/* Staggered down the list so the eye reads top to
+                            bottom instead of everything arriving at once. */}
+                        <BarFill
+                            percent={Math.max((item.amount / maxAmount) * 100, 2)}
+                            color={item.color}
+                            delay={i * 55}
+                        />
                     </View>
                 );
             })}
@@ -145,10 +128,13 @@ const EditBudgetModal: React.FC<{
     React.useEffect(() => { if (budget) setLimit(budget.monthlyLimit.toString()); }, [budget]);
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <View className="flex-1 justify-center items-center bg-black/50">
+            <KeyboardAvoidingView
+                className="flex-1 justify-center items-center bg-black/50"
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
                 <View className="bg-white w-[85%] rounded-2xl p-6">
-                    <Text className="text-xl font-bold text-text-primary mb-4">Edit {budget?.category} Budget</Text>
-                    <Text className="text-sm text-text-secondary mb-2">Monthly Limit (₹)</Text>
+                    <Text className="text-xl font-bold text-text-primary mb-4">Edit the {budget?.category} budget</Text>
+                    <Text className="text-sm text-text-secondary mb-2">Monthly limit (₹)</Text>
                     <TextInput
                         className="bg-surface-tertiary p-3 rounded-lg text-lg text-text-primary mb-6"
                         value={limit}
@@ -160,18 +146,19 @@ const EditBudgetModal: React.FC<{
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
                             <Text className="text-text-secondary font-semibold">Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
                                 const amount = parseFloat(limit);
                                 if (!isNaN(amount) && amount > 0) onSave(amount);
                             }}
+                            accessibilityRole="button"
                             className="bg-brand-primary px-6 py-2 rounded-lg"
                         >
                             <Text className="text-white font-semibold">Save</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
@@ -194,9 +181,12 @@ const CreateBudgetModal: React.FC<{
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <View className="flex-1 justify-center items-center bg-black/50">
+            <KeyboardAvoidingView
+                className="flex-1 justify-center items-center bg-black/50"
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
                 <View className="bg-white w-[85%] rounded-2xl p-6">
-                    <Text className="text-xl font-bold text-text-primary mb-4">Add New Budget</Text>
+                    <Text className="text-xl font-bold text-text-primary mb-4">New budget</Text>
                     <Text className="text-sm text-text-secondary mb-2">Category</Text>
                     <View className="flex-row flex-wrap gap-2 mb-4">
                         {CATEGORIES.map((cat) => (
@@ -211,7 +201,7 @@ const CreateBudgetModal: React.FC<{
                             </TouchableOpacity>
                         ))}
                     </View>
-                    <Text className="text-sm text-text-secondary mb-2">Monthly Limit (₹)</Text>
+                    <Text className="text-sm text-text-secondary mb-2">Monthly limit (₹)</Text>
                     <TextInput
                         className="bg-surface-tertiary p-3 rounded-lg text-lg text-text-primary mb-6"
                         value={limit}
@@ -223,18 +213,19 @@ const CreateBudgetModal: React.FC<{
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
                             <Text className="text-text-secondary font-semibold">Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
                                 const amount = parseFloat(limit);
                                 if (selectedCategoryId && !isNaN(amount) && amount > 0) onSave(selectedCategoryId, amount);
                             }}
+                            accessibilityRole="button"
                             className="bg-brand-primary px-6 py-2 rounded-lg"
                         >
                             <Text className="text-white font-semibold">Save</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
@@ -277,15 +268,17 @@ export const VitalsScreen: React.FC = () => {
             if (t.type === 'debit') {
                 const txDate = parseISO(t.date);
                 if (isToday(txDate)) spentToday += t.amount;
-                if (isThisWeek(txDate)) spentThisWeek += t.amount;
+                if (isThisWeek(txDate, { weekStartsOn: 1 })) spentThisWeek += t.amount;
             }
         });
         return { spentToday, spentThisWeek };
     }, [transactions]);
 
-    const totalBudget = budgets
-        .filter((b) => b.month === currentMonthKey)
-        .reduce((sum, b) => sum + b.monthlyLimit, 0);
+    const monthBudgets = React.useMemo(
+        () => budgets.filter((b) => b.month === currentMonthKey),
+        [budgets, currentMonthKey]
+    );
+    const totalBudget = monthBudgets.reduce((sum, b) => sum + b.monthlyLimit, 0);
     const totalSpent = transactions
         .filter((t) => t.type === 'debit' && format(new Date(t.date), 'yyyy-MM') === currentMonthKey)
         .reduce((sum, t) => sum + t.amount, 0);
@@ -353,18 +346,20 @@ export const VitalsScreen: React.FC = () => {
                 {/* Header */}
                 <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
                     <View>
-                        <Text className="text-2xl font-bold text-text-primary">Financial Vitals</Text>
+                        <Text className="text-2xl font-bold text-text-primary">Financial vitals</Text>
                         <Text className="text-sm text-text-secondary">{format(new Date(), 'MMMM yyyy')}</Text>
                     </View>
                     <View className="flex-row items-center gap-3">
                         {budgetsLoading && <ActivityIndicator size="small" color="#6366F1" />}
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => navigation.navigate('Profile' as never)}
-                            activeOpacity={0.8}
+                            activeScale={0.92}
+                            accessibilityRole="button"
+                            accessibilityLabel="Your profile"
                             className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
                         >
                             <Text className="text-white font-bold text-base">{userInitial}</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </View>
 
@@ -416,13 +411,13 @@ export const VitalsScreen: React.FC = () => {
                     accessibilityLabel="Spending today and this week. Open burn rate."
                 >
                     <View className="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-                        <Text className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Spent Today</Text>
+                        <Text className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Spent today</Text>
                         <Text className="text-xl font-bold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
                             ₹{recentSpending.spentToday.toLocaleString('en-IN')}
                         </Text>
                     </View>
                     <View className="flex-1 bg-teal-50 border border-teal-100 rounded-xl p-4">
-                        <Text className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-1">This Week</Text>
+                        <Text className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-1">This week</Text>
                         <Text className="text-xl font-bold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
                             ₹{recentSpending.spentThisWeek.toLocaleString('en-IN')}
                         </Text>
@@ -439,19 +434,18 @@ export const VitalsScreen: React.FC = () => {
                     accessibilityLabel="Monthly budget. Open the 50/30/20 breakdown."
                 >
                     <View className="flex-row justify-between items-center mb-2">
-                        <Text className="text-sm text-text-secondary">Monthly Budget</Text>
+                        <Text className="text-sm text-text-secondary">Monthly budget</Text>
                         <Text className="text-sm font-semibold text-text-primary">{overallPercentage}% used</Text>
                     </View>
                     <View className="flex-row items-baseline mb-2">
                         <Text className="text-3xl font-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
                         <Text className="text-base text-text-tertiary ml-2">/ ₹{totalBudget.toLocaleString('en-IN')}</Text>
                     </View>
-                    <View className="h-3 bg-surface-tertiary rounded-full overflow-hidden">
-                        <View
-                            className={`h-full rounded-full ${overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}`}
-                            style={{ width: `${Math.min(overallPercentage, 100)}%` }}
-                        />
-                    </View>
+                    <BarFill
+                        percent={Math.min(overallPercentage, 100)}
+                        height={12}
+                        fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
+                    />
                     <View className="flex-row items-center justify-end mt-3">
                         <Text className="text-xs font-semibold text-brand-primary mr-1">50/30/20 breakdown</Text>
                         <ChevronRight size={14} color="#6366F1" />
@@ -461,7 +455,7 @@ export const VitalsScreen: React.FC = () => {
                 {/* Category Spending, and the recurring charges hiding inside
                     those categories. */}
                 <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4">
-                    <Text className="text-lg font-semibold text-text-primary mb-3">Category Spending</Text>
+                    <Text className="text-lg font-semibold text-text-primary mb-3">Category spending</Text>
                     <SpendingBarChart data={chartData} />
                     <TouchableOpacity
                         className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
@@ -479,17 +473,21 @@ export const VitalsScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Top Goal Progress */}
-                <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4 shadow-sm">
+                {/* The top goal, and nothing at all when there is not one. A
+                    card whose entire content is a link to another tab is an
+                    advert, not a panel. */}
+                {topGoal && (
+                <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4">
                     <View className="flex-row justify-between items-center mb-4">
-                        <Text className="text-lg font-semibold text-text-primary">Top Goal Progress</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Goals' as never)}>
-                            <Text className="text-brand-primary font-bold text-sm">View Goals</Text>
+                        <Text className="text-lg font-semibold text-text-primary">Your top goal</Text>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Goals' as never)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <Text className="text-brand-primary font-bold text-sm">All goals</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {topGoal ? (
-                        <>
                             <View className="flex-row items-center mb-3">
                                 <View className="w-12 h-12 bg-indigo-50 rounded-full items-center justify-center mr-3">
                                     {React.createElement(goalIcon(topGoal.icon), { size: 22, color: '#6366F1' })}
@@ -505,44 +503,27 @@ export const VitalsScreen: React.FC = () => {
                                 </Text>
                             </View>
 
-                            <View className="h-2.5 bg-surface-tertiary rounded-full overflow-hidden">
-                                <View
-                                    className="h-full bg-brand-primary rounded-full"
-                                    style={{ width: `${goalProgressPercentage}%` }}
-                                />
-                            </View>
+                            <BarFill percent={goalProgressPercentage} height={10} fillClassName="bg-brand-primary" />
 
                             {topGoal.deadline && (
                                 <Text className="text-xs text-text-tertiary mt-2 text-right">
-                                    Target Date: {format(parseISO(topGoal.deadline), 'MMM yyyy')}
+                                    Target {format(parseISO(topGoal.deadline), 'MMM yyyy')}
                                 </Text>
                             )}
-                        </>
-                    ) : (
-                        <View className="items-center py-4">
-                            <Text className="text-text-secondary mb-3">No active goals found.</Text>
-                            <TouchableOpacity
-                                className="bg-brand-primary px-4 py-2 rounded-lg"
-                                onPress={() => navigation.navigate('Goals' as never)}
-                            >
-                                <Text className="text-white font-semibold">Create a Goal</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
                 </View>
+                )}
 
                 {/* Budget Breakdown */}
                 <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4 mb-8">
                     <View className="flex-row justify-between items-center mb-3">
-                        <Text className="text-lg font-semibold text-text-primary">Budget Breakdown</Text>
+                        <Text className="text-lg font-semibold text-text-primary">Budgets</Text>
                         <TouchableOpacity onPress={() => setCreateModalVisible(true)}>
-                            <Text className="text-brand-primary font-bold text-sm">Add Budget</Text>
+                            <Text className="text-brand-primary font-bold text-sm">Add budget</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {budgets.length > 0 ? (
-                        budgets
-                            .filter((budget) => budget.month === currentMonthKey)
+                    {monthBudgets.length > 0 ? (
+                        monthBudgets
                             .map((budget) => {
                                 const dynamicSpend = transactions
                                     .filter((t) =>
@@ -569,7 +550,9 @@ export const VitalsScreen: React.FC = () => {
                                 );
                             })
                     ) : (
-                        <Text className="text-text-secondary text-center py-4">No budgets set for this month.</Text>
+                        <Text className="text-text-secondary text-center py-4">
+                            No budgets set for this month yet.
+                        </Text>
                     )}
                 </View>
 

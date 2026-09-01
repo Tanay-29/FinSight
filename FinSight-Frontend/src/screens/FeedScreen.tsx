@@ -1,7 +1,21 @@
-import React, { useEffect } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+/**
+ * FeedScreen - the home tab.
+ *
+ * Two things here were not real. "This Month" summed every transaction the
+ * user had ever logged, so it grew for ever and was only correct in the first
+ * month. And the comparison footer was handed a hardcoded zero, so everyone
+ * read "0% higher than last month" whatever they had spent. Both are computed
+ * from the actual month boundaries now.
+ *
+ * Sync failures used to raise two Alert dialogs on top of the screen, which
+ * meant a weak connection greeted the user with a modal they had to dismiss
+ * before they could look at anything. They are a quiet inline line now.
+ */
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Bot, Wallet } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import { Plus, Bot, Wallet, CloudOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -12,37 +26,32 @@ import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import { EmptyState } from '../components/EmptyState';
 import { PressableScale } from '../components/PressableScale';
+import { Skeleton } from '../components/Skeleton';
 import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
 
+/** Card width plus its right margin, so the carousel lands on a card edge. */
+const INSIGHT_SNAP = 320 + 12;
 
 export const FeedScreen: React.FC = () => {
     const navigation = useNavigation();
     const dispatch = useAppDispatch();
-    
-    // User state
+    const reduced = useReducedMotion();
+
     const { user } = useAppSelector((state) => state.auth);
-    
-    // 2. Grabbing the LIVE data directly from the new marketSlice!
     const { insights: eitmCards, loading: marketLoading } = useAppSelector((state) => state.market);
-    
-    // Financial state
+
     const transactions = useAppSelector((state) => state.transactions.items);
-    const budgets = useAppSelector((state) => state.budgets.items);
     const transactionsError = useAppSelector((state) => state.transactions.error);
     const budgetsError = useAppSelector((state) => state.budgets.error);
-    
-    const [refreshing, setRefreshing] = React.useState(false);
-
-    // Everything below the market pulse is derived from logged spending, so
-    // with none of it there is nothing to render but noughts.
     const transactionsLoaded = useAppSelector((state) => state.transactions.loaded);
-    const hasNothingLogged = transactionsLoaded && !transactionsError && transactions.length === 0;
 
-    useEffect(() => {
-        if (transactionsError) Alert.alert('Transaction Sync Error', transactionsError);
-        if (budgetsError) Alert.alert('Budget Sync Error', budgetsError);
-    }, [transactionsError, budgetsError]);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // Everything below the header is derived from logged spending, so with
+    // none of it there is nothing to render but noughts.
+    const hasNothingLogged = transactionsLoaded && !transactionsError && transactions.length === 0;
+    const syncFailed = Boolean(transactionsError || budgetsError);
 
     useEffect(() => {
         dispatch(fetchMarketInsight());
@@ -50,7 +59,7 @@ export const FeedScreen: React.FC = () => {
         dispatch(fetchBudgets());
     }, [dispatch]);
 
-    const onRefresh = React.useCallback(() => {
+    const onRefresh = useCallback(() => {
         setRefreshing(true);
         Promise.all([
             dispatch(fetchTransactions()),
@@ -61,60 +70,60 @@ export const FeedScreen: React.FC = () => {
     const today = new Date();
     const greeting =
         today.getHours() < 12
-            ? 'Good Morning'
+            ? 'Good morning'
             : today.getHours() < 17
-                ? 'Good Afternoon'
-                : 'Good Evening';
+                ? 'Good afternoon'
+                : 'Good evening';
 
-    const displayName = user?.displayName?.split(' ')[0] || 'User';
+    const displayName = user?.displayName?.split(' ')[0] || 'there';
 
-    const recentTransactions = [...transactions]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
+    const recentTransactions = useMemo(
+        () => [...transactions]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 5),
+        [transactions]
+    );
 
-    // Calculate total spent dynamically
-    const totalSpent = React.useMemo(() => transactions.reduce(
-        (acc, t) => (t.type === 'debit' ? acc + t.amount : acc),
-        0
-    ), [transactions]);
-
-    // Calculate Category Spending
-    const categorySpending = React.useMemo(() => {
-        const totals: Record<string, number> = {};
-        transactions.forEach(t => {
-            if (t.type === 'debit') {
-                const cat = t.category;
-                totals[cat] = (totals[cat] || 0) + t.amount;
-            }
-        });
-
-        const total = Object.values(totals).reduce((a, b) => a + b, 0);
-        return Object.entries(totals)
-            .map(([name, amount]) => ({
-                name: name.charAt(0).toUpperCase() + name.slice(1),
-                amount,
-                percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
-                icon: name, // category key - FinancialVitals uses its own Lucide icon map
-            }))
-            .sort((a, b) => b.amount - a.amount);
+    /** Debits inside one calendar month, counted back from today. */
+    const monthlySpend = useCallback((monthsAgo: number) => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() - monthsAgo + 1, 1);
+        return transactions.reduce((acc, t) => {
+            if (t.type !== 'debit') return acc;
+            const d = new Date(t.date);
+            return d >= start && d < end ? acc + t.amount : acc;
+        }, 0);
     }, [transactions]);
 
-    // Calculate Weekly Trend (Last 7 Days)
-    const weeklyTrend = React.useMemo(() => {
+    const totalSpent = useMemo(() => monthlySpend(0), [monthlySpend]);
+
+    /** Null when there is no previous month to compare against. */
+    const comparison = useMemo(() => {
+        const previous = monthlySpend(1);
+        if (previous <= 0) return null;
+        const delta = ((totalSpent - previous) / previous) * 100;
+        if (Math.abs(delta) < 1) return { type: 'flat' as const, percentage: 0 };
+        return {
+            type: delta > 0 ? ('increase' as const) : ('decrease' as const),
+            percentage: Math.abs(Math.round(delta)),
+        };
+    }, [monthlySpend, totalSpent]);
+
+    const weeklyTrend = useMemo(() => {
         const days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - (6 - i));
             return d.toISOString().split('T')[0];
         });
-
-        return days.map(date => {
-            return transactions
-                .filter(t => t.type === 'debit' && t.date.startsWith(date))
-                .reduce((acc, t) => acc + t.amount, 0);
-        });
+        return days.map((date) =>
+            transactions
+                .filter((t) => t.type === 'debit' && t.date.startsWith(date))
+                .reduce((acc, t) => acc + t.amount, 0)
+        );
     }, [transactions]);
 
-return (
+    return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'left', 'right']}>
             <ScrollView
                 className="flex-1"
@@ -129,9 +138,8 @@ return (
                     />
                 }
             >
-                {/* Greeting Header */}
                 <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
-                    <View>
+                    <View className="flex-1 mr-3">
                         <Text className="text-2xl font-bold text-text-primary">
                             {greeting}, {displayName}
                         </Text>
@@ -139,16 +147,30 @@ return (
                             {format(today, 'EEEE, MMMM d')}
                         </Text>
                     </View>
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={() => navigation.navigate('Profile' as never)}
-                        activeOpacity={0.8}
+                        activeScale={0.92}
+                        accessibilityRole="button"
+                        accessibilityLabel="Your profile"
                         className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
                     >
                         <Text className="text-white font-bold text-base">
                             {displayName.charAt(0).toUpperCase()}
                         </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
+
+                {syncFailed && (
+                    <Animated.View
+                        entering={FadeIn.duration(200)}
+                        className="mx-4 mt-2 flex-row items-center bg-surface-secondary border border-border rounded-xl px-3 py-2.5"
+                    >
+                        <CloudOff size={14} color="#6B7280" />
+                        <Text className="text-xs text-text-secondary ml-2 flex-1">
+                            Showing what was saved on this device. Pull down to try again.
+                        </Text>
+                    </Animated.View>
+                )}
 
                 {hasNothingLogged ? (
                     <EmptyState
@@ -160,74 +182,93 @@ return (
                         hint="Got a bank SMS? Paste it and we will read the amount, merchant and category for you."
                     />
                 ) : (
-                  <>
-                {/* FinSight IQ Card */}
-                <FinSightIQCard />
+                    <>
+                        <FinSightIQCard />
 
-                {/* EITM Cards Carousel */}
-                <View className="mt-5">
-                    <View className="px-4 mb-2 flex-row items-center">
-                        <Bot size={12} color="#6366F1" />
-                        <Text className="text-[10px] font-bold tracking-widest text-brand-primary uppercase ml-1">
-                            AI Insights & Alerts
-                        </Text>
-                    </View>
+                        <View className="mt-5">
+                            <View className="px-4 mb-2 flex-row items-center">
+                                <Bot size={12} color="#6366F1" />
+                                <Text className="text-[10px] font-bold tracking-widest text-brand-primary uppercase ml-1">
+                                    AI insights
+                                </Text>
+                            </View>
 
-                    {marketLoading && eitmCards.length === 0 ? (
-                         <View className="px-4 py-8 items-center justify-center">
-                             <Text className="text-sm text-text-secondary">Analyzing Dalal Street...</Text>
-                         </View>
-                    ) : (
-                        <ScrollView 
-                            horizontal 
-                            showsHorizontalScrollIndicator={false} 
-                            contentContainerStyle={{ paddingHorizontal: 16 }}
-                            decelerationRate="fast"
-                            snapToInterval={336} 
-                        >
-                            {eitmCards.map((insightItem, index) => (
-                                <EITMCard key={index} insight={insightItem} />
-                            ))}
-                        </ScrollView>
-                    )}
-                </View>
-
-                {/* Financial Vitals */}
-                <View className="mt-4">
-                    <FinancialVitals
-                        totalSpent={totalSpent}
-                        categories={categorySpending}
-                        weeklyTrend={weeklyTrend}
-                        comparison={{ type: 'increase', percentage: 0 }} 
-                    />
-                </View>
-
-                {/* Recent Transactions */}
-                <View className="mt-4 mx-4 bg-white border border-border rounded-xl overflow-hidden mb-6">
-                    <View className="px-4 py-3 border-b border-border">
-                        <Text className="text-lg font-semibold text-text-primary">
-                            Recent Transactions
-                        </Text>
-                    </View>
-                    {recentTransactions.length > 0 ? (
-                        recentTransactions.map((txn) => (
-                            <TransactionRow
-                                key={txn.id}
-                                category={txn.category}
-                                merchant={txn.merchant}
-                                amount={txn.amount}
-                                type={txn.type}
-                                date={txn.date}
-                                source={txn.source as 'auto' | 'manual'}
-                            />
-                        ))
-                    ) : (
-                        <View className="p-4 items-center">
-                            <Text className="text-text-secondary">No recent transactions</Text>
+                            {marketLoading && eitmCards.length === 0 ? (
+                                // A placeholder shaped like the card that is coming,
+                                // rather than a line of text about Dalal Street.
+                                <View className="flex-row px-4">
+                                    <View className="w-80 mr-3 bg-white rounded-2xl border border-border p-4">
+                                        <Skeleton width="35%" height={10} />
+                                        <View style={{ height: 12 }} />
+                                        <Skeleton width="80%" height={16} />
+                                        <View style={{ height: 10 }} />
+                                        <Skeleton width="100%" height={11} />
+                                        <View style={{ height: 6 }} />
+                                        <Skeleton width="90%" height={11} />
+                                    </View>
+                                </View>
+                            ) : (
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingHorizontal: 16 }}
+                                    decelerationRate="fast"
+                                    snapToInterval={INSIGHT_SNAP}
+                                >
+                                    {eitmCards.map((insightItem, index) => (
+                                        <EITMCard key={index} insight={insightItem} />
+                                    ))}
+                                </ScrollView>
+                            )}
                         </View>
-                    )}
-                </View>
-                  </>
+
+                        <View className="mt-4">
+                            <FinancialVitals
+                                totalSpent={totalSpent}
+                                weeklyTrend={weeklyTrend}
+                                comparison={comparison}
+                            />
+                        </View>
+
+                        <View className="mt-4 mx-4 bg-white border border-border rounded-xl overflow-hidden mb-6">
+                            <View className="px-4 py-3 border-b border-border">
+                                <Text className="text-lg font-semibold text-text-primary">
+                                    Recent transactions
+                                </Text>
+                            </View>
+                            {recentTransactions.length > 0 ? (
+                                recentTransactions.map((txn, i) => (
+                                    // Five rows off a plain map, not a virtualized
+                                    // list, so an entrance here is safe. The stagger
+                                    // is short enough that the last row is in before
+                                    // the eye reaches it.
+                                    <Animated.View
+                                        key={txn.id}
+                                        entering={
+                                            reduced
+                                                ? FadeIn.duration(160)
+                                                : FadeInDown.duration(240).delay(i * 45)
+                                        }
+                                    >
+                                        <TransactionRow
+                                            category={txn.category}
+                                            merchant={txn.merchant}
+                                            amount={txn.amount}
+                                            type={txn.type}
+                                            date={txn.date}
+                                            source={txn.source as 'auto' | 'manual'}
+                                        />
+                                    </Animated.View>
+                                ))
+                            ) : (
+                                <View className="p-4 items-center">
+                                    <Text className="text-text-secondary">
+                                        Nothing logged yet this month.
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    </>
                 )}
             </ScrollView>
 

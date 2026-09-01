@@ -14,6 +14,7 @@ import {
     View, Text, ScrollView, TouchableOpacity, TextInput, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PressableScale } from '../components/PressableScale';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Svg, { Path, Line, Circle } from 'react-native-svg';
 import { ArrowLeft, TrendingUp, Info } from 'lucide-react-native';
@@ -109,17 +110,16 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                     {PRESETS.map((preset) => {
                         const active = parsed === preset.amount && frequency === preset.frequency;
                         return (
-                            <TouchableOpacity
+                            <PressableScale
                                 key={preset.label}
                                 onPress={() => applyPreset(preset)}
-                                activeOpacity={0.85}
                                 accessibilityRole="button"
                                 className={`px-3.5 py-2 rounded-full border ${active ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-200'}`}
                             >
                                 <Text className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-600'}`}>
                                     {preset.label}
                                 </Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         );
                     })}
                 </View>
@@ -169,14 +169,14 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                         <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Years</Text>
                         <View className="flex-row flex-wrap gap-1.5">
                             {YEAR_OPTIONS.map((y) => (
-                                <TouchableOpacity
+                                <PressableScale
                                     key={y}
                                     onPress={() => { haptics.select(); setYears(y); }}
                                     accessibilityRole="button"
                                     className={`px-3 py-1.5 rounded-lg ${years === y ? 'bg-indigo-600' : 'bg-gray-100'}`}
                                 >
                                     <Text className={`text-xs font-bold ${years === y ? 'text-white' : 'text-gray-500'}`}>{y}</Text>
-                                </TouchableOpacity>
+                                </PressableScale>
                             ))}
                         </View>
                     </View>
@@ -184,14 +184,14 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                         <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Return</Text>
                         <View className="flex-row flex-wrap gap-1.5">
                             {RATE_OPTIONS.map((r) => (
-                                <TouchableOpacity
+                                <PressableScale
                                     key={r}
                                     onPress={() => { haptics.select(); setRate(r); }}
                                     accessibilityRole="button"
                                     className={`px-3 py-1.5 rounded-lg ${rate === r ? 'bg-indigo-600' : 'bg-gray-100'}`}
                                 >
                                     <Text className={`text-xs font-bold ${rate === r ? 'text-white' : 'text-gray-500'}`}>{r}%</Text>
-                                </TouchableOpacity>
+                                </PressableScale>
                             ))}
                         </View>
                     </View>

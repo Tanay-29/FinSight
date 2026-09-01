@@ -8,6 +8,8 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ReAnimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import { BarFill } from '../components/BarFill';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
     ArrowLeft, BookOpen, Layers, Clock, Check, Trophy,
@@ -20,6 +22,7 @@ import { fetchUserProgress } from '../store/slices/learningSlice';
 type Props = NativeStackScreenProps<any, 'LearnPathDetail'>;
 
 export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) => {
+    const reduced = useReducedMotion();
     const dispatch = useAppDispatch();
     const { progress } = useAppSelector((s) => s.learning);
     const { user } = useAppSelector((s) => s.auth);
@@ -84,25 +87,19 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                 <View className="mx-4 mt-4 bg-white border border-gray-100 rounded-2xl p-5" style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
                     <View className="flex-row items-center mb-2">
                         <BookOpen size={16} color="#6366F1" />
-                        <Text className="text-base font-bold text-gray-900 ml-2">Course Overview</Text>
+                        <Text className="text-base font-bold text-gray-900 ml-2">Course overview</Text>
                     </View>
                     <Text className="text-sm text-gray-500 leading-6 mb-4">{path.overview}</Text>
 
                     {/* Progress */}
                     <View className="mb-4">
                         <View className="flex-row justify-between items-center mb-1.5">
-                            <Text className="text-sm font-semibold text-gray-700">Your Progress</Text>
+                            <Text className="text-sm font-semibold text-gray-700">Your progress</Text>
                             <Text className="text-xs text-gray-400">
                                 {completedCount}/{totalCount} modules
                             </Text>
                         </View>
-                        <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <View
-                                className="h-full bg-indigo-500 rounded-full"
-                                style={{ width: `${progressPct}%` }}
-                            />
-                        </View>
-                        <Text className="text-xs text-gray-400 mt-1">{progressPct}% complete</Text>
+                        <BarFill percent={progressPct} trackClassName="bg-gray-100" fillClassName="bg-indigo-500" />
                     </View>
 
                     {/* Badge earned */}
@@ -151,8 +148,15 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                         const diff = getDifficultyColor(module.difficulty);
 
                         return (
-                            <TouchableOpacity
+                            <ReAnimated.View
                                 key={module.id}
+                                entering={
+                                    reduced
+                                        ? FadeIn.duration(160)
+                                        : FadeInDown.duration(240).delay(index * 45)
+                                }
+                            >
+                            <TouchableOpacity
                                 onPress={() => { if (!isLocked) openModule(module, index); }}
                                 disabled={isLocked}
                                 activeOpacity={0.8}
@@ -233,6 +237,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                     </View>
                                 )}
                             </TouchableOpacity>
+                            </ReAnimated.View>
                         );
                     }) : (
                         <View className="bg-white border border-gray-100 rounded-2xl p-5 items-center">

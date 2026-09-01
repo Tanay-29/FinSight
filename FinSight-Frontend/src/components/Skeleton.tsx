@@ -5,10 +5,14 @@
  * wait; a skeleton tells them what is about to arrive and stops the layout
  * jumping when it does.
  *
- * One shared pulse animation per skeleton block, native-driven.
+ * The pulse is a Reanimated CSS animation rather than a core Animated loop.
+ * A screen showing eight placeholders was running eight JS-driven loops; as
+ * keyframes the whole thing lives on the UI thread and costs nothing while the
+ * data it is waiting for is being parsed.
  */
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, View, ViewStyle } from 'react-native';
+import React from 'react';
+import { View, ViewStyle } from 'react-native';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 
 interface SkeletonProps {
     width?: number | `${number}%`;
@@ -23,35 +27,25 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     radius = 6,
     style,
 }) => {
-    const pulse = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        const animation = Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulse, {
-                    toValue: 1,
-                    duration: 750,
-                    easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
-                }),
-                Animated.timing(pulse, {
-                    toValue: 0,
-                    duration: 750,
-                    easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
-                }),
-            ])
-        );
-        animation.start();
-        return () => animation.stop();
-    }, [pulse]);
-
-    const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.9] });
+    const reduced = useReducedMotion();
 
     return (
         <Animated.View
             style={[
-                { width, height, borderRadius: radius, backgroundColor: '#E5E7EB', opacity },
+                { width, height, borderRadius: radius, backgroundColor: '#E5E7EB' },
+                // Reduced motion keeps the placeholder, drops the breathing.
+                reduced
+                    ? { opacity: 0.7 }
+                    : ({
+                          animationName: {
+                              '0%': { opacity: 0.5 },
+                              '50%': { opacity: 0.85 },
+                              '100%': { opacity: 0.5 },
+                          },
+                          animationDuration: '1500ms',
+                          animationIterationCount: 'infinite',
+                          animationTimingFunction: 'ease-in-out',
+                      } as ViewStyle),
                 style,
             ]}
         />
