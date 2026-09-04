@@ -21,7 +21,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 // Confetti is the one place a spread of hues is the point rather than a
 // failure of restraint, so it borrows from the category set instead of
 // inventing a sixth palette.
-const PIECE_COLORS = [
+const pieceColors = () => [
     COLORS.brand.primary,
     COLORS.semantic.profit,
     COLORS.semantic.alertAmberFill,
@@ -41,13 +41,15 @@ interface Piece {
 }
 
 function buildPieces(count: number): Piece[] {
+    // Read here rather than at module scope, so a burst uses the live theme.
+    const palette = pieceColors();
     return Array.from({ length: count }, (_, i) => ({
         startX: Math.random() * SCREEN_W,
         // Pieces fan outward: those starting left drift left.
         driftX: (Math.random() - 0.5) * 220,
         delay: Math.random() * 0.35,
         size: 6 + Math.random() * 8,
-        color: PIECE_COLORS[i % PIECE_COLORS.length],
+        color: palette[i % palette.length],
         spins: 1 + Math.random() * 3,
         isCircle: Math.random() > 0.6,
     }));

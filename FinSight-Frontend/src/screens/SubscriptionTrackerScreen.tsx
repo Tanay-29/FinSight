@@ -33,7 +33,8 @@ import { futureValueOfSeries, formatCompactINR } from '../utils/projections';
 import { merchantKey } from '../utils/merchantRules';
 import { RecurringType, amountVariation, classifyRecurring } from '../utils/recurring';
 import { format, parseISO, subDays, differenceInDays } from 'date-fns';
-import { FONTS, COLORS } from '../theme/tokens';
+import { FONTS, COLORS, CATEGORY_COLORS, categoryTint } from '../theme/tokens';
+import { normaliseCategory } from '../utils/categories';
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -63,27 +64,35 @@ const ASSUMED_RETURN_PCT = 10;
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-    entertainment: <Tv size={18} color={COLORS.brand.primaryDark} />,
-    dining:        <Coffee size={18} color="#C2410C" />,
-    shopping:      <ShoppingBag size={18} color="#BE185D" />,
-    utilities:     <Zap size={18} color={COLORS.brand.primary} />,
-    health:        <Heart size={18} color={COLORS.semantic.loss} />,
+/**
+ * Built when the row renders, not at module scope.
+ *
+ * These were constants holding finished JSX elements, so they captured
+ * whichever theme happened to be loaded on import and then never changed
+ * again. They were also keyed on "health", a spelling the canonical category
+ * list does not use, so anything filed as healthcare fell through to the
+ * default icon. Routing through normaliseCategory fixes both.
+ */
+const ICON_FOR: Record<string, React.ComponentType<any>> = {
+    entertainment: Tv,
+    dining: Coffee,
+    shopping: ShoppingBag,
+    utilities: Zap,
+    healthcare: Heart,
 };
-const DEFAULT_ICON = <RefreshCw size={18} color={COLORS.text.secondary} />;
 
-const CATEGORY_BG: Record<string, string> = {
-    entertainment: COLORS.brand.soft,
-    dining:        '#FDF5EC',
-    shopping:      '#FBF0F4',
-    utilities:     COLORS.brand.soft,
-    health:        '#FDF4F2',
+const categoryIcon = (category: string) => {
+    const key = normaliseCategory(category);
+    const Icon = ICON_FOR[key] ?? RefreshCw;
+    return <Icon size={18} color={CATEGORY_COLORS[key]} strokeWidth={1.8} />;
 };
+
+const categoryBg = (category: string) => categoryTint(normaliseCategory(category));
 
 function getTypeLabel(type: RecurringType): { label: string; color: string; bg: string } {
     if (type === 'subscription') return { label: 'Monthly', color: COLORS.brand.primary, bg: COLORS.brand.soft };
-    if (type === 'weekly')       return { label: 'Weekly',  color: COLORS.semantic.alertAmberFill, bg: '#FDF7EC' };
-    return                               { label: 'Varies', color: COLORS.semantic.profit, bg: '#EFF7F2' };
+    if (type === 'weekly')       return { label: 'Weekly',  color: COLORS.semantic.alertAmberFill, bg: COLORS.semantic.alertBg };
+    return                               { label: 'Varies', color: COLORS.semantic.profit, bg: COLORS.semantic.profitBg };
 }
 
 // ─── Main Screen ──────────────────────────────────────────────
@@ -368,8 +377,8 @@ const SubscriptionTrackerScreen: React.FC = () => {
                         const isKept = keepSet.has(c.normalised);
                         const isCancelled = cancelSet.has(c.normalised);
                         const typeInfo = getTypeLabel(c.type);
-                        const catIcon = CATEGORY_ICONS[c.category] ?? DEFAULT_ICON;
-                        const catBg = CATEGORY_BG[c.category] ?? COLORS.surface.secondary;
+                        const catIcon = categoryIcon(c.category);
+                        const catBg = categoryBg(c.category);
 
                         return (
                             <View

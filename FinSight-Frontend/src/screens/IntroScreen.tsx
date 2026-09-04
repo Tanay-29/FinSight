@@ -39,7 +39,15 @@ interface Panel {
  *  warm canvas, one hairline, no shadow. */
 const previewCard = 'w-full bg-surface-primary border border-border p-4';
 
-const PANELS: Panel[] = [
+/**
+ * Built when the screen renders, not at module scope.
+ *
+ * These panels carry finished JSX with colours baked into it, so as a constant
+ * they captured whichever theme was loaded on import and then kept it. The
+ * dining tile stayed the light orange on a dark card, which is exactly the
+ * failure this whole indirection exists to prevent.
+ */
+const buildPanels = (): Panel[] => [
     {
         key: 'paste',
         icon: <MessageSquareText size={22} color={COLORS.brand.primaryDark} strokeWidth={1.8} />,
@@ -132,6 +140,7 @@ interface IntroScreenProps {
 }
 
 export const IntroScreen: React.FC<IntroScreenProps> = ({ onDone }) => {
+    const PANELS = buildPanels();
     const { width } = useWindowDimensions();
     const reduced = useReducedMotion();
     const scrollRef = useRef<ScrollView>(null);

@@ -47,20 +47,26 @@ const BUCKET_MAP: Record<string, 'needs' | 'wants' | 'savings'> = {
 
 type Bucket = 'needs' | 'wants' | 'savings';
 
-const BUCKET_META: Record<Bucket, {
+/**
+ * Built when a bucket renders, not at module scope.
+ *
+ * It carries colours and finished JSX icons, so as a constant it captured
+ * whichever theme loaded first and kept it for the life of the process.
+ */
+const bucketMeta = (): Record<Bucket, {
     label: string;
     target: number;
     color: string;
     lightColor: string;
     icon: React.ReactNode;
     description: string;
-}> = {
+}> => ({
     needs: {
         label: 'Needs',
         target: 50,
-        color: '#1D4ED8',
-        lightColor: '#F2F5FD',
-        icon: <Home size={18} color="#1D4ED8" />,
+        color: COLORS.brand.primary,
+        lightColor: COLORS.brand.soft,
+        icon: <Home size={18} color={COLORS.brand.primary} />,
         description: 'Essentials - groceries, rent, utilities, transport, health',
     },
     wants: {
@@ -75,11 +81,11 @@ const BUCKET_META: Record<Bucket, {
         label: 'Savings',
         target: 20,
         color: COLORS.semantic.profit,
-        lightColor: '#EFF7F2',
+        lightColor: COLORS.semantic.profitBg,
         icon: <TrendingUp size={18} color={COLORS.semantic.profit} />,
         description: 'Future - investments, SIP, goal deposits',
     },
-};
+});
 
 const CATEGORY_DISPLAY: Record<string, string> = {
     groceries: 'Groceries', utilities: 'Utilities', transport: 'Transport',
@@ -125,7 +131,7 @@ const BucketCard: React.FC<{
     expanded: boolean;
     onToggle: () => void;
 }> = ({ bucket, spend, basis, totalSpend, categoryBreakdown, expanded, onToggle }) => {
-    const meta = BUCKET_META[bucket];
+    const meta = bucketMeta()[bucket];
     // Fifty, thirty and twenty are shares of income. Dividing by spending
     // instead made the three buckets sum to a hundred whatever the user
     // earned, so the rule could neither be passed nor failed.
@@ -392,10 +398,10 @@ const MoneyManagerScreen: React.FC = () => {
                                     <View key={b} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 10, alignItems: 'center' }}>
                                         <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: '#FFFFFF' }}>{pct}%</Text>
                                         <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
-                                            {BUCKET_META[b].label}
+                                            {bucketMeta()[b].label}
                                         </Text>
                                         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>
-                                            target {BUCKET_META[b].target}%
+                                            target {bucketMeta()[b].target}%
                                         </Text>
                                     </View>
                                 );

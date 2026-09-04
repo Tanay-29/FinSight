@@ -60,12 +60,18 @@ function getGrade(score: number): { label: string; color: string } {
     return                    { label: 'Needs Attention',  color: COLORS.semantic.loss };
 }
 
-/** Icon and tint for quest 1, 2 and 3, in order. */
-const QUEST_ICONS = [
-    { Icon: Target, color: COLORS.brand.primary },
-    { Icon: BookOpen, color: COLORS.brand.primaryDark },
-    { Icon: TrendingUp, color: COLORS.semantic.profit },
-] as const;
+/**
+ * Icon and tint for quest 1, 2 and 3, in order.
+ *
+ * A function rather than a constant, because a constant is evaluated on import
+ * and would hold whichever theme loaded first. Two of these three colours are
+ * the same in both themes; the third is not.
+ */
+const questStyle = (idx: number) => ({
+    Icon: [Target, BookOpen, TrendingUp][idx] ?? Target,
+    color: [COLORS.brand.primary, COLORS.brand.primaryDark, COLORS.semantic.profit][idx]
+        ?? COLORS.brand.primary,
+});
 
 // ─── Arc Gauge ────────────────────────────────────────────────
 
@@ -326,7 +332,7 @@ const FinSightIQCard: React.FC = () => {
                     </Text>
 
                     {advice.quests.slice(0, 3).map((quest, idx) => {
-                        const { Icon, color } = QUEST_ICONS[idx] ?? QUEST_ICONS[0];
+                        const { Icon, color } = questStyle(idx);
                         return (
                             <View
                                 key={idx}

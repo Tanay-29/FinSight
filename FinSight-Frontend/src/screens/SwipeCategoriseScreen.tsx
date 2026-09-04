@@ -29,7 +29,8 @@ import { updateTransactionCategory } from '../store/slices/transactionsSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
 import { normaliseCategory } from '../utils/categories';
-import { MOTION, COLORS, TYPE } from '../theme/tokens';
+import type { Category } from '../utils/categories';
+import { MOTION, COLORS, TYPE, CATEGORY_COLORS, categoryTint } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<any, 'SwipeCategorise'>;
 
@@ -37,17 +38,17 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_W * 0.28;
 
 const CATEGORIES = [
-    { key: 'dining', label: 'Dining', icon: Utensils, color: '#C2410C' },
-    { key: 'groceries', label: 'Groceries', icon: ShoppingCart, color: COLORS.semantic.profit },
-    { key: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#BE185D' },
-    { key: 'transport', label: 'Transport', icon: Car, color: '#1D4ED8' },
-    { key: 'utilities', label: 'Utilities', icon: Zap, color: '#8A5406' },
-    { key: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: COLORS.brand.primaryDark },
-    { key: 'healthcare', label: 'Health', icon: HeartPulse, color: '#0F766E' },
-    { key: 'housing', label: 'Rent', icon: Home, color: COLORS.brand.primary },
-    { key: 'investments', label: 'Investments', icon: TrendingUp, color: COLORS.semantic.profit },
-    { key: 'education', label: 'Education', icon: GraduationCap, color: '#1D4ED8' },
-    { key: 'other', label: 'Other', icon: Package, color: COLORS.text.tertiary },
+    { key: 'dining', label: 'Dining', icon: Utensils },
+    { key: 'groceries', label: 'Groceries', icon: ShoppingCart },
+    { key: 'shopping', label: 'Shopping', icon: ShoppingBag },
+    { key: 'transport', label: 'Transport', icon: Car },
+    { key: 'utilities', label: 'Utilities', icon: Zap },
+    { key: 'entertainment', label: 'Entertainment', icon: Clapperboard },
+    { key: 'healthcare', label: 'Health', icon: HeartPulse },
+    { key: 'housing', label: 'Rent', icon: Home },
+    { key: 'investments', label: 'Investments', icon: TrendingUp },
+    { key: 'education', label: 'Education', icon: GraduationCap },
+    { key: 'other', label: 'Other', icon: Package },
 ] as const;
 
 const categoryMeta = (key: string) =>
@@ -253,7 +254,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                                     accessibilityLabel={c.label}
                                     className="bg-surface-primary border border-border-strong rounded-2xl px-4 py-3 flex-row items-center"
                                 >
-                                    <CIcon size={16} color={c.color} />
+                                    <CIcon size={16} color={CATEGORY_COLORS[c.key as Category]} strokeWidth={1.8} />
                                     <Text className="text-sm font-inter-semibold text-text-secondary ml-2">{c.label}</Text>
                                 </TouchableOpacity>
                             );
@@ -309,10 +310,10 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                             </Text>
                             <View
                                 className="flex-row items-center rounded-2xl px-4 py-2.5"
-                                style={{ backgroundColor: `${meta?.color ?? COLORS.text.tertiary}1A` }}
+                                style={{ backgroundColor: meta ? categoryTint(meta.key as Category) : COLORS.surface.tertiary }}
                             >
-                                <Icon size={18} color={meta?.color} />
-                                <Text className="text-base font-inter-bold ml-2" style={{ color: meta?.color }}>
+                                <Icon size={18} color={meta ? CATEGORY_COLORS[meta.key as Category] : COLORS.text.tertiary} strokeWidth={1.8} />
+                                <Text className="text-base font-inter-bold ml-2" style={{ color: meta ? CATEGORY_COLORS[meta.key as Category] : COLORS.text.tertiary }}>
                                     {meta?.label}
                                 </Text>
                             </View>

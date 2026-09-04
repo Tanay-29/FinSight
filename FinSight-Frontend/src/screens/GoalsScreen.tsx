@@ -315,9 +315,18 @@ const DepositModal: React.FC<{
 
 // ─── Add Goal Modal ───────────────────────────────────────────
 
+/**
+ * Swatches for the goal colour picker.
+ *
+ * Deliberately literal rather than theme tokens. The chosen value is written
+ * onto the goal and read back later, so it has to mean the same thing in both
+ * themes: a goal picked as green while the phone was in dark mode should not
+ * come back a different green in daylight. These are the category hues, which
+ * are chosen to sit on either ground.
+ */
 const GOAL_COLORS = [
-    COLORS.brand.primary, COLORS.semantic.profit, COLORS.semantic.alertAmberFill, COLORS.semantic.loss,
-    COLORS.brand.primaryDark, '#BE185D', '#1D4ED8', '#0F766E',
+    '#6366F1', '#047857', '#8A5406', '#C0392F',
+    '#BE185D', '#6D28D9', '#1D4ED8', '#0F766E',
 ];
 
 const AddGoalModal: React.FC<{
