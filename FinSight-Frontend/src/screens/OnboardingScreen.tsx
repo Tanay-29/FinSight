@@ -21,7 +21,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Wallet, PiggyBank, TrendingUp, GraduationCap,
-    Shield, Minus, Zap, Baby, BookOpen, ChevronRight,
+    Baby, BookOpen, ChevronRight,
     ChevronLeft, Sparkles, Check,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -30,20 +30,18 @@ import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
 import { COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 // ─── Types ───────────────────────────────────────────────────────
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'experienced';
 type AppGoal = 'budgeting' | 'goals' | 'investing' | 'education';
-type RiskProfile = 'conservative' | 'moderate' | 'aggressive';
 
 interface OnboardingData {
     age: string;
     experienceLevel: ExperienceLevel | null;
     appGoals: AppGoal[];
     incomeRange: string | null;
-    riskProfile: RiskProfile | null;
 }
 
 // ─── SelectCard - reusable single/multi select card ──────────────
@@ -132,7 +130,7 @@ const Step1Age: React.FC<{
             Let's get to know you
         </Text>
         <Text style={TYPE.body} className="text-text-secondary mb-8">
-            We personalise your experience and learning paths based on where you are in life.
+            Your coach uses this to pitch its advice at someone your age rather than at nobody in particular.
         </Text>
 
         <Text style={TYPE.micro} className="text-text-tertiary mb-2">Your age</Text>
@@ -187,7 +185,7 @@ const Step2Experience: React.FC<{
                 How comfortable are you with money?
             </Text>
             <Text style={TYPE.body} className="text-text-secondary mb-7">
-                We'll tailor your content and suggestions accordingly - no wrong answer here.
+                Your coach explains more or less depending on this. There is no wrong answer, and you can be honest.
             </Text>
             {OPTIONS.map((opt) => (
                 <SelectCard
@@ -305,61 +303,6 @@ const Step4Income: React.FC<{
     );
 };
 
-const Step5Risk: React.FC<{
-    data: OnboardingData;
-    onChange: (v: Partial<OnboardingData>) => void;
-}> = ({ data, onChange }) => {
-    const OPTIONS: Array<{
-        value: RiskProfile;
-        icon: React.ReactNode;
-        title: string;
-        subtitle: string;
-    }> = [
-        {
-            value: 'conservative',
-            icon: <Shield size={22} color={data.riskProfile === 'conservative' ? '#FFFFFF' : COLORS.text.secondary} />,
-            title: "Sell - I can't risk it",
-            subtitle: 'Safety first. Prefer stability over returns.',
-        },
-        {
-            value: 'moderate',
-            icon: <Minus size={22} color={data.riskProfile === 'moderate' ? '#FFFFFF' : COLORS.text.secondary} />,
-            title: "Hold - I'll wait it out",
-            subtitle: 'Comfortable with short-term dips.',
-        },
-        {
-            value: 'aggressive',
-            icon: <Zap size={22} color={data.riskProfile === 'aggressive' ? '#FFFFFF' : COLORS.text.secondary} />,
-            title: 'Buy more - great discount!',
-            subtitle: 'Long-term growth is the goal.',
-        },
-    ];
-
-    return (
-        <View className="flex-1 pt-6" style={{ paddingHorizontal: GUTTER }}>
-            <Text style={TYPE.title} className="text-text-primary mb-2">
-                Your risk comfort
-            </Text>
-            <Text style={TYPE.body} className="text-text-secondary mb-3">
-                Imagine your investments drop 20% in a month. What would you do?
-            </Text>
-            <Text className="text-xs text-text-tertiary mb-7 font-inter">
-                No right or wrong - this helps us tailor investment suggestions.
-            </Text>
-            {OPTIONS.map((opt) => (
-                <SelectCard
-                    key={opt.value}
-                    icon={opt.icon}
-                    title={opt.title}
-                    subtitle={opt.subtitle}
-                    selected={data.riskProfile === opt.value}
-                    onPress={() => onChange({ riskProfile: opt.value })}
-                />
-            ))}
-        </View>
-    );
-};
-
 // ─── Main OnboardingScreen ────────────────────────────────────────
 
 const OnboardingScreen: React.FC = () => {
@@ -378,7 +321,6 @@ const OnboardingScreen: React.FC = () => {
         experienceLevel: null,
         appGoals: [],
         incomeRange: null,
-        riskProfile: null,
     });
 
     const updateData = (partial: Partial<OnboardingData>) => {
@@ -391,7 +333,6 @@ const OnboardingScreen: React.FC = () => {
             case 2: return data.experienceLevel !== null;
             case 3: return data.appGoals.length > 0;
             case 4: return data.incomeRange !== null;
-            case 5: return data.riskProfile !== null;
             default: return false;
         }
     };
@@ -425,7 +366,6 @@ const OnboardingScreen: React.FC = () => {
                 experienceLevel: data.experienceLevel!,
                 appGoals: data.appGoals,
                 incomeRange: data.incomeRange!,
-                riskProfile: data.riskProfile!,
             },
         }));
         setSaving(false);
@@ -441,7 +381,6 @@ const OnboardingScreen: React.FC = () => {
         'Experience',
         'Your goals',
         'Income',
-        'Risk profile',
     ];
 
     return (
@@ -500,7 +439,6 @@ const OnboardingScreen: React.FC = () => {
                         {step === 2 && <Step2Experience data={data} onChange={updateData} />}
                         {step === 3 && <Step3Goals data={data} onChange={updateData} />}
                         {step === 4 && <Step4Income data={data} onChange={updateData} />}
-                        {step === 5 && <Step5Risk data={data} onChange={updateData} />}
                     </Animated.View>
                 </ScrollView>
 

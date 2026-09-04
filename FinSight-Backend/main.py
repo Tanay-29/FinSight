@@ -188,6 +188,11 @@ def get_ai_advisor():
         goals        = body.get('goals', [])
         score        = body.get('score', 400)
         streak       = body.get('streak', 0)
+        # Onboarding asked for these two and then never read them again, so
+        # "we'll tailor your content accordingly" was not true of anything.
+        # Optional, so a client that does not send them still works.
+        experience   = body.get('experienceLevel')
+        age          = body.get('age')
 
         # Build concise text summaries for Gemini
         tx_lines = []
@@ -220,14 +225,29 @@ def get_ai_advisor():
         # These summaries plus the score fully determine the prompt, so they
         # make the cache key. Advice is regenerated when the user's finances
         # actually change, and not when they simply reopen the app.
-        cache_key = make_key("advisor", score, streak, tx_summary, budget_summary, goal_summary)
+        # Who the reader is changes the wording, so it has to change the cache
+        # key too, or a beginner would be served advice written for someone
+        # experienced simply because their numbers matched.
+        experience_line = {
+            'beginner': "New to managing money. Explain any term you use, in one clause, the first time it appears. Never assume they have invested before.",
+            'intermediate': "Knows the basics of budgeting and saving. Skip the beginner definitions, but do not assume they know investing vocabulary.",
+            'experienced': "Comfortable with money and investing. Be brief and skip the explanations. Get to the point they cannot already see for themselves.",
+        }.get(experience, "Comfort with money is unknown. Keep the language plain and define anything technical.")
+
+        age_line = f"Age {age}." if age else ""
+        reader_summary = f"  {age_line} {experience_line}".strip()
+
+        cache_key = make_key("advisor", score, streak, experience, age, tx_summary, budget_summary, goal_summary)
         hit = cache.get(cache_key)
         if hit is not None:
             return cached_json(hit, True)
 
         prompt = f"""You are 'FinSight Sensei', a sharp, encouraging financial coach for Indian students and young professionals.
 You speak ONLY in English. Do not use any Hindi or Hinglish words whatsoever.
-Your tone is direct, motivating, and data-driven - like a personal CFO.
+Your tone is direct and encouraging. You talk about what this person actually did with their money, in plain words, the way a sharp friend would.
+
+WHO YOU ARE TALKING TO:
+{reader_summary}
 
 FINSIGHT IQ SCORE: {score} / 1000
 LEARNING STREAK: {streak} days

@@ -133,9 +133,15 @@ export const fetchAIAdvice = createAsyncThunk(
                 : 0;
             const score = calculateIQScore(transactions, budgets, goals, completedModules, streak);
 
+            // Onboarding asks for these and promises the coach will use them.
+            // Until now nothing read either one back.
+            const profile = state.auth.profile as any;
+
             const payload = {
                 score,
                 streak,
+                experienceLevel: profile?.experienceLevel ?? null,
+                age: profile?.age ?? null,
                 transactions: transactions.slice(0, 15).map((t) => ({
                     date: t.date,
                     type: t.type,
