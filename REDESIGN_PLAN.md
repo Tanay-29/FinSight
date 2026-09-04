@@ -459,28 +459,58 @@ meets them.
    capped reading width, generous line-height) to Module Reader and other
    dense-content screens.
 
-### Phase 4c — Dark mode — **DELIBERATELY LAST**
+### Phase 4c — Dark mode — **LANDED, uncommitted**
 
-Not started, and it should stay that way until Phase 4b finishes. Dark mode is
-close to free once every colour resolves through a token, and expensive while
-172 hex literals are still scattered through the tree: doing it now means doing
-it twice.
+Deferring it was the right call: because every colour already resolved through
+a token, this needed almost no per-screen work. Two mechanisms, because the app
+has two kinds of colour and they need different answers.
 
-Three things are already in place for it, which is why deferring costs nothing:
+**Class colour goes through CSS variables.** `global.css` declares every value
+as `--c-*` channels under `:root` and `.dark:root`, and `tailwind.config.js`
+points each colour at `rgb(var(--c-...) / <alpha-value>)`. NativeWind puts the
+`dark` class on the document element and the whole app follows. **Not one of
+the roughly nine hundred class names in the tree had to change, and there is
+not a single `dark:` variant anywhere.** The alpha placeholder is what keeps
+`bg-brand-primary/10` and `bg-black/50` working.
 
-- `darkMode: 'class'` is set in `tailwind.config.js`. It had to be, because
-  Tailwind's default of `media` makes NativeWind's web runtime throw on load.
-- `palette.js` is structured so a dark ramp is a second set of values against
-  the same key names, not a rewrite. The warm ground inverts to a warm dark
-  ground rather than a blue-black one.
-- Every value that carries text already has a measured contrast ratio recorded
-  against the light canvas, so the dark equivalents have a target to hit rather
-  than being eyeballed.
+`global.css` is generated from `palette.js` so the two cannot drift, which is
+the exact failure the palette was created to end.
 
-The work when it comes: a `PALETTE_DARK` beside `PALETTE`, a theme provider
-that toggles the root class, and a pass over the handful of places that hard
-code a light assumption (white icon glyphs on accent surfaces, the `onBrand`
-and `onDark` tokens, the modal scrims).
+**Inline JS colour goes through getters.** A Lucide icon's `color` prop and an
+SVG stroke cannot read a CSS variable, and there are 537 of those. `COLORS` and
+`CATEGORY_COLORS` are now getter-backed objects reading from whichever palette
+is active, so all 537 call sites were left untouched and resolve at render time
+instead of import time.
+
+**The exception is a constant evaluated at module scope**, which runs once
+before any theme exists. Four were found and rewritten as functions:
+`Confetti`'s piece colours, the IQ card's quest icons, SwipeCategorise's
+category list, and SubscriptionTracker's icon and tint maps. The last of those
+was also keyed on `health`, a spelling the canonical list does not use, so
+anything filed as healthcare had been falling through to the default icon.
+
+**One token had to split.** `brand.primaryDark` was doing two jobs that want
+opposite treatment in dark: a button fill, where white sits on it and it must
+stay mid, and link text, where a mid indigo on near-black reads 2.9:1. Text
+sites moved to a new `brand.link`, which inverts to `#A5B4FC` at 9.3:1. The
+fill does not move.
+
+**The dark ramp is warm**, hue 32 like the light one rather than the usual
+slate. A blue-black ground under a warm accent is what makes most dark modes
+feel like a different app with the lights off. Every text value carries its
+measured ratio against the dark canvas: primary 15.9:1, secondary 9.5:1,
+tertiary 6.2:1, the semantics between 6.2 and 8.2.
+
+**Preference, not scheme, is what gets stored**, so someone on "system" keeps
+following the phone at sunset. The control is the first row of Profile's
+Settings, since it changes the whole app where the rows under it change one
+feature each.
+
+**One deliberate cost.** `RootNavigator` is keyed on the scheme, so switching
+theme remounts the stack and returns you to its root. Without it, a mounted and
+idle screen would keep the old palette for its JS colours until something else
+made it re-render, and the switch would look half-applied. Remounting is the
+one line that makes it complete rather than gradual.
 
 ### Phase 5 — iOS pass
 Once the teammate's iPhone build is actually underway: gesture conventions
