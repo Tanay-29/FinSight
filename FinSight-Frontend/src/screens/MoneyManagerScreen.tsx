@@ -22,6 +22,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../store/hooks';
 import { format, parseISO } from 'date-fns';
+import { normaliseCategory, categoryLabel } from '../utils/categories';
 import { FONTS, COLORS } from '../theme/tokens';
 
 // Enable LayoutAnimation on Android
@@ -35,7 +36,7 @@ const BUCKET_MAP: Record<string, 'needs' | 'wants' | 'savings'> = {
     groceries:     'needs',
     utilities:     'needs',
     transport:     'needs',
-    health:        'needs',
+    healthcare:    'needs',
     housing:       'needs',
     dining:        'wants',
     shopping:      'wants',
@@ -87,12 +88,9 @@ const bucketMeta = (): Record<Bucket, {
     },
 });
 
-const CATEGORY_DISPLAY: Record<string, string> = {
-    groceries: 'Groceries', utilities: 'Utilities', transport: 'Transport',
-    health: 'Health', housing: 'Housing', dining: 'Dining',
-    shopping: 'Shopping', entertainment: 'Entertainment', education: 'Education',
-    investments: 'Investments', other: 'Other',
-};
+// Was a second copy of the category labels, keyed on `health` so anything
+// filed as healthcare showed its raw key. categoryLabel already does this, and
+// accepts every legacy spelling.
 
 // ─── Sub-components ───────────────────────────────────────────
 
@@ -234,7 +232,7 @@ const BucketCard: React.FC<{
                                 <View style={{ flex: 1 }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
                                         <Text style={{ fontSize: 13, fontFamily: FONTS.semibold, color: '#423C35' }}>
-                                            {CATEGORY_DISPLAY[cat] ?? cat}
+                                            {categoryLabel(cat)}
                                         </Text>
                                         <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
                                             ₹{amt.toLocaleString('en-IN')}
@@ -282,7 +280,7 @@ const MoneyManagerScreen: React.FC = () => {
             const txMonth = format(parseISO(t.date), 'yyyy-MM');
             if (txMonth !== thisMonth) return;
 
-            const cat = (t.category ?? 'other').toLowerCase();
+            const cat = normaliseCategory(t.category);
             const bucket: Bucket = BUCKET_MAP[cat] ?? 'wants';
             buckets[bucket] += t.amount;
             catSpend[cat] = (catSpend[cat] ?? 0) + t.amount;
