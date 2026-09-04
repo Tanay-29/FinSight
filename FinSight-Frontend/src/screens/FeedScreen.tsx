@@ -34,11 +34,12 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
-import { Plus, Wallet, CloudOff } from 'lucide-react-native';
+import { Plus, Wallet, CloudOff, ArrowRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { fetchBudgets } from '../store/slices/budgetsSlice';
+import { fetchGoals } from '../store/slices/goalsSlice';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import { EmptyState } from '../components/EmptyState';
@@ -46,6 +47,52 @@ import { PressableScale } from '../components/PressableScale';
 import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
 import { COLORS, TYPE, RADIUS, GUTTER, ELEVATION, FONTS } from '../theme/tokens';
+
+/**
+ * What the app set up from the onboarding answers, and the one thing still
+ * missing.
+ *
+ * Onboarding asks five questions and says why each matters. Until now only
+ * income was read back, so the promise was mostly empty. This closes the loop
+ * the only way that counts: it names what the person said, and points at the
+ * thing that answer implies they have not done yet.
+ *
+ * It returns null once there is nothing to prompt, so it disappears by being
+ * satisfied rather than by being dismissed. A card you have to close is a
+ * card that was not worth showing.
+ */
+const goalPrompt = (
+    appGoals: string[] | undefined,
+    hasBudgets: boolean,
+    hasGoals: boolean,
+): { said: string; body: string; action: string; route: string } | null => {
+    const goals = appGoals ?? [];
+    if (goals.includes('budgeting') && !hasBudgets) {
+        return {
+            said: 'You said you want to know where your money goes',
+            body: 'A budget is how that becomes a number you can check, rather than a feeling at the end of the month.',
+            action: 'Set your first budget',
+            route: 'Vitals',
+        };
+    }
+    if (goals.includes('goals') && !hasGoals) {
+        return {
+            said: 'You said you want to save for something specific',
+            body: 'Name it and put a number on it. Saving for a trip works. Saving in general does not.',
+            action: 'Create a goal',
+            route: 'Goals',
+        };
+    }
+    if (goals.includes('education') || goals.includes('investing')) {
+        return {
+            said: 'You said you want the basics straight',
+            body: 'Interest, inflation and how a SIP actually works, in short modules built for someone who has never bought a share.',
+            action: 'Open Learn',
+            route: 'Learn',
+        };
+    }
+    return null;
+};
 
 export const FeedScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -57,6 +104,17 @@ export const FeedScreen: React.FC = () => {
     const transactionsError = useAppSelector((state) => state.transactions.error);
     const budgetsError = useAppSelector((state) => state.budgets.error);
     const transactionsLoaded = useAppSelector((state) => state.transactions.loaded);
+    const budgets = useAppSelector((state) => state.budgets.items);
+    const savingsGoals = useAppSelector((state) => (state as any).goals?.items ?? []);
+    const profile = useAppSelector((state) => state.auth.profile as any);
+
+    const appGoals: string[] = profile?.appGoals ?? [];
+    const prompt = goalPrompt(appGoals, budgets.length > 0, savingsGoals.length > 0);
+
+    // Phase 3. The spending summary is the budgeting artefact, so it leads for
+    // someone who came here to budget and sits below the ledger of what they
+    // actually spent for someone who did not.
+    const vitalsFirst = appGoals.length === 0 || appGoals.includes('budgeting');
 
     const [refreshing, setRefreshing] = useState(false);
 
@@ -68,6 +126,8 @@ export const FeedScreen: React.FC = () => {
     useEffect(() => {
         dispatch(fetchTransactions());
         dispatch(fetchBudgets());
+        // The prompt below needs to know whether any goal exists yet.
+        dispatch(fetchGoals());
     }, [dispatch]);
 
     const onRefresh = useCallback(() => {
@@ -196,13 +256,43 @@ export const FeedScreen: React.FC = () => {
                     <>
                         <FinSightIQCard />
 
-                        <View className="mt-4">
-                            <FinancialVitals
-                                totalSpent={totalSpent}
-                                weeklyTrend={weeklyTrend}
-                                comparison={comparison}
-                            />
-                        </View>
+                        {prompt && (
+                            <Animated.View
+                                entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(280)}
+                                className="mt-4 bg-brand-soft border border-brand-edge p-5"
+                                style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}
+                            >
+                                <Text style={TYPE.micro} className="text-brand-link">
+                                    From your answers
+                                </Text>
+                                <Text style={TYPE.callout} className="text-text-primary mt-2">
+                                    {prompt.said}
+                                </Text>
+                                <Text style={TYPE.caption} className="text-text-secondary mt-1.5">
+                                    {prompt.body}
+                                </Text>
+                                <PressableScale
+                                    onPress={() => navigation.navigate(prompt.route as never)}
+                                    accessibilityRole="button"
+                                    className="flex-row items-center mt-4"
+                                >
+                                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-brand-link mr-1.5">
+                                        {prompt.action}
+                                    </Text>
+                                    <ArrowRight size={16} color={COLORS.brand.link} strokeWidth={2} />
+                                </PressableScale>
+                            </Animated.View>
+                        )}
+
+                        {vitalsFirst && (
+                            <View className="mt-4">
+                                <FinancialVitals
+                                    totalSpent={totalSpent}
+                                    weeklyTrend={weeklyTrend}
+                                    comparison={comparison}
+                                />
+                            </View>
+                        )}
 
                         <View className="mt-4 bg-surface-primary border border-border overflow-hidden mb-6" style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}>
                             <View className="px-5 py-4 border-b border-border">
@@ -242,6 +332,16 @@ export const FeedScreen: React.FC = () => {
                                 </View>
                             )}
                         </View>
+
+                        {!vitalsFirst && (
+                            <View className="mb-6">
+                                <FinancialVitals
+                                    totalSpent={totalSpent}
+                                    weeklyTrend={weeklyTrend}
+                                    comparison={comparison}
+                                />
+                            </View>
+                        )}
                     </>
                 )}
             </ScrollView>
