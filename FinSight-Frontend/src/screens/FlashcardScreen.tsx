@@ -35,6 +35,7 @@ import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
 import { authedFetch } from '../config/api';
 import { friendlyError } from '../utils/errors';
+import { FONTS, COLORS } from '../theme/tokens';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -100,14 +101,14 @@ const FlipCard: React.FC<{
                         style={{
                             height: 4, borderRadius: 2,
                             width: i === index ? 24 : 8,
-                            backgroundColor: i === index ? '#6366F1' : i < index ? '#A5B4FC' : '#E5E7EB',
+                            backgroundColor: i === index ? COLORS.brand.primary : i < index ? COLORS.brand.edge : COLORS.border.default,
                         }}
                     />
                 ))}
             </View>
 
             {/* Card counter */}
-            <Text style={{ fontSize: 12, color: '#9CA3AF', fontWeight: '600', marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, color: COLORS.text.tertiary, fontFamily: FONTS.semibold, marginBottom: 16 }}>
                 Card {index + 1} of {total}
             </Text>
 
@@ -125,25 +126,25 @@ const FlipCard: React.FC<{
                     backgroundColor: '#FFFFFF',
                     borderRadius: 24,
                     borderWidth: 1.5,
-                    borderColor: '#EEF2FF',
+                    borderColor: COLORS.brand.soft,
                     padding: 28,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: '#6366F1',
+                    shadowColor: COLORS.brand.primary,
                     shadowOpacity: 0.1,
                     shadowRadius: 20,
                     elevation: 6,
                 }}>
-                    <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                        <Lightbulb size={24} color="#6366F1" />
+                    <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                        <Lightbulb size={24} color={COLORS.brand.primary} />
                     </View>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                         Question
                     </Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center', lineHeight: 26 }}>
+                    <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary, textAlign: 'center', lineHeight: 26 }}>
                         {card.question}
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#C4B5FD', marginTop: 24, fontWeight: '500' }}>
+                    <Text style={{ fontSize: 12, color: COLORS.brand.edge, marginTop: 24, fontFamily: FONTS.medium }}>
                         Tap to reveal answer
                     </Text>
                 </Animated.View>
@@ -153,20 +154,20 @@ const FlipCard: React.FC<{
                     position: 'absolute', width: '100%', height: '100%',
                     backfaceVisibility: 'hidden',
                     transform: [{ rotateY: backInterpolate }],
-                    backgroundColor: '#6366F1',
+                    backgroundColor: COLORS.brand.primary,
                     borderRadius: 24,
                     padding: 28,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: '#6366F1',
+                    shadowColor: COLORS.brand.primary,
                     shadowOpacity: 0.3,
                     shadowRadius: 20,
                     elevation: 6,
                 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                         Answer
                     </Text>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', lineHeight: 24 }}>
+                    <Text style={{ fontSize: 16, fontFamily: FONTS.semibold, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 }}>
                         {card.answer}
                     </Text>
                     <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 20 }}>
@@ -188,11 +189,11 @@ const FlipCard: React.FC<{
                         style={{
                             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                             paddingVertical: 14, borderRadius: 16, gap: 8,
-                            backgroundColor: '#FEF2F2', borderWidth: 1.5, borderColor: '#FECACA',
+                            backgroundColor: '#FDF4F2', borderWidth: 1.5, borderColor: '#F2CFC9',
                         }}
                     >
-                        <XIcon size={18} color="#EF4444" />
-                        <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }}>Show me again</Text>
+                        <XIcon size={18} color={COLORS.semantic.loss} />
+                        <Text style={{ color: COLORS.semantic.loss, fontFamily: FONTS.bold, fontSize: 14 }}>Show me again</Text>
                     </PressableScale>
 
                     <PressableScale
@@ -202,11 +203,11 @@ const FlipCard: React.FC<{
                         style={{
                             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                             paddingVertical: 14, borderRadius: 16, gap: 8,
-                            backgroundColor: '#ECFDF5', borderWidth: 1.5, borderColor: '#BBF7D0',
+                            backgroundColor: '#EFF7F2', borderWidth: 1.5, borderColor: '#CDE8D9',
                         }}
                     >
-                        <Check size={18} color="#10B981" />
-                        <Text style={{ color: '#10B981', fontWeight: '700', fontSize: 14 }}>Got it</Text>
+                        <Check size={18} color={COLORS.semantic.profit} />
+                        <Text style={{ color: COLORS.semantic.profit, fontFamily: FONTS.bold, fontSize: 14 }}>Got it</Text>
                     </PressableScale>
                 </ReAnimated.View>
             )}
@@ -240,56 +241,56 @@ const ResultsScreen: React.FC<{
             <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
                 <View style={{
                     width: 140, height: 140, borderRadius: 70,
-                    backgroundColor: pct >= 80 ? '#ECFDF5' : pct >= 50 ? '#FFFBEB' : '#FEF2F2',
+                    backgroundColor: pct >= 80 ? '#EFF7F2' : pct >= 50 ? '#FDF7EC' : '#FDF4F2',
                     borderWidth: 4,
-                    borderColor: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444',
+                    borderColor: pct >= 80 ? COLORS.semantic.profit : pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss,
                     alignItems: 'center', justifyContent: 'center',
                 }}>
-                    {pct >= 80 ? <Trophy size={40} color="#10B981" /> : <BrainCircuit size={40} color={pct >= 50 ? '#F59E0B' : '#EF4444'} />}
-                    <Text style={{ fontSize: 22, fontWeight: '900', color: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444', marginTop: 4 }}>
+                    {pct >= 80 ? <Trophy size={40} color={COLORS.semantic.profit} /> : <BrainCircuit size={40} color={pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss} />}
+                    <Text style={{ fontSize: 22, fontFamily: FONTS.bold, color: pct >= 80 ? COLORS.semantic.profit : pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss, marginTop: 4 }}>
                         {pct}%
                     </Text>
                 </View>
             </Animated.View>
 
-            <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 24, textAlign: 'center' }}>
+            <Text style={{ fontSize: 24, fontFamily: FONTS.bold, color: COLORS.text.primary, marginTop: 24, textAlign: 'center' }}>
                 {pct === 100 ? 'Perfect Memory!' : pct >= 80 ? 'Great Recall!' : pct >= 50 ? 'Good Progress!' : 'Keep Studying!'}
             </Text>
-            <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
                 You got {gotItCount} of {cards.length} cards right
                 {reviewCount > 0 ? ` - ${reviewCount} card${reviewCount > 1 ? 's' : ''} need more review` : '!'}
             </Text>
 
             {/* Stats row */}
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' }}>
-                <View style={{ flex: 1, backgroundColor: '#ECFDF5', borderRadius: 16, padding: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 28, fontWeight: '900', color: '#10B981' }}>{gotItCount}</Text>
-                    <Text style={{ fontSize: 12, color: '#059669', fontWeight: '600', marginTop: 2 }}>Got It</Text>
+                <View style={{ flex: 1, backgroundColor: '#EFF7F2', borderRadius: 16, padding: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.profit }}>{gotItCount}</Text>
+                    <Text style={{ fontSize: 12, color: '#0B6A4D', fontFamily: FONTS.semibold, marginTop: 2 }}>Got It</Text>
                 </View>
-                <View style={{ flex: 1, backgroundColor: '#FEF2F2', borderRadius: 16, padding: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 28, fontWeight: '900', color: '#EF4444' }}>{reviewCount}</Text>
-                    <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600', marginTop: 2 }}>Review Again</Text>
+                <View style={{ flex: 1, backgroundColor: '#FDF4F2', borderRadius: 16, padding: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.loss }}>{reviewCount}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.semantic.alertCritical, fontFamily: FONTS.semibold, marginTop: 2 }}>Review Again</Text>
                 </View>
             </View>
 
             {/* Review-only cards list */}
             {reviewCount > 0 && (
                 <View style={{ width: '100%', marginTop: 20 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 10 }}>
+                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 10 }}>
                         Cards to Focus On:
                     </Text>
                     {cards.map((card, i) =>
                         statuses[i] === 'review' ? (
                             <View key={i} style={{
-                                backgroundColor: '#FFF7ED',
+                                backgroundColor: '#FDF5EC',
                                 borderRadius: 14, padding: 14,
-                                borderWidth: 1, borderColor: '#FED7AA',
+                                borderWidth: 1, borderColor: '#EED9C0',
                                 marginBottom: 8,
                             }}>
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E', marginBottom: 4 }}>
+                                <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#7A4A08', marginBottom: 4 }}>
                                     Q: {card.question}
                                 </Text>
-                                <Text style={{ fontSize: 12, color: '#78350F', lineHeight: 18 }}>
+                                <Text style={{ fontSize: 12, color: '#6B3F10', lineHeight: 18 }}>
                                     A: {card.answer}
                                 </Text>
                             </View>
@@ -304,11 +305,11 @@ const ResultsScreen: React.FC<{
                     <PressableScale
                         onPress={onReviewOnly}
                         style={{
-                            backgroundColor: '#6366F1', borderRadius: 16,
+                            backgroundColor: COLORS.brand.primary, borderRadius: 16,
                             paddingVertical: 16, alignItems: 'center',
                         }}
                     >
-                        <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>
+                        <Text style={{ color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 15 }}>
                             Practise {reviewCount} weak card{reviewCount > 1 ? 's' : ''}
                         </Text>
                     </PressableScale>
@@ -319,18 +320,18 @@ const ResultsScreen: React.FC<{
                         backgroundColor: '#FFFFFF', borderRadius: 16,
                         paddingVertical: 14, alignItems: 'center',
                         flexDirection: 'row', justifyContent: 'center', gap: 8,
-                        borderWidth: 1.5, borderColor: '#E5E7EB',
+                        borderWidth: 1.5, borderColor: COLORS.border.default,
                     }}
                 >
-                    <RefreshCw size={16} color="#6B7280" />
-                    <Text style={{ color: '#374151', fontWeight: '600', fontSize: 14 }}>Restart all cards</Text>
+                    <RefreshCw size={16} color={COLORS.text.secondary} />
+                    <Text style={{ color: '#423C35', fontFamily: FONTS.semibold, fontSize: 14 }}>Restart all cards</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={onBack}
                     style={{ paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 2 }}
                 >
-                    <ChevronLeft size={15} color="#9CA3AF" />
-                    <Text style={{ color: '#9CA3AF', fontWeight: '500', fontSize: 14 }}>Back to the module</Text>
+                    <ChevronLeft size={15} color={COLORS.text.tertiary} />
+                    <Text style={{ color: COLORS.text.tertiary, fontFamily: FONTS.medium, fontSize: 14 }}>Back to the module</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>
@@ -483,7 +484,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top', 'bottom']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
             <StatusBar barStyle="dark-content" />
 
             {/* Header */}
@@ -491,56 +492,56 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                 flexDirection: 'row', alignItems: 'center',
                 paddingHorizontal: 20, paddingVertical: 14,
                 backgroundColor: '#FFFFFF',
-                borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+                borderBottomWidth: 1, borderBottomColor: COLORS.surface.tertiary,
             }}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
-                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
                 >
-                    <ArrowLeft size={18} color="#374151" />
+                    <ArrowLeft size={18} color="#423C35" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
+                    <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary }} numberOfLines={1}>
                         AI Flashcards
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#9CA3AF' }} numberOfLines={1}>
+                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary }} numberOfLines={1}>
                         {moduleTitle}
                     </Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EEF2FF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
-                    <BrainCircuit size={13} color="#6366F1" />
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#6366F1' }}>AI Generated</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.brand.soft, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <BrainCircuit size={13} color={COLORS.brand.primary} />
+                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.brand.primary }}>AI Generated</Text>
                 </View>
             </View>
 
             {/* Content */}
             {loading ? (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-                    <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' }}>
-                        <BrainCircuit size={32} color="#6366F1" />
+                    <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center' }}>
+                        <BrainCircuit size={32} color={COLORS.brand.primary} />
                     </View>
-                    <ActivityIndicator size="large" color="#6366F1" />
-                    <Text style={{ fontSize: 14, color: '#6B7280', fontWeight: '500' }}>
+                    <ActivityIndicator size="large" color={COLORS.brand.primary} />
+                    <Text style={{ fontSize: 14, color: COLORS.text.secondary, fontFamily: FONTS.medium }}>
                         Generating your flashcards...
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>
                         Gemini AI is reading the module
                     </Text>
                 </View>
             ) : error ? (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#EF4444', marginBottom: 8 }}>
+                    <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: COLORS.semantic.loss, marginBottom: 8 }}>
                         Could not load flashcards
                     </Text>
-                    <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', marginBottom: 24 }}>
+                    <Text style={{ fontSize: 13, color: COLORS.text.secondary, textAlign: 'center', marginBottom: 24 }}>
                         {error}
                     </Text>
                     <PressableScale
                         onPress={fetchCards}
-                        style={{ backgroundColor: '#6366F1', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                        style={{ backgroundColor: COLORS.brand.primary, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                     >
                         <RefreshCw size={16} color="white" />
-                        <Text style={{ color: 'white', fontWeight: '700' }}>Try Again</Text>
+                        <Text style={{ color: 'white', fontFamily: FONTS.bold }}>Try Again</Text>
                     </PressableScale>
                 </View>
             ) : phase === 'cards' && cards.length > 0 && activeDeck.length > 0 ? (

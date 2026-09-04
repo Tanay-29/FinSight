@@ -16,6 +16,7 @@ import { View, Text } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { Svg, Polyline } from 'react-native-svg';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
+import { COLORS } from '../theme/tokens';
 
 interface FinancialVitalsProps {
     totalSpent: number;
@@ -46,7 +47,7 @@ const SpendingTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
             <Polyline
                 points={points}
                 fill="none"
-                stroke="#6366F1"
+                stroke={COLORS.brand.primary}
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -64,10 +65,10 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
 
     const tone =
         comparison === null || comparison.type === 'flat'
-            ? { Icon: Minus, color: '#6B7280', text: 'text-text-secondary' }
+            ? { Icon: Minus, color: COLORS.text.secondary, text: 'text-text-secondary' }
             : comparison.type === 'increase'
-                ? { Icon: TrendingUp, color: '#F59E0B', text: 'text-alert-amber' }
-                : { Icon: TrendingDown, color: '#10B981', text: 'text-profit' };
+                ? { Icon: TrendingUp, color: COLORS.semantic.alertAmberFill, text: 'text-alert-amber' }
+                : { Icon: TrendingDown, color: COLORS.semantic.profit, text: 'text-profit' };
 
     return (
         // The card fades in once when the Feed first paints. It is the number
@@ -75,19 +76,19 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
         // appearing.
         <Animated.View
             entering={FadeIn.duration(reduced ? 160 : 320)}
-            className="bg-white border border-border rounded-xl p-4 mx-4"
+            className="bg-surface-primary border border-border rounded-xl p-4 mx-5"
         >
-            <Text className="text-xs font-bold text-text-secondary mb-1 uppercase tracking-wider">
+            <Text className="text-xs font-inter-bold text-text-secondary mb-1 uppercase tracking-wider">
                 Last 30 days
             </Text>
             <Text
-                className="text-[32px] leading-10 font-bold text-text-primary"
+                className="text-[32px] leading-10 font-inter-bold text-text-primary"
                 style={{ fontVariant: ['tabular-nums'] }}
             >
                 ₹{totalSpent.toLocaleString('en-IN')}
             </Text>
 
-            <Text className="text-xs text-text-tertiary mt-3 mb-1">Last 7 days</Text>
+            <Text className="text-xs text-text-tertiary mt-3 mb-1 font-inter">Last 7 days</Text>
             <View className="h-14 w-full opacity-70">
                 <SpendingTrendChart data={weeklyTrend} />
             </View>
@@ -95,7 +96,7 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
             {comparison && (
                 <View className="mt-3 pt-3 border-t border-border flex-row items-center">
                     <tone.Icon size={12} color={tone.color} />
-                    <Text className={`text-xs font-semibold ml-1 ${tone.text}`}>
+                    <Text className={`text-xs font-inter-semibold ml-1 ${tone.text}`}>
                         {comparison.type === 'flat'
                             ? 'About the same as the 30 days before'
                             : `${comparison.percentage}% ${comparison.type === 'increase' ? 'higher' : 'lower'} than the 30 days before`}

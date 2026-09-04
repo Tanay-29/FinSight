@@ -4,7 +4,7 @@ import { FeedScreen } from '../screens/FeedScreen';
 import { VitalsScreen } from '../screens/VitalsScreen';
 import { LearnScreen } from '../screens/LearnScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
-import { COLORS } from '../theme/tokens';
+import { FONTS, COLORS } from '../theme/tokens';
 import { View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, BarChart2, Target, GraduationCap } from 'lucide-react-native';
@@ -42,7 +42,7 @@ export const BottomTabs: React.FC = () => {
                 },
                 tabBarLabelStyle: {
                     fontSize: 10,
-                    fontWeight: '600',
+                    fontFamily: FONTS.semibold,
                 },
             }}
             // A light tick on every tab change, applied once here rather than

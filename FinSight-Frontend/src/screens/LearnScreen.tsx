@@ -27,6 +27,7 @@ import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
 import { streakAtRisk, MAX_FREEZES } from '../utils/streak';
 import * as haptics from '../utils/haptics';
+import { COLORS, TYPE } from '../theme/tokens';
 
 // Map onboarding goal → which pathId to promote first
 const GOAL_PATH_PRIORITY: Record<string, string> = {
@@ -114,17 +115,17 @@ export const LearnScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
             <ScrollView
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 32 }}
             >
                 {/* ── Header ──────────────────────────────────── */}
-                <View className="px-4 pt-4 pb-3 flex-row justify-between items-center bg-white border-b border-gray-100">
+                <View className="px-5 pt-4 pb-3 flex-row justify-between items-center bg-surface-primary border-b border-border">
                     <View>
-                        <Text className="text-2xl font-bold text-gray-900">Learn</Text>
-                        <Text className="text-sm text-gray-500 mt-0.5">
+                        <Text style={TYPE.title} className="text-text-primary">Learn</Text>
+                        <Text className="text-sm text-text-secondary mt-0.5 font-inter">
                             {totalDone === 0
                                 ? 'Courses, practice and a glossary'
                                 : `${totalDone} module${totalDone === 1 ? '' : 's'} done so far`}
@@ -135,14 +136,14 @@ export const LearnScreen: React.FC = () => {
                         activeScale={0.92}
                         accessibilityRole="button"
                         accessibilityLabel="Your profile"
-                        className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                        className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
                     >
-                        <Text className="text-white font-bold text-base">{userInitial}</Text>
+                        <Text className="text-white font-inter-bold text-base">{userInitial}</Text>
                     </PressableScale>
                 </View>
 
                 {/* ── Stats Row ──────────────────────────────── */}
-                <View className="mx-4 mt-4 flex-row gap-3">
+                <View className="mx-5 mt-4 flex-row gap-3">
                     {progressLoading ? (
                         <>
                             <StatCardSkeleton />
@@ -152,49 +153,49 @@ export const LearnScreen: React.FC = () => {
                     ) : (
                         <>
                             {/* Modules done */}
-                            <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 }}>
-                                <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center mb-2">
-                                    <BookOpen size={18} color="#6366F1" />
+                            <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
+                                <View className="w-10 h-10 rounded-full bg-brand-soft items-center justify-center mb-2">
+                                    <BookOpen size={18} color={COLORS.brand.primary} />
                                 </View>
                                 <AnimatedNumber
                                     value={totalDone}
                                     format={(v) => String(Math.round(v))}
-                                    className="text-2xl font-bold text-gray-900"
+                                    className="text-2xl font-inter-bold text-text-primary"
                                 />
-                                <Text className="text-xs text-gray-400 text-center mt-0.5">Modules done</Text>
+                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Modules done</Text>
                             </View>
 
                             {/* Badges earned */}
-                            <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 }}>
-                                <View className="w-10 h-10 rounded-full bg-amber-50 items-center justify-center mb-2">
-                                    <Trophy size={18} color="#F59E0B" />
+                            <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
+                                <View className="w-10 h-10 rounded-full bg-alert-bg items-center justify-center mb-2">
+                                    <Trophy size={18} color={COLORS.semantic.alertAmberFill} />
                                 </View>
                                 <AnimatedNumber
                                     value={badgesEarned}
                                     format={(v) => String(Math.round(v))}
-                                    className="text-2xl font-bold text-gray-900"
+                                    className="text-2xl font-inter-bold text-text-primary"
                                 />
-                                <Text className="text-xs text-gray-400 text-center mt-0.5">Badges earned</Text>
+                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Badges earned</Text>
                             </View>
 
                             {/* Streak, with banked freezes shown underneath */}
-                            <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100" style={{ shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 }}>
-                                <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mb-2">
-                                    <Flame size={18} color="#F97316" />
+                            <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
+                                <View className="w-10 h-10 rounded-full bg-alert-bg items-center justify-center mb-2">
+                                    <Flame size={18} color="#C2410C" />
                                 </View>
                                 <AnimatedNumber
                                     value={currentStreak}
                                     format={(v) => String(Math.round(v))}
-                                    className="text-2xl font-bold text-gray-900"
+                                    className="text-2xl font-inter-bold text-text-primary"
                                 />
-                                <Text className="text-xs text-gray-400 text-center mt-0.5">Day streak</Text>
+                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Day streak</Text>
                                 {freezes > 0 ? (
                                     <View className="flex-row items-center mt-1.5">
                                         {Array.from({ length: MAX_FREEZES }).map((_, i) => (
                                             <Snowflake
                                                 key={i}
                                                 size={10}
-                                                color={i < freezes ? '#0EA5E9' : '#E5E7EB'}
+                                                color={i < freezes ? '#0E7490' : COLORS.border.default}
                                             />
                                         ))}
                                     </View>
@@ -206,19 +207,19 @@ export const LearnScreen: React.FC = () => {
 
                 {/* ── Streak at risk ──────────────────────────── */}
                 {atRisk && currentStreak > 0 ? (
-                    <View className={`mx-4 mt-4 rounded-2xl border p-4 flex-row items-center ${freezes > 0 ? 'bg-sky-50 border-sky-100' : 'bg-orange-50 border-orange-100'}`}>
-                        <View className="w-11 h-11 rounded-2xl bg-white items-center justify-center mr-3">
+                    <View className={`mx-5 mt-4 rounded-2xl border p-4 flex-row items-center ${freezes > 0 ? 'bg-brand-soft border-brand-edge' : 'bg-alert-bg border-alert-bg'}`}>
+                        <View className="w-11 h-11 rounded-2xl bg-surface-primary items-center justify-center mr-3">
                             {freezes > 0
-                                ? <Snowflake size={20} color="#0EA5E9" />
-                                : <Flame size={20} color="#F97316" />}
+                                ? <Snowflake size={20} color="#0E7490" />
+                                : <Flame size={20} color="#C2410C" />}
                         </View>
                         <View className="flex-1">
-                            <Text className={`text-base font-bold ${freezes > 0 ? 'text-sky-900' : 'text-orange-900'}`}>
+                            <Text className={`text-base font-inter-bold ${freezes > 0 ? 'text-brand-primary-dark' : 'text-alert-amber'}`}>
                                 {freezes > 0
                                     ? `${currentStreak}-day streak protected`
                                     : `${currentStreak}-day streak at risk`}
                             </Text>
-                            <Text className={`text-xs mt-0.5 ${freezes > 0 ? 'text-sky-700' : 'text-orange-700'}`}>
+                            <Text className={`text-xs mt-0.5 ${freezes > 0 ? 'text-brand-primary-dark' : 'text-alert-amber'}`}>
                                 {freezes > 0
                                     ? `A freeze will cover the day you missed. ${freezes} left.`
                                     : 'Finish any module today to keep it alive.'}
@@ -234,30 +235,30 @@ export const LearnScreen: React.FC = () => {
                         activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel={`Review ${dueCount} cards due today`}
-                        className="mx-4 mt-4 bg-white rounded-2xl border border-indigo-100 p-4 flex-row items-center"
-                        style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}
+                        className="mx-5 mt-4 bg-surface-primary rounded-2xl border border-brand-edge p-4 flex-row items-center"
+                       
                     >
-                        <View className="w-11 h-11 rounded-2xl bg-indigo-50 items-center justify-center mr-3">
-                            <BrainCircuit size={20} color="#6366F1" />
+                        <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
+                            <BrainCircuit size={20} color={COLORS.brand.primary} />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-base font-bold text-gray-900">
+                            <Text className="text-base font-inter-bold text-text-primary">
                                 {dueCount} card{dueCount === 1 ? '' : 's'} due today
                             </Text>
-                            <Text className="text-xs text-gray-500 mt-0.5">
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                                 {masteredCount} of {trackedCount} mastered. Cards you miss come back sooner.
                             </Text>
                         </View>
-                        <ChevronRight size={18} color="#6366F1" />
+                        <ChevronRight size={18} color={COLORS.brand.primary} />
                     </TouchableOpacity>
                 ) : trackedCount > 0 ? (
-                    <View className="mx-4 mt-4 bg-emerald-50 rounded-2xl border border-emerald-100 p-4 flex-row items-center">
-                        <View className="w-11 h-11 rounded-2xl bg-white items-center justify-center mr-3">
-                            <Trophy size={20} color="#10B981" />
+                    <View className="mx-5 mt-4 bg-profit-bg rounded-2xl border border-profit-bg p-4 flex-row items-center">
+                        <View className="w-11 h-11 rounded-2xl bg-surface-primary items-center justify-center mr-3">
+                            <Trophy size={20} color={COLORS.semantic.profit} />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-base font-bold text-emerald-900">All caught up</Text>
-                            <Text className="text-xs text-emerald-700 mt-0.5">
+                            <Text className="text-base font-inter-bold text-profit">All caught up</Text>
+                            <Text className="text-xs text-profit mt-0.5 font-inter">
                                 {masteredCount} of {trackedCount} cards mastered. Check back tomorrow.
                             </Text>
                         </View>
@@ -271,83 +272,83 @@ export const LearnScreen: React.FC = () => {
                     Three tools that teach by doing. They used to sit in a grid
                     of tiles on the Vitals screen, which is where you go to see
                     how the month is going, not to learn something. */}
-                <Text className="mx-4 mt-6 mb-1 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                <Text className="mx-5 mt-6 mb-1 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
                     Practise
                 </Text>
 
                 <PressableScale
                     onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
                     accessibilityRole="button"
-                    className="mx-4 mt-2 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                    className="mx-5 mt-2 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
                 >
-                    <View className="w-11 h-11 rounded-2xl bg-rose-50 items-center justify-center mr-3">
-                        <Target size={20} color="#F43F5E" />
+                    <View className="w-11 h-11 rounded-2xl bg-loss-bg items-center justify-center mr-3">
+                        <Target size={20} color={COLORS.semantic.loss} />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Which was more?</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
+                        <Text className="text-base font-inter-bold text-text-primary">Which was more?</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                             Two of your own categories, head to head. Find your blind spot
                         </Text>
                     </View>
-                    <ChevronRight size={18} color="#F43F5E" />
+                    <ChevronRight size={18} color={COLORS.semantic.loss} />
                 </PressableScale>
 
                 <PressableScale
                     onPress={() => { haptics.tap(); navigation.navigate('SwipeCategorise'); }}
                     accessibilityRole="button"
-                    className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
                 >
-                    <View className="w-11 h-11 rounded-2xl bg-sky-50 items-center justify-center mr-3">
-                        <Layers size={20} color="#0EA5E9" />
+                    <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
+                        <Layers size={20} color="#0E7490" />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Tidy Up</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
+                        <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                             Sort miscategorised transactions and teach the app as you go
                         </Text>
                     </View>
-                    <ChevronRight size={18} color="#0EA5E9" />
+                    <ChevronRight size={18} color="#0E7490" />
                 </PressableScale>
 
                 <PressableScale
                     onPress={() => { haptics.tap(); navigation.navigate('TimeMachine'); }}
                     accessibilityRole="button"
-                    className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
                 >
-                    <View className="w-11 h-11 rounded-2xl bg-emerald-50 items-center justify-center mr-3">
-                        <Hourglass size={20} color="#10B981" />
+                    <View className="w-11 h-11 rounded-2xl bg-profit-bg items-center justify-center mr-3">
+                        <Hourglass size={20} color={COLORS.semantic.profit} />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-base font-bold text-gray-900">Time Machine</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
+                        <Text className="text-base font-inter-bold text-text-primary">Time Machine</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                             What a small regular spend is worth decades from now
                         </Text>
                     </View>
-                    <ChevronRight size={18} color="#10B981" />
+                    <ChevronRight size={18} color={COLORS.semantic.profit} />
                 </PressableScale>
 
 
                 {/* ── Tab Switcher ────────────────────────────── */}
-                <View className="flex-row mx-4 mt-4 bg-gray-100 rounded-xl p-1">
+                <View className="flex-row mx-5 mt-4 bg-surface-tertiary rounded-xl p-1">
                     <TouchableOpacity
                         onPress={() => { haptics.select(); setActiveTab('paths'); }}
                         activeOpacity={0.8}
-                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'paths' ? 'bg-white' : ''}`}
-                        style={activeTab === 'paths' ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
+                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'paths' ? 'bg-surface-primary' : ''}`}
+                        style={activeTab === 'paths' ? { shadowColor: '#3A2E22', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
                     >
-                        <GraduationCap size={14} color={activeTab === 'paths' ? '#6366F1' : '#9CA3AF'} />
-                        <Text style={{ color: activeTab === 'paths' ? '#6366F1' : '#9CA3AF' }} className="text-sm font-semibold ml-1.5">
+                        <GraduationCap size={14} color={activeTab === 'paths' ? COLORS.brand.primary : COLORS.text.tertiary} />
+                        <Text style={{ color: activeTab === 'paths' ? COLORS.brand.primary : COLORS.text.tertiary }} className="text-sm font-inter-semibold ml-1.5">
                             Courses
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => { haptics.select(); setActiveTab('glossary'); }}
                         activeOpacity={0.8}
-                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'glossary' ? 'bg-white' : ''}`}
-                        style={activeTab === 'glossary' ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
+                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'glossary' ? 'bg-surface-primary' : ''}`}
+                        style={activeTab === 'glossary' ? { shadowColor: '#3A2E22', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
                     >
-                        <HelpCircle size={14} color={activeTab === 'glossary' ? '#6366F1' : '#9CA3AF'} />
-                        <Text style={{ color: activeTab === 'glossary' ? '#6366F1' : '#9CA3AF' }} className="text-sm font-semibold ml-1.5">
+                        <HelpCircle size={14} color={activeTab === 'glossary' ? COLORS.brand.primary : COLORS.text.tertiary} />
+                        <Text style={{ color: activeTab === 'glossary' ? COLORS.brand.primary : COLORS.text.tertiary }} className="text-sm font-inter-semibold ml-1.5">
                             Glossary
                         </Text>
                     </TouchableOpacity>
@@ -355,7 +356,7 @@ export const LearnScreen: React.FC = () => {
 
                 {/* ── Courses Tab ─────────────────────────────── */}
                 {activeTab === 'paths' && (
-                    <View className="mx-4 mt-4">
+                    <View className="mx-5 mt-4">
                         {loading ? (
                             <>
                                 <CourseCardSkeleton />
@@ -363,9 +364,9 @@ export const LearnScreen: React.FC = () => {
                                 <CourseCardSkeleton />
                             </>
                         ) : displayPaths.length === 0 ? (
-                            <View className="bg-white border border-gray-100 rounded-2xl p-6 items-center">
-                                <BookOpen size={32} color="#D1D5DB" />
-                                <Text className="text-gray-500 text-sm mt-3 text-center">
+                            <View className="bg-surface-primary border border-border rounded-2xl p-6 items-center">
+                                <BookOpen size={32} color={COLORS.border.strong} />
+                                <Text className="text-text-secondary text-sm mt-3 text-center font-inter">
                                     No courses found. Check your connection.
                                 </Text>
                             </View>
@@ -387,31 +388,31 @@ export const LearnScreen: React.FC = () => {
                                     <PressableScale
                                         onPress={() => { haptics.tap(); navigation.navigate('LearnPathDetail', { path }); }}
                                         accessibilityRole="button"
-                                        className="mb-4 bg-white rounded-2xl border border-gray-100 overflow-hidden"
+                                        className="mb-4 bg-surface-primary rounded-2xl border border-border overflow-hidden"
                                     >
                                         {/* Top accent bar */}
-                                        <View style={{ height: 3, backgroundColor: pBadge ? '#10B981' : pPct > 0 ? '#6366F1' : '#E5E7EB' }} />
+                                        <View style={{ height: 3, backgroundColor: pBadge ? COLORS.semantic.profit : pPct > 0 ? COLORS.brand.primary : COLORS.border.default }} />
 
                                         <View className="p-4">
                                             <View className="flex-row items-start justify-between mb-2">
                                                 <View className="flex-1 mr-3">
-                                                    <Text className="text-base font-bold text-gray-900">{path.title}</Text>
-                                                    <Text className="text-xs text-gray-500 mt-0.5 leading-4">{path.description}</Text>
+                                                    <Text className="text-base font-inter-bold text-text-primary">{path.title}</Text>
+                                                    <Text className="text-xs text-text-secondary mt-0.5 leading-4 font-inter">{path.description}</Text>
                                                 </View>
                                                 {pBadge && (
-                                                    <View className="bg-emerald-50 rounded-full p-1.5">
-                                                        <Trophy size={14} color="#10B981" />
+                                                    <View className="bg-profit-bg rounded-full p-1.5">
+                                                        <Trophy size={14} color={COLORS.semantic.profit} />
                                                     </View>
                                                 )}
                                             </View>
 
                                             {/* Module count + progress */}
                                             <View className="flex-row items-center justify-between mt-2 mb-3">
-                                                <Text className="text-xs text-gray-400">{total} modules · {path.modules?.reduce((sum: number, m: any) => {
+                                                <Text className="text-xs text-text-tertiary font-inter">{total} modules · {path.modules?.reduce((sum: number, m: any) => {
                                                     const mins = parseInt(m.duration) || 0;
                                                     return sum + mins;
                                                 }, 0)} min total</Text>
-                                                <Text className="text-xs font-semibold" style={{ color: pPct === 100 ? '#10B981' : '#6366F1' }}>
+                                                <Text className="text-xs font-inter-semibold" style={{ color: pPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary }}>
                                                     {completed}/{total} done
                                                 </Text>
                                             </View>
@@ -419,8 +420,8 @@ export const LearnScreen: React.FC = () => {
                                             <BarFill
                                                 percent={pPct}
                                                 height={6}
-                                                color={pPct === 100 ? '#10B981' : '#6366F1'}
-                                                trackClassName="bg-gray-100"
+                                                color={pPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary}
+                                                trackClassName="bg-surface-tertiary"
                                                 delay={i * 60}
                                                 style={{ marginBottom: 12 }}
                                             />
@@ -429,10 +430,10 @@ export const LearnScreen: React.FC = () => {
                                                 already carry the percentage, so this
                                                 row is only the next action. */}
                                             <View className="flex-row items-center justify-end">
-                                                <Text className="text-xs font-semibold text-indigo-600 mr-1">
+                                                <Text className="text-xs font-inter-semibold text-brand-primary-dark mr-1">
                                                     {pPct === 0 ? 'Start' : pPct === 100 ? 'Review' : 'Continue'}
                                                 </Text>
-                                                <ChevronRight size={14} color="#6366F1" />
+                                                <ChevronRight size={14} color={COLORS.brand.primary} />
                                             </View>
                                         </View>
                                     </PressableScale>
@@ -445,32 +446,32 @@ export const LearnScreen: React.FC = () => {
 
                 {/* ── Glossary Tab ────────────────────────────── */}
                 {activeTab === 'glossary' && (
-                    <View className="mx-4 mt-4">
+                    <View className="mx-5 mt-4">
                         {/* Search */}
-                        <View className="flex-row items-center bg-white border border-gray-200 rounded-xl px-3 mb-4">
-                            <Search size={16} color="#9CA3AF" />
+                        <View className="flex-row items-center bg-surface-primary border border-border-strong rounded-xl px-3 mb-4">
+                            <Search size={16} color={COLORS.text.tertiary} />
                             <TextInput
-                                className="flex-1 py-3 pl-2 text-sm text-gray-700"
+                                className="flex-1 py-3 pl-2 text-sm text-text-secondary font-inter"
                                 placeholder="Search terms"
-                                placeholderTextColor="#D1D5DB"
+                                placeholderTextColor={COLORS.border.strong}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
                         </View>
 
                         {filteredGlossary.length === 0 ? (
-                            <View className="bg-white border border-gray-100 rounded-2xl p-6 items-center">
-                                <HelpCircle size={28} color="#D1D5DB" />
-                                <Text className="text-gray-400 text-sm mt-2">No terms match "{searchQuery}"</Text>
+                            <View className="bg-surface-primary border border-border rounded-2xl p-6 items-center">
+                                <HelpCircle size={28} color={COLORS.border.strong} />
+                                <Text className="text-text-tertiary text-sm mt-2 font-inter">No terms match "{searchQuery}"</Text>
                             </View>
                         ) : (
                             filteredGlossary.map((term, idx) => (
                                 <View
                                     key={term.term + idx}
-                                    className="bg-white border border-gray-100 rounded-2xl px-4 py-3.5 mb-3"
+                                    className="bg-surface-primary border border-border rounded-2xl px-4 py-3.5 mb-3"
                                 >
-                                    <Text className="text-sm font-bold text-indigo-600 mb-1">{term.term}</Text>
-                                    <Text className="text-sm text-gray-600 leading-5">{term.definition}</Text>
+                                    <Text className="text-sm font-inter-bold text-brand-primary-dark mb-1">{term.term}</Text>
+                                    <Text className="text-sm text-text-secondary leading-5 font-inter">{term.definition}</Text>
                                 </View>
                             ))
                         )}

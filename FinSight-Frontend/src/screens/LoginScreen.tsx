@@ -32,12 +32,13 @@ import {
     ScrollView,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
-import { Eye, EyeOff, Sparkles } from 'lucide-react-native';
+import { Eye, EyeOff, TrendingUp } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, signInUser, clearError } from '../store/slices/authSlice';
 import { sendPasswordReset } from '../services/authService';
 import { PressableScale } from '../components/PressableScale';
 import type { RootState, AppDispatch } from '../store/store';
+import { COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
 
 const LoginScreen: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -86,15 +87,16 @@ const LoginScreen: React.FC = () => {
         }
     };
 
-    /** Border colour is the only thing that marks focus, and it costs nothing. */
+    /** Border colour is the only thing that marks focus, and it costs nothing.
+     *  Width deliberately stays at 1: thickening it on focus nudges the text. */
     const fieldClass = (key: string) =>
-        `bg-surface-secondary rounded-2xl px-4 py-3.5 border ${
-            focused === key ? 'border-brand-primary' : 'border-transparent'
+        `bg-surface-primary rounded-control px-4 h-[52px] border ${
+            focused === key ? 'border-brand-primary' : 'border-border'
         }`;
 
     return (
         <KeyboardAvoidingView
-            className="flex-1 bg-brand-primary"
+            className="flex-1 bg-brand-primary-dark"
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <ScrollView
@@ -107,19 +109,19 @@ const LoginScreen: React.FC = () => {
                     a student nothing they could picture. */}
                 <Animated.View
                     entering={reduced ? FadeIn.duration(200) : FadeIn.duration(400)}
-                    className="px-7 pt-16 pb-9"
+                    style={{ paddingHorizontal: GUTTER, paddingTop: 64, paddingBottom: 36 }}
                 >
                     <View className="flex-row items-center mb-5">
-                        <View className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center mr-2.5">
-                            <Sparkles size={18} color="#FFFFFF" />
+                        <View className="w-9 h-9 bg-white/20 items-center justify-center mr-2.5" style={{ borderRadius: RADIUS.tile }}>
+                            <TrendingUp size={18} color={COLORS.text.inverse} strokeWidth={1.8} />
                         </View>
-                        <Text className="text-white text-lg font-bold tracking-tight">FinSight</Text>
+                        <Text style={TYPE.heading} className="text-white">FinSight</Text>
                     </View>
 
-                    <Text className="text-white text-[32px] leading-10 font-bold tracking-tight mb-3">
+                    <Text style={TYPE.title} className="text-white mb-3">
                         Paste a bank text.{'\n'}See where it went.
                     </Text>
-                    <Text className="text-indigo-100 text-[15px] leading-6">
+                    <Text style={TYPE.body} className="text-brand-on-dark">
                         Built for students who want to know where the money goes,
                         without a spreadsheet.
                     </Text>
@@ -128,14 +130,14 @@ const LoginScreen: React.FC = () => {
                 {/* The sheet. Rises once, then never moves again. */}
                 <Animated.View
                     entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(380)}
-                    className="flex-1 bg-surface-primary rounded-t-[32px] px-7 pt-7 pb-10"
+                    className="flex-1 bg-surface-primary" style={{ borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, paddingHorizontal: GUTTER, paddingTop: 28, paddingBottom: 40 }}
                 >
                     <View className="flex-row items-baseline justify-between mb-6">
-                        <Text className="text-[22px] font-bold text-text-primary tracking-tight">
+                        <Text style={TYPE.heading} className="text-text-primary">
                             {isSignUp ? 'Create your account' : 'Welcome back'}
                         </Text>
                         <TouchableOpacity onPress={toggleMode} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <Text className="text-sm font-semibold text-brand-primary">
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-brand-primary-dark">
                                 {isSignUp ? 'Sign in' : 'Sign up'}
                             </Text>
                         </TouchableOpacity>
@@ -147,9 +149,9 @@ const LoginScreen: React.FC = () => {
                             className="mb-3"
                         >
                             <TextInput
-                                className={fieldClass('name') + ' text-base text-text-primary'}
+                                className={fieldClass('name') + ' text-base text-text-primary font-inter'}
                                 placeholder="Your name"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={COLORS.text.tertiary}
                                 value={name}
                                 onChangeText={setName}
                                 onFocus={() => setFocused('name')}
@@ -162,9 +164,9 @@ const LoginScreen: React.FC = () => {
 
                     <View className="mb-3">
                         <TextInput
-                            className={fieldClass('email') + ' text-base text-text-primary'}
+                            className={fieldClass('email') + ' text-base text-text-primary font-inter'}
                             placeholder="Email"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={COLORS.text.tertiary}
                             value={email}
                             onChangeText={setEmail}
                             onFocus={() => setFocused('email')}
@@ -179,9 +181,9 @@ const LoginScreen: React.FC = () => {
                     <View className="mb-2">
                         <View className="relative justify-center">
                             <TextInput
-                                className={fieldClass('password') + ' text-base text-text-primary pr-12'}
+                                className={fieldClass('password') + ' text-base text-text-primary pr-12 font-inter'}
                                 placeholder={isSignUp ? 'Password, at least 6 characters' : 'Password'}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={COLORS.text.tertiary}
                                 value={password}
                                 onChangeText={setPassword}
                                 onFocus={() => setFocused('password')}
@@ -199,8 +201,8 @@ const LoginScreen: React.FC = () => {
                                 accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                             >
                                 {showPassword
-                                    ? <EyeOff size={19} color="#9CA3AF" />
-                                    : <Eye size={19} color="#9CA3AF" />}
+                                    ? <EyeOff size={19} color={COLORS.text.tertiary} />
+                                    : <Eye size={19} color={COLORS.text.tertiary} />}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -213,7 +215,7 @@ const LoginScreen: React.FC = () => {
                             className="self-end mb-1"
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                            <Text className="text-sm font-medium text-brand-primary">
+                            <Text style={TYPE.callout} className="text-brand-primary-dark">
                                 {resetting ? 'Sending...' : 'Forgot password?'}
                             </Text>
                         </TouchableOpacity>
@@ -222,18 +224,18 @@ const LoginScreen: React.FC = () => {
                     {resetNotice && (
                         <Animated.View
                             entering={FadeIn.duration(180)}
-                            className="bg-surface-secondary rounded-xl p-3 mt-3"
+                            className="bg-surface-tertiary rounded-control p-3.5 mt-3"
                         >
-                            <Text className="text-text-secondary text-sm text-center">{resetNotice}</Text>
+                            <Text style={TYPE.caption} className="text-text-secondary text-center">{resetNotice}</Text>
                         </Animated.View>
                     )}
 
                     {error && (
                         <Animated.View
                             entering={FadeIn.duration(180)}
-                            className="bg-loss-bg rounded-xl p-3 mt-3"
+                            className="bg-loss-bg rounded-control p-3.5 mt-3"
                         >
-                            <Text className="text-loss text-sm text-center">{error}</Text>
+                            <Text style={TYPE.caption} className="text-loss text-center">{error}</Text>
                         </Animated.View>
                     )}
 
@@ -241,18 +243,26 @@ const LoginScreen: React.FC = () => {
                         onPress={handleSubmit}
                         disabled={isLoading}
                         accessibilityRole="button"
-                        className={`rounded-2xl py-4 items-center mt-5 ${isLoading ? 'bg-brand-primary/60' : 'bg-brand-primary'}`}
+                        style={{
+                            backgroundColor: COLORS.brand.primaryDark,
+                            opacity: isLoading ? 0.6 : 1,
+                            borderRadius: RADIUS.pill,
+                            height: 52,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginTop: 20,
+                        }}
                     >
                         {isLoading ? (
-                            <ActivityIndicator color="#FFFFFF" />
+                            <ActivityIndicator color={COLORS.text.inverse} />
                         ) : (
-                            <Text className="text-white font-bold text-base">
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-white">
                                 {isSignUp ? 'Create account' : 'Sign in'}
                             </Text>
                         )}
                     </PressableScale>
 
-                    <Text className="text-xs text-text-tertiary text-center mt-5 leading-5">
+                    <Text style={TYPE.caption} className="text-text-tertiary text-center mt-5">
                         FinSight is educational. It holds no money and connects to no bank.
                     </Text>
                 </Animated.View>

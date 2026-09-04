@@ -39,26 +39,26 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             {icon}
         </View>
 
-        <Text className="text-xl font-bold text-text-primary mb-2 text-center">
+        <Text className="text-xl font-inter-bold text-text-primary mb-2 text-center">
             {title}
         </Text>
 
-        <Text className="text-sm text-text-secondary text-center leading-5 mb-6">
+        <Text className="text-sm text-text-secondary text-center leading-5 mb-6 font-inter">
             {body}
         </Text>
 
         {actionLabel && onAction && (
             <PressableScale
-                className="bg-brand-primary px-8 py-3 rounded-2xl"
+                className="bg-brand-primary-dark px-8 py-3 rounded-pill"
                 onPress={onAction}
                 accessibilityRole="button"
             >
-                <Text className="text-white font-bold">{actionLabel}</Text>
+                <Text className="text-white font-inter-bold">{actionLabel}</Text>
             </PressableScale>
         )}
 
         {hint && (
-            <Text className="text-xs text-text-tertiary text-center leading-4 mt-4">
+            <Text className="text-xs text-text-tertiary text-center leading-4 mt-4 font-inter">
                 {hint}
             </Text>
         )}

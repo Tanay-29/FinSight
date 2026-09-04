@@ -23,6 +23,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { resolveMonthlyIncome } from '../utils/income';
 import { loadBurnRate, loadSavingsEngine } from '../store/slices/vitalsIntelSlice';
+import { FONTS, COLORS } from '../theme/tokens';
 
 // ── Gauge Bar ─────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ const GaugeBar: React.FC<{
 }> = ({ value, max, color, targetPct }) => {
     const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
     return (
-        <View style={{ height: 12, backgroundColor: '#F3F4F6', borderRadius: 6, overflow: 'hidden', marginTop: 8, position: 'relative' }}>
+        <View style={{ height: 12, backgroundColor: COLORS.surface.tertiary, borderRadius: 6, overflow: 'hidden', marginTop: 8, position: 'relative' }}>
             {targetPct !== undefined && (
                 <View style={{
                     position: 'absolute', left: `${targetPct}%`, top: 0, bottom: 0,
@@ -50,12 +51,12 @@ const GaugeBar: React.FC<{
 
 const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; subtitle: string }> = ({ icon, title, subtitle }) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center' }}>
             {icon}
         </View>
         <View>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#111827' }}>{title}</Text>
-            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>{subtitle}</Text>
+            <Text style={{ fontSize: 17, fontFamily: FONTS.bold, color: COLORS.text.primary }}>{title}</Text>
+            <Text style={{ fontSize: 12, color: COLORS.text.tertiary, marginTop: 1 }}>{subtitle}</Text>
         </View>
     </View>
 );
@@ -73,10 +74,10 @@ const IncomeModal: React.FC<{
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
                 <View style={{ backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: '85%' }}>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 }}>Set your monthly income</Text>
-                    <Text style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 16 }}>Used to compute your 50/30/20 ratios and savings rate.</Text>
+                    <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary, marginBottom: 8 }}>Set your monthly income</Text>
+                    <Text style={{ fontSize: 13, color: COLORS.text.tertiary, marginBottom: 16 }}>Used to compute your 50/30/20 ratios and savings rate.</Text>
                     <TextInput
-                        style={{ backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 20 }}
+                        style={{ backgroundColor: COLORS.surface.secondary, borderWidth: 1.5, borderColor: COLORS.border.default, borderRadius: 12, padding: 12, fontSize: 20, fontFamily: FONTS.bold, color: COLORS.text.primary, marginBottom: 20 }}
                         keyboardType="numeric"
                         value={value}
                         onChangeText={setValue}
@@ -84,9 +85,9 @@ const IncomeModal: React.FC<{
                     />
                     <PressableScale
                         onPress={() => { const n = parseFloat(value); if (n > 0) onSave(n); onClose(); }}
-                        style={{ backgroundColor: '#6366F1', borderRadius: 12, padding: 14, alignItems: 'center' }}
+                        style={{ backgroundColor: COLORS.brand.primary, borderRadius: 12, padding: 14, alignItems: 'center' }}
                     >
-                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>Save income</Text>
+                        <Text style={{ color: '#FFF', fontFamily: FONTS.bold, fontSize: 15 }}>Save income</Text>
                     </PressableScale>
                 </View>
             </View>
@@ -146,19 +147,19 @@ const BurnRateScreen: React.FC = () => {
     };
 
     const STATUS_COLORS: Record<string, string> = {
-        ON_TRACK: '#10B981',
-        WARNING:  '#F59E0B',
-        OVER_BUDGET: '#EF4444',
+        ON_TRACK: COLORS.semantic.profit,
+        WARNING:  COLORS.semantic.alertAmberFill,
+        OVER_BUDGET: COLORS.semantic.loss,
     };
 
     const REC_COLORS: Record<string, { bg: string; text: string }> = {
-        INVEST:     { bg: '#EDE9FE', text: '#7C3AED' },
-        SAVE:       { bg: '#ECFDF5', text: '#059669' },
-        REALLOCATE: { bg: '#FFF7ED', text: '#D97706' },
+        INVEST:     { bg: COLORS.brand.soft, text: COLORS.brand.primaryDark },
+        SAVE:       { bg: '#EFF7F2', text: '#0B6A4D' },
+        REALLOCATE: { bg: '#FDF5EC', text: COLORS.semantic.alertAmber },
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
             <IncomeModal
                 visible={incomeModalVisible}
                 onClose={() => setIncomeModalVisible(false)}
@@ -173,42 +174,42 @@ const BurnRateScreen: React.FC = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <TouchableOpacity
                         onPress={() => navigation.goBack()}
-                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <ChevronLeft size={20} color="#111827" />
+                        <ChevronLeft size={20} color={COLORS.text.primary} />
                     </TouchableOpacity>
                     <View>
-                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827' }}>Spending pace</Text>
-                        <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Where this month is heading</Text>
+                        <Text style={{ fontSize: 20, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Spending pace</Text>
+                        <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>Where this month is heading</Text>
                     </View>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity
                         onPress={() => setIncomeModalVisible(true)}
-                        style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}
+                        style={{ backgroundColor: COLORS.brand.soft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}
                     >
-                        <Text style={{ fontSize: 12, color: '#7C3AED', fontWeight: '700' }}>₹{(income / 1000).toFixed(0)}k</Text>
+                        <Text style={{ fontSize: 12, color: COLORS.brand.primaryDark, fontFamily: FONTS.bold }}>₹{(income / 1000).toFixed(0)}k</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={loadAll}>
-                        <RefreshCw size={18} color="#9CA3AF" />
+                        <RefreshCw size={18} color={COLORS.text.tertiary} />
                     </TouchableOpacity>
                 </View>
             </View>
 
             {loading && !burnRate ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator color="#6366F1" size="large" />
-                    <Text style={{ color: '#9CA3AF', marginTop: 12 }}>Working out your pace</Text>
+                    <ActivityIndicator color={COLORS.brand.primary} size="large" />
+                    <Text style={{ color: COLORS.text.tertiary, marginTop: 12 }}>Working out your pace</Text>
                 </View>
             ) : (
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.brand.primary} />}
                 >
                     {/* ── Section 1: Burn Rate ─────────────────────────────── */}
                     <SectionHeader
-                        icon={<Flame size={22} color="#EF4444" />}
+                        icon={<Flame size={22} color={COLORS.semantic.loss} />}
                         title="Where the month is heading"
                         subtitle="Today's pace, carried to the end of the month"
                     />
@@ -227,7 +228,7 @@ const BurnRateScreen: React.FC = () => {
                                     ? <AlertTriangle size={18} color={STATUS_COLORS[burnRate.status]} />
                                     : <XCircle size={18} color={STATUS_COLORS[burnRate.status]} />
                                 }
-                                <Text style={{ flex: 1, fontSize: 13, color: STATUS_COLORS[burnRate.status], fontWeight: '600', lineHeight: 19 }}>
+                                <Text style={{ flex: 1, fontSize: 13, color: STATUS_COLORS[burnRate.status], fontFamily: FONTS.semibold, lineHeight: 19 }}>
                                     {burnRate.alert}
                                 </Text>
                             </View>
@@ -235,45 +236,45 @@ const BurnRateScreen: React.FC = () => {
                             {/* Metrics Row */}
                             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
                                 {[
-                                    { label: 'So far', value: `₹${burnRate.current_month_spend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: `Day ${burnRate.days_elapsed}/${burnRate.days_in_month}`, color: '#6366F1' },
-                                    { label: 'Per day', value: `₹${burnRate.daily_avg.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: 'per day', color: '#F59E0B' },
+                                    { label: 'So far', value: `₹${burnRate.current_month_spend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: `Day ${burnRate.days_elapsed}/${burnRate.days_in_month}`, color: COLORS.brand.primary },
+                                    { label: 'Per day', value: `₹${burnRate.daily_avg.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: 'per day', color: COLORS.semantic.alertAmberFill },
                                     { label: 'On track for', value: `₹${burnRate.projected_monthly.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: 'this month', color: STATUS_COLORS[burnRate.status] },
                                 ].map((m) => (
-                                    <View key={m.label} style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                                        <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>{m.label}</Text>
-                                        <Text style={{ fontSize: 16, fontWeight: '800', color: m.color, marginTop: 4 }}>{m.value}</Text>
-                                        <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>{m.sub}</Text>
+                                    <View key={m.label} style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
+                                        <Text style={{ fontSize: 10, color: COLORS.text.tertiary, fontFamily: FONTS.semibold, textTransform: 'uppercase', letterSpacing: 0.5 }}>{m.label}</Text>
+                                        <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: m.color, marginTop: 4 }}>{m.value}</Text>
+                                        <Text style={{ fontSize: 10, color: COLORS.text.tertiary, marginTop: 2 }}>{m.sub}</Text>
                                     </View>
                                 ))}
                             </View>
 
                             {/* Projection vs Budget */}
                             {burnRate.total_budget > 0 && (
-                                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                                        <Text style={{ fontSize: 13, color: '#6B7280', fontWeight: '600' }}>Against your budget</Text>
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: burnRate.budget_variance && burnRate.budget_variance > 0 ? '#EF4444' : '#10B981' }}>
+                                        <Text style={{ fontSize: 13, color: COLORS.text.secondary, fontFamily: FONTS.semibold }}>Against your budget</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: burnRate.budget_variance && burnRate.budget_variance > 0 ? COLORS.semantic.loss : COLORS.semantic.profit }}>
                                             {burnRate.budget_variance && burnRate.budget_variance > 0 ? `+₹${burnRate.budget_variance.toLocaleString('en-IN', { maximumFractionDigits: 0 })} over` : 'Within budget'}
                                         </Text>
                                     </View>
                                     <GaugeBar value={burnRate.projected_monthly} max={burnRate.total_budget * 1.3} color={STATUS_COLORS[burnRate.status]} targetPct={76} />
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>₹0</Text>
-                                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Budget: ₹{burnRate.total_budget.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</Text>
+                                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>₹0</Text>
+                                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Budget: ₹{burnRate.total_budget.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</Text>
                                     </View>
                                 </View>
                             )}
 
                             {/* Top Categories */}
                             {burnRate.top_categories.length > 0 && (
-                                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 12 }}>Top categories</Text>
+                                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
+                                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 12 }}>Top categories</Text>
                                     {burnRate.top_categories.map((cat, i) => (
                                         <View key={cat.category} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                            <Text style={{ fontSize: 13, color: '#6B7280', textTransform: 'capitalize', flex: 1 }}>
+                                            <Text style={{ fontSize: 13, color: COLORS.text.secondary, textTransform: 'capitalize', flex: 1 }}>
                                                 {i + 1}. {cat.category}
                                             </Text>
-                                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
+                                            <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
                                                 ₹{cat.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                             </Text>
                                         </View>
@@ -285,7 +286,7 @@ const BurnRateScreen: React.FC = () => {
 
                     {/* ── Section 2: Savings Engine ────────────────────────── */}
                     <SectionHeader
-                        icon={<PiggyBank size={22} color="#10B981" />}
+                        icon={<PiggyBank size={22} color={COLORS.semantic.profit} />}
                         title="Where you could cut"
                         subtitle="Categories running under what you budgeted"
                     />
@@ -293,25 +294,25 @@ const BurnRateScreen: React.FC = () => {
                     {savingsEngine && (
                         <>
                             {savingsEngine.total_surplus > 0 && (
-                                <View style={{ backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#BBF7D0', borderRadius: 16, padding: 14, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ backgroundColor: '#EFF7F2', borderWidth: 1, borderColor: '#CDE8D9', borderRadius: 16, padding: 14, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <View>
-                                        <Text style={{ fontSize: 12, color: '#065F46', fontWeight: '600' }}>TOTAL SURPLUS AVAILABLE</Text>
-                                        <Text style={{ fontSize: 24, fontWeight: '800', color: '#059669', marginTop: 2 }}>
+                                        <Text style={{ fontSize: 12, color: '#0A5C43', fontFamily: FONTS.semibold }}>TOTAL SURPLUS AVAILABLE</Text>
+                                        <Text style={{ fontSize: 24, fontFamily: FONTS.bold, color: '#0B6A4D', marginTop: 2 }}>
                                             ₹{savingsEngine.total_surplus.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                         </Text>
                                     </View>
                                     {savingsEngine.savings_rate !== null && (
                                         <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={{ fontSize: 11, color: '#065F46' }}>Savings rate</Text>
-                                            <Text style={{ fontSize: 22, fontWeight: '800', color: '#059669' }}>{savingsEngine.savings_rate.toFixed(1)}%</Text>
+                                            <Text style={{ fontSize: 11, color: '#0A5C43' }}>Savings rate</Text>
+                                            <Text style={{ fontSize: 22, fontFamily: FONTS.bold, color: '#0B6A4D' }}>{savingsEngine.savings_rate.toFixed(1)}%</Text>
                                         </View>
                                     )}
                                 </View>
                             )}
 
                             {savingsEngine.events.length === 0 ? (
-                                <View style={{ backgroundColor: '#F9FAFB', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 24 }}>
-                                    <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No surpluses detected yet. Keep budgeting!</Text>
+                                <View style={{ backgroundColor: COLORS.surface.secondary, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 24 }}>
+                                    <Text style={{ color: COLORS.text.tertiary, fontSize: 14 }}>No surpluses detected yet. Keep budgeting!</Text>
                                 </View>
                             ) : (
                                 savingsEngine.events.map((event, i) => {
@@ -319,27 +320,27 @@ const BurnRateScreen: React.FC = () => {
                                     return (
                                         <View
                                             key={i}
-                                            style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: '#F3F4F6' }}
+                                            style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: COLORS.surface.tertiary }}
                                         >
                                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                                 <View style={{ flex: 1 }}>
-                                                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', textTransform: 'capitalize' }}>{event.category}</Text>
-                                                    <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                                                    <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary, textTransform: 'capitalize' }}>{event.category}</Text>
+                                                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary, marginTop: 2 }}>
                                                         Spent ₹{event.actual_spend.toLocaleString('en-IN', { maximumFractionDigits: 0 })} of ₹{event.planned_budget.toLocaleString('en-IN', { maximumFractionDigits: 0 })} budget
                                                     </Text>
                                                 </View>
                                                 <View style={{ backgroundColor: recStyle.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-                                                    <Text style={{ fontSize: 12, fontWeight: '700', color: recStyle.text }}>{event.recommendation}</Text>
+                                                    <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: recStyle.text }}>{event.recommendation}</Text>
                                                 </View>
                                             </View>
-                                            <GaugeBar value={event.actual_spend} max={event.planned_budget} color="#10B981" />
+                                            <GaugeBar value={event.actual_spend} max={event.planned_budget} color={COLORS.semantic.profit} />
                                             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10 }}>
                                                 <Lightbulb size={14} color={recStyle.text} style={{ marginTop: 2 }} />
-                                                <Text style={{ flex: 1, fontSize: 13, color: recStyle.text, fontWeight: '600', lineHeight: 18 }}>
+                                                <Text style={{ flex: 1, fontSize: 13, color: recStyle.text, fontFamily: FONTS.semibold, lineHeight: 18 }}>
                                                     {event.action_text}
                                                 </Text>
                                             </View>
-                                            <Text style={{ fontSize: 12, color: '#10B981', fontWeight: '700', marginTop: 6 }}>
+                                            <Text style={{ fontSize: 12, color: COLORS.semantic.profit, fontFamily: FONTS.bold, marginTop: 6 }}>
                                                 Surplus: ₹{event.surplus.toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({event.surplus_pct.toFixed(0)}% unspent)
                                             </Text>
                                         </View>

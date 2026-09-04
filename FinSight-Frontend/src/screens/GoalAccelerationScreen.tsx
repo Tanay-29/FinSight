@@ -29,6 +29,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppSelector } from '../store/hooks';
 import { differenceInDays, format, parseISO, addMonths } from 'date-fns';
+import { FONTS, COLORS } from '../theme/tokens';
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -154,20 +155,20 @@ const GoalAccelerationScreen: React.FC = () => {
     // ── Empty state ───────────────────────────────────────────
     if (!goal) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top']}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-                    <PiggyBank size={56} color="#C7D2FE" />
-                    <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginTop: 16, textAlign: 'center' }}>
+                    <PiggyBank size={56} color={COLORS.brand.edge} />
+                    <Text style={{ fontSize: 20, fontFamily: FONTS.bold, color: COLORS.text.primary, marginTop: 16, textAlign: 'center' }}>
                         No Goals Yet
                     </Text>
-                    <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center' }}>
+                    <Text style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 8, textAlign: 'center' }}>
                         Create a savings goal first, then come back to simulate your investment strategy.
                     </Text>
                     <PressableScale
                         onPress={() => navigation.goBack()}
-                        style={{ marginTop: 24, backgroundColor: '#6366F1', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}
+                        style={{ marginTop: 24, backgroundColor: COLORS.brand.primary, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}
                     >
-                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>Go back</Text>
+                        <Text style={{ color: 'white', fontFamily: FONTS.bold, fontSize: 15 }}>Go back</Text>
                     </PressableScale>
                 </View>
             </SafeAreaView>
@@ -175,19 +176,19 @@ const GoalAccelerationScreen: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
 
             {/* ── Header ─────────────────────────────────────── */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
-                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
                 >
-                    <ChevronLeft size={20} color="#111827" />
+                    <ChevronLeft size={20} color={COLORS.text.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Accelerate this goal</Text>
-                    <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Compound interest simulator</Text>
+                    <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Accelerate this goal</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>Compound interest simulator</Text>
                 </View>
             </View>
 
@@ -202,8 +203,8 @@ const GoalAccelerationScreen: React.FC = () => {
                     padding: 20,
                     marginBottom: 16,
                     borderWidth: 1,
-                    borderColor: '#F3F4F6',
-                    shadowColor: '#000',
+                    borderColor: COLORS.surface.tertiary,
+                    shadowColor: '#3A2E22',
                     shadowOpacity: 0.04,
                     shadowRadius: 8,
                     elevation: 2,
@@ -217,36 +218,36 @@ const GoalAccelerationScreen: React.FC = () => {
                             {React.createElement(goalIcon(goal.icon), { size: 24, color: goal.color })}
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
+                            <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }} numberOfLines={1}>
                                 {goal.title}
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                                <Calendar size={12} color="#9CA3AF" />
-                                <Text style={{ fontSize: 12, color: '#9CA3AF', marginLeft: 4 }}>
+                                <Calendar size={12} color={COLORS.text.tertiary} />
+                                <Text style={{ fontSize: 12, color: COLORS.text.tertiary, marginLeft: 4 }}>
                                     {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? 'Due today' : 'Overdue'}
                                 </Text>
                             </View>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ fontSize: 20, fontWeight: '800', color: goal.color }}>
+                            <Text style={{ fontSize: 20, fontFamily: FONTS.bold, color: goal.color }}>
                                 {Math.round(progress)}%
                             </Text>
-                            <Text style={{ fontSize: 11, color: '#9CA3AF' }}>saved</Text>
+                            <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>saved</Text>
                         </View>
                     </View>
 
                     {/* Amount row */}
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 10 }}>
-                        <Text style={{ fontSize: 24, fontWeight: '800', color: goal.color }}>
+                        <Text style={{ fontSize: 24, fontFamily: FONTS.bold, color: goal.color }}>
                             ₹{goal.savedAmount.toLocaleString('en-IN')}
                         </Text>
-                        <Text style={{ fontSize: 14, color: '#9CA3AF', marginLeft: 4 }}>
+                        <Text style={{ fontSize: 14, color: COLORS.text.tertiary, marginLeft: 4 }}>
                             {' '}/ ₹{goal.targetAmount.toLocaleString('en-IN')}
                         </Text>
                     </View>
 
-                    <BarFill percent={progress} color={goal.color} trackClassName="bg-gray-100" />
-                    <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6 }}>
+                    <BarFill percent={progress} color={goal.color} trackClassName="bg-surface-tertiary" />
+                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary, marginTop: 6 }}>
                         ₹{Math.max(goal.targetAmount - goal.savedAmount, 0).toLocaleString('en-IN')} remaining
                     </Text>
                 </View>
@@ -258,30 +259,30 @@ const GoalAccelerationScreen: React.FC = () => {
                     padding: 20,
                     marginBottom: 16,
                     borderWidth: 1,
-                    borderColor: '#F3F4F6',
+                    borderColor: COLORS.surface.tertiary,
                 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
+                    <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.text.secondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
                         Monthly Contribution
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <TouchableOpacity
                             onPress={() => setMonthlyContrib((v) => Math.max(v - step, 1000))}
-                            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center' }}
                             activeOpacity={0.7}
                         >
-                            <Minus size={20} color="#374151" />
+                            <Minus size={20} color="#423C35" />
                         </TouchableOpacity>
 
                         <View style={{ alignItems: 'center' }}>
-                            <Text style={{ fontSize: 32, fontWeight: '900', color: '#111827', letterSpacing: -1 }}>
+                            <Text style={{ fontSize: 32, fontFamily: FONTS.bold, color: COLORS.text.primary, letterSpacing: -1 }}>
                                 ₹{monthlyContrib.toLocaleString('en-IN')}
                             </Text>
-                            <Text style={{ fontSize: 12, color: '#9CA3AF' }}>per month</Text>
+                            <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>per month</Text>
                         </View>
 
                         <PressableScale
                             onPress={() => setMonthlyContrib((v) => v + step)}
-                            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.brand.primary, alignItems: 'center', justifyContent: 'center' }}
                         >
                             <Plus size={20} color="white" />
                         </PressableScale>
@@ -296,11 +297,11 @@ const GoalAccelerationScreen: React.FC = () => {
                                 style={{
                                     paddingHorizontal: 12, paddingVertical: 6,
                                     borderRadius: 20, borderWidth: 1.5,
-                                    borderColor: monthlyContrib === v ? '#6366F1' : '#E5E7EB',
-                                    backgroundColor: monthlyContrib === v ? '#EEF2FF' : '#F9FAFB',
+                                    borderColor: monthlyContrib === v ? COLORS.brand.primary : COLORS.border.default,
+                                    backgroundColor: monthlyContrib === v ? COLORS.brand.soft : COLORS.surface.secondary,
                                 }}
                             >
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: monthlyContrib === v ? '#6366F1' : '#9CA3AF' }}>
+                                <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: monthlyContrib === v ? COLORS.brand.primary : COLORS.text.tertiary }}>
                                     ₹{v >= 1000 ? `${v / 1000}K` : v}
                                 </Text>
                             </TouchableOpacity>
@@ -312,36 +313,36 @@ const GoalAccelerationScreen: React.FC = () => {
                 {smartTip && smartTip.extraMonthsSaved > 0 && (
                     <View style={{
                         flexDirection: 'row',
-                        backgroundColor: '#FFF7ED',
+                        backgroundColor: '#FDF5EC',
                         borderRadius: 16,
                         padding: 14,
                         marginBottom: 16,
                         borderWidth: 1,
-                        borderColor: '#FED7AA',
+                        borderColor: '#EED9C0',
                         alignItems: 'flex-start',
                     }}>
-                        <AlertCircle size={18} color="#F97316" style={{ marginTop: 2 }} />
+                        <AlertCircle size={18} color="#C2410C" style={{ marginTop: 2 }} />
                         <View style={{ flex: 1, marginLeft: 10 }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#9A3412' }}>
+                            <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#8A4210' }}>
                                 Smart Tip
                             </Text>
                             <Text style={{ fontSize: 12, color: '#C2410C', marginTop: 2, lineHeight: 18 }}>
                                 You spent{' '}
-                                <Text style={{ fontWeight: '700' }}>
+                                <Text style={{ fontFamily: FONTS.bold }}>
                                     ₹{smartTip.spend.toLocaleString('en-IN')}
                                 </Text>
                                 {' '}on {smartTip.category} this month. Redirect{' '}
-                                <Text style={{ fontWeight: '700' }}>₹{smartTip.redirect.toLocaleString('en-IN')}</Text>
+                                <Text style={{ fontFamily: FONTS.bold }}>₹{smartTip.redirect.toLocaleString('en-IN')}</Text>
                                 {' '}to this goal and reach it{' '}
-                                <Text style={{ fontWeight: '700' }}>
+                                <Text style={{ fontFamily: FONTS.bold }}>
                                     {formatMonths(smartTip.extraMonthsSaved)} sooner!
                                 </Text>
                             </Text>
                             <TouchableOpacity
                                 onPress={() => setMonthlyContrib((v) => v + smartTip.redirect)}
-                                style={{ marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#F97316', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }}
+                                style={{ marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#C2410C', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }}
                             >
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: 'white' }}>
+                                <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: 'white' }}>
                                     Apply +₹{smartTip.redirect.toLocaleString('en-IN')}
                                 </Text>
                             </TouchableOpacity>
@@ -351,7 +352,7 @@ const GoalAccelerationScreen: React.FC = () => {
 
                 {/* ── 4. Timeline Comparison Card ───────────────── */}
                 <View style={{
-                    backgroundColor: '#1E1B4B',
+                    backgroundColor: COLORS.text.primary,
                     borderRadius: 24,
                     padding: 24,
                     marginBottom: 16,
@@ -362,16 +363,16 @@ const GoalAccelerationScreen: React.FC = () => {
                         <Clock size={120} color="#FFFFFF" />
                     </View>
 
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#A5B4FC', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.brand.edge, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
                         Time Saved with Smart Investing
                     </Text>
 
                     {/* Hero number */}
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 }}>
-                        <Text style={{ fontSize: 60, fontWeight: '900', color: '#FFFFFF', letterSpacing: -2 }}>
+                        <Text style={{ fontSize: 60, fontFamily: FONTS.bold, color: '#FFFFFF', letterSpacing: -2 }}>
                             {monthsSaved}
                         </Text>
-                        <Text style={{ fontSize: 20, fontWeight: '700', color: '#A5B4FC', marginLeft: 8 }}>
+                        <Text style={{ fontSize: 20, fontFamily: FONTS.bold, color: COLORS.brand.edge, marginLeft: 8 }}>
                             months saved
                         </Text>
                     </View>
@@ -382,10 +383,10 @@ const GoalAccelerationScreen: React.FC = () => {
                             {/* Bank path */}
                             <View style={{ flex: 1, alignItems: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                                    <Landmark size={12} color="#A5B4FC" />
-                                    <Text style={{ fontSize: 11, color: '#A5B4FC' }}>Bank (4% p.a.)</Text>
+                                    <Landmark size={12} color={COLORS.brand.edge} />
+                                    <Text style={{ fontSize: 11, color: COLORS.brand.edge }}>Bank (4% p.a.)</Text>
                                 </View>
-                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>
+                                <Text style={{ fontSize: 22, fontFamily: FONTS.bold, color: '#FFFFFF' }}>
                                     {formatMonths(bankMonths)}
                                 </Text>
                                 <Text style={{ fontSize: 11, color: '#818CF8', marginTop: 4 }}>
@@ -399,13 +400,13 @@ const GoalAccelerationScreen: React.FC = () => {
                             {/* SIP path */}
                             <View style={{ flex: 1, alignItems: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                                    <TrendingUp size={12} color="#A5B4FC" />
-                                    <Text style={{ fontSize: 11, color: '#A5B4FC' }}>SIP (9% p.a.)</Text>
+                                    <TrendingUp size={12} color={COLORS.brand.edge} />
+                                    <Text style={{ fontSize: 11, color: COLORS.brand.edge }}>SIP (9% p.a.)</Text>
                                 </View>
-                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#34D399' }}>
+                                <Text style={{ fontSize: 22, fontFamily: FONTS.bold, color: '#3E9E7A' }}>
                                     {formatMonths(sipMonths)}
                                 </Text>
-                                <Text style={{ fontSize: 11, color: '#6EE7B7', marginTop: 4 }}>
+                                <Text style={{ fontSize: 11, color: '#8FCBB2', marginTop: 4 }}>
                                     {targetDate(sipMonths)}
                                 </Text>
                             </View>
@@ -414,12 +415,12 @@ const GoalAccelerationScreen: React.FC = () => {
 
                     {/* Investment strategy chip */}
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: 'rgba(52,211,153,0.12)', borderRadius: 14, padding: 14 }}>
-                        <ShieldCheck size={20} color="#34D399" />
+                        <ShieldCheck size={20} color="#3E9E7A" />
                         <View style={{ flex: 1, marginLeft: 10 }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#34D399' }}>
+                            <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#3E9E7A' }}>
                                 {daysLeft < 365 ? 'Liquid Debt Fund' : daysLeft < 1095 ? 'Conservative Hybrid Fund' : 'Flexi Cap Equity MF'}
                             </Text>
-                            <Text style={{ fontSize: 12, color: '#6EE7B7', marginTop: 2, lineHeight: 17 }}>
+                            <Text style={{ fontSize: 12, color: '#8FCBB2', marginTop: 2, lineHeight: 17 }}>
                                 {daysLeft < 365
                                     ? 'Short horizon (<1 year) - 100% debt for capital protection'
                                     : daysLeft < 1095
@@ -433,8 +434,8 @@ const GoalAccelerationScreen: React.FC = () => {
 
                 {/* ── 5. Disclaimer ──────────────────────────── */}
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', padding: 12 }}>
-                    <Zap size={13} color="#9CA3AF" />
-                    <Text style={{ flex: 1, fontSize: 11, color: '#9CA3AF', marginLeft: 6, lineHeight: 16 }}>
+                    <Zap size={13} color={COLORS.text.tertiary} />
+                    <Text style={{ flex: 1, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 6, lineHeight: 16 }}>
                         Returns shown are estimates and not guaranteed. Past performance of mutual funds does not indicate future returns. Invest based on your risk profile and consult a SEBI-registered financial advisor before investing.
                     </Text>
                 </View>

@@ -81,7 +81,7 @@ export const COURSE_CONTENT: LearningPath[] = [
         id: 'investing101',
         title: 'Investing 101',
         description: 'Learn the basics of stock market investing, from stocks to SIPs',
-        overview: 'Master the fundamentals of Indian stock market investing. This 8-module course covers everything from understanding how stocks work to building your first SIP. Perfect for beginners who want to start their investment journey.',
+        overview: 'How the Indian stock market actually works, in eight modules. It starts with what a share is and ends with how a SIP is set up, and it assumes you have never bought one. Nothing here asks you to put real money anywhere.',
         progress: { completed: 3, total: 8 },
         nextModule: 'Mutual Funds Explained',
         badgeEarned: false,

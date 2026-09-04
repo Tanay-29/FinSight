@@ -32,6 +32,7 @@ import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
 import { addMonths, differenceInDays, format, parseISO } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
+import { COLORS, TYPE } from '../theme/tokens';
 
 // ─── Goal Card ────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ const GoalCard: React.FC<{
             : 0;
 
     return (
-        <View className="bg-white border border-border rounded-xl p-4 mx-4 mb-3">
+        <View className="bg-surface-primary border border-border rounded-xl p-4 mx-5 mb-3">
             {/* Header */}
             <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center flex-1">
@@ -73,18 +74,18 @@ const GoalCard: React.FC<{
                         {React.createElement(goalIcon(goal.icon), { size: 20, color: goal.color })}
                     </View>
                     <View className="flex-1">
-                        <Text className="text-base font-bold text-text-primary" numberOfLines={1}>
+                        <Text className="text-base font-inter-bold text-text-primary" numberOfLines={1}>
                             {goal.title}
                         </Text>
                         <View className="flex-row items-center">
                             {isComplete ? (
-                                <Star size={11} color="#10B981" />
+                                <Star size={11} color={COLORS.semantic.profit} />
                             ) : (
-                                <CalendarDays size={11} color={daysLeft < 7 ? '#DC2626' : '#9CA3AF'} />
+                                <CalendarDays size={11} color={daysLeft < 7 ? COLORS.semantic.alertCritical : COLORS.text.tertiary} />
                             )}
                             <Text
-                                className="text-xs font-medium ml-0.5"
-                                style={{ color: daysLeft < 7 && !isComplete ? '#DC2626' : '#9CA3AF' }}
+                                className="text-xs font-inter-medium ml-0.5"
+                                style={{ color: daysLeft < 7 && !isComplete ? COLORS.semantic.alertCritical : COLORS.text.tertiary }}
                             >
                                 {isComplete ? 'Goal reached!' : deadlineLabel}
                             </Text>
@@ -108,19 +109,19 @@ const GoalCard: React.FC<{
                     accessibilityRole="button"
                     accessibilityLabel={`Delete the goal ${goal.title}`}
                 >
-                    <Trash2 color="#9CA3AF" size={16} />
+                    <Trash2 color={COLORS.text.tertiary} size={16} />
                 </TouchableOpacity>
             </View>
 
             {/* Amount row */}
             <View className="flex-row items-baseline mb-3">
                 <Text
-                    className="text-2xl font-bold"
-                    style={{ color: isComplete ? '#10B981' : goal.color }}
+                    className="text-2xl font-inter-bold"
+                    style={{ color: isComplete ? COLORS.semantic.profit : goal.color }}
                 >
                     ₹{goal.savedAmount.toLocaleString('en-IN')}
                 </Text>
-                <Text className="text-sm text-text-tertiary ml-1">
+                <Text className="text-sm text-text-tertiary ml-1 font-inter">
                     {' '}/ ₹{goal.targetAmount.toLocaleString('en-IN')}
                 </Text>
             </View>
@@ -128,7 +129,7 @@ const GoalCard: React.FC<{
             <BarFill
                 percent={progress}
                 height={12}
-                color={isComplete ? '#10B981' : goal.color}
+                color={isComplete ? COLORS.semantic.profit : goal.color}
                 style={{ marginBottom: 8 }}
             />
 
@@ -136,7 +137,7 @@ const GoalCard: React.FC<{
                 worth spending here is the one it cannot show. */}
             <View className="flex-row justify-end items-center mb-4">
                 {!isComplete && remaining > 0 && (
-                    <Text className="text-xs text-text-tertiary">
+                    <Text className="text-xs text-text-tertiary font-inter">
                         ₹{remaining.toLocaleString('en-IN')} to go
                     </Text>
                 )}
@@ -145,10 +146,10 @@ const GoalCard: React.FC<{
             {/* Suggestion chip */}
             {!isComplete && monthlySuggestion > 0 && (
                 <View className="bg-surface-secondary rounded-xl p-3 mb-3 flex-row items-center">
-                    <TrendingUp color="#6366F1" size={14} />
-                    <Text className="text-xs text-text-secondary ml-2">
+                    <TrendingUp color={COLORS.brand.primary} size={14} />
+                    <Text className="text-xs text-text-secondary ml-2 font-inter">
                         Save{' '}
-                        <Text className="font-semibold text-brand-primary">
+                        <Text className="font-inter-semibold text-brand-primary">
                             ₹{monthlySuggestion.toLocaleString('en-IN')}/mo
                         </Text>{' '}
                         to hit your goal on time
@@ -174,7 +175,7 @@ const GoalCard: React.FC<{
                         <Text
                             numberOfLines={1}
                             style={{ color: goal.color }}
-                            className="font-bold text-sm ml-1.5"
+                            className="font-inter-bold text-sm ml-1.5"
                         >
                             Add
                         </Text>
@@ -188,15 +189,15 @@ const GoalCard: React.FC<{
                         style={{ backgroundColor: goal.color }}
                     >
                         <Zap size={15} color="white" />
-                        <Text numberOfLines={1} className="text-white font-bold text-sm ml-1.5">
+                        <Text numberOfLines={1} className="text-white font-inter-bold text-sm ml-1.5">
                             Speed up
                         </Text>
                     </PressableScale>
                 </View>
             ) : (
                 <View className="bg-profit-bg rounded-xl py-2.5 items-center flex-row justify-center">
-                    <CheckCircle color="#10B981" size={16} />
-                    <Text className="text-profit font-semibold text-sm ml-2">Completed</Text>
+                    <CheckCircle color={COLORS.semantic.profit} size={16} />
+                    <Text className="text-profit font-inter-semibold text-sm ml-2">Completed</Text>
                 </View>
             )}
         </View>
@@ -225,14 +226,14 @@ const DepositModal: React.FC<{
                 className="flex-1 justify-end bg-black/40"
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View className="bg-white rounded-t-3xl p-6">
+                <View className="bg-surface-primary rounded-t-3xl p-6">
                     <View className="flex-row items-center mb-1">
-                        {React.createElement(goalIcon(goal?.icon), { size: 20, color: goal?.color ?? '#6366F1' })}
-                        <Text className="text-xl font-bold text-text-primary ml-2">
+                        {React.createElement(goalIcon(goal?.icon), { size: 20, color: goal?.color ?? COLORS.brand.primary })}
+                        <Text className="text-xl font-inter-bold text-text-primary ml-2">
                             Add to {goal?.title}
                         </Text>
                     </View>
-                    <Text className="text-sm text-text-secondary mb-5">
+                    <Text className="text-sm text-text-secondary mb-5 font-inter">
                         ₹{goal?.savedAmount.toLocaleString('en-IN')} saved of ₹
                         {goal?.targetAmount.toLocaleString('en-IN')}
                     </Text>
@@ -254,8 +255,8 @@ const DepositModal: React.FC<{
                                 }
                             >
                                 <Text
-                                    className="text-xs font-semibold"
-                                    style={{ color: amount === String(q) ? goal?.color : '#6B7280' }}
+                                    className="text-xs font-inter-semibold"
+                                    style={{ color: amount === String(q) ? goal?.color : COLORS.text.secondary }}
                                 >
                                     ₹{q.toLocaleString('en-IN')}
                                 </Text>
@@ -265,11 +266,11 @@ const DepositModal: React.FC<{
 
                     {/* Custom amount */}
                     <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-6 flex-row items-center">
-                        <Text className="text-lg font-bold text-text-primary mr-2">₹</Text>
+                        <Text className="text-lg font-inter-bold text-text-primary mr-2">₹</Text>
                         <TextInput
-                            className="flex-1 text-lg font-bold text-text-primary"
+                            className="flex-1 text-lg font-inter-bold text-text-primary"
                             placeholder="Enter amount"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={COLORS.text.tertiary}
                             keyboardType="numeric"
                             value={amount}
                             onChangeText={setAmount}
@@ -277,7 +278,7 @@ const DepositModal: React.FC<{
                     </View>
 
                     {error && (
-                        <Text className="text-loss text-sm mb-4 leading-5">{error}</Text>
+                        <Text className="text-loss text-sm mb-4 leading-5 font-inter">{error}</Text>
                     )}
 
                     <View className="flex-row gap-3">
@@ -285,7 +286,7 @@ const DepositModal: React.FC<{
                             className="flex-1 border border-border rounded-xl py-3 items-center"
                             onPress={onClose}
                         >
-                            <Text className="text-text-secondary font-semibold">Cancel</Text>
+                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
                         </TouchableOpacity>
                         <PressableScale
                             containerStyle={{ flex: 1 }}
@@ -293,8 +294,8 @@ const DepositModal: React.FC<{
                             style={{
                                 backgroundColor:
                                     !amount || parseFloat(amount) <= 0
-                                        ? '#E5E7EB'
-                                        : goal?.color ?? '#6366F1',
+                                        ? COLORS.border.default
+                                        : goal?.color ?? COLORS.brand.primary,
                             }}
                             accessibilityRole="button"
                             onPress={() => {
@@ -303,7 +304,7 @@ const DepositModal: React.FC<{
                             }}
                             disabled={!amount || parseFloat(amount) <= 0}
                         >
-                            <Text className="text-white font-bold">Confirm</Text>
+                            <Text className="text-white font-inter-bold">Confirm</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -315,8 +316,8 @@ const DepositModal: React.FC<{
 // ─── Add Goal Modal ───────────────────────────────────────────
 
 const GOAL_COLORS = [
-    '#6366F1', '#10B981', '#F59E0B', '#EF4444',
-    '#8B5CF6', '#EC4899', '#3B82F6', '#14B8A6',
+    COLORS.brand.primary, COLORS.semantic.profit, COLORS.semantic.alertAmberFill, COLORS.semantic.loss,
+    COLORS.brand.primaryDark, '#BE185D', '#1D4ED8', '#0F766E',
 ];
 
 const AddGoalModal: React.FC<{
@@ -332,7 +333,7 @@ const AddGoalModal: React.FC<{
     const [deadlineDate, setDeadlineDate] = useState(() => addMonths(new Date(), 3));
     const [pickerOpen, setPickerOpen] = useState(false);
     const [selectedIcon, setSelectedIcon] = useState<string>(DEFAULT_GOAL_ICON_KEY);
-    const [selectedColor, setSelectedColor] = useState('#6366F1');
+    const [selectedColor, setSelectedColor] = useState(COLORS.brand.primary);
 
     useEffect(() => {
         if (visible) {
@@ -340,7 +341,7 @@ const AddGoalModal: React.FC<{
             setTarget('');
             setDeadlineDate(addMonths(new Date(), 3));
             setSelectedIcon(DEFAULT_GOAL_ICON_KEY);
-            setSelectedColor('#6366F1');
+            setSelectedColor(COLORS.brand.primary);
         }
     }, [visible]);
 
@@ -367,13 +368,13 @@ const AddGoalModal: React.FC<{
                 className="flex-1 justify-end bg-black/40"
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View className="bg-white rounded-t-3xl p-6">
-                    <Text className="text-xl font-bold text-text-primary mb-5">
+                <View className="bg-surface-primary rounded-t-3xl p-6">
+                    <Text className="text-xl font-inter-bold text-text-primary mb-5">
                         New Savings Goal
                     </Text>
 
                     {/* Emoji picker */}
-                    <Text className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
+                    <Text className="text-xs font-inter-semibold text-text-secondary mb-2 uppercase tracking-wide">
                         Pick an icon
                     </Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
@@ -391,7 +392,7 @@ const AddGoalModal: React.FC<{
                                             }`}
                                         onPress={() => setSelectedIcon(key)}
                                     >
-                                        <Icon size={20} color={isSelected ? selectedColor : '#6B7280'} />
+                                        <Icon size={20} color={isSelected ? selectedColor : COLORS.text.secondary} />
                                     </TouchableOpacity>
                                 );
                             })}
@@ -399,7 +400,7 @@ const AddGoalModal: React.FC<{
                     </ScrollView>
 
                     {/* Color picker */}
-                    <Text className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
+                    <Text className="text-xs font-inter-semibold text-text-secondary mb-2 uppercase tracking-wide">
                         Accent color
                     </Text>
                     <View className="flex-row gap-2 mb-4">
@@ -423,11 +424,11 @@ const AddGoalModal: React.FC<{
 
                     {/* Goal title */}
                     <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-3">
-                        <Text className="text-xs text-text-tertiary mb-1">Goal name</Text>
+                        <Text className="text-xs text-text-tertiary mb-1 font-inter">Goal name</Text>
                         <TextInput
-                            className="text-base text-text-primary font-medium"
+                            className="text-base text-text-primary font-inter-medium"
                             placeholder="e.g. Emergency Fund, Goa Trip"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={COLORS.text.tertiary}
                             value={title}
                             onChangeText={setTitle}
                         />
@@ -437,11 +438,11 @@ const AddGoalModal: React.FC<{
                     <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-3 flex-row items-center">
                         <Text className="text-text-secondary mr-2">₹</Text>
                         <View className="flex-1">
-                            <Text className="text-xs text-text-tertiary mb-1">Target amount</Text>
+                            <Text className="text-xs text-text-tertiary mb-1 font-inter">Target amount</Text>
                             <TextInput
-                                className="text-base text-text-primary font-medium"
+                                className="text-base text-text-primary font-inter-medium"
                                 placeholder="50000"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={COLORS.text.tertiary}
                                 keyboardType="numeric"
                                 value={target}
                                 onChangeText={setTarget}
@@ -459,12 +460,12 @@ const AddGoalModal: React.FC<{
                         accessibilityLabel={`Target date, ${format(deadlineDate, 'd MMMM yyyy')}. Tap to change.`}
                     >
                         <View>
-                            <Text className="text-xs text-text-tertiary mb-1">Target date</Text>
-                            <Text className="text-base text-text-primary font-medium">
+                            <Text className="text-xs text-text-tertiary mb-1 font-inter">Target date</Text>
+                            <Text className="text-base text-text-primary font-inter-medium">
                                 {format(deadlineDate, 'd MMM yyyy')}
                             </Text>
                         </View>
-                        <CalendarDays size={18} color="#9CA3AF" />
+                        <CalendarDays size={18} color={COLORS.text.tertiary} />
                     </TouchableOpacity>
 
                     {pickerOpen && (
@@ -484,7 +485,7 @@ const AddGoalModal: React.FC<{
                     )}
 
                     {error && (
-                        <Text className="text-loss text-sm mb-4 leading-5">{error}</Text>
+                        <Text className="text-loss text-sm mb-4 leading-5 font-inter">{error}</Text>
                     )}
 
                     <View className="flex-row gap-3">
@@ -492,7 +493,7 @@ const AddGoalModal: React.FC<{
                             className="flex-1 border border-border rounded-xl py-3 items-center"
                             onPress={onClose}
                         >
-                            <Text className="text-text-secondary font-semibold">Cancel</Text>
+                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
                         </TouchableOpacity>
                         <PressableScale
                             containerStyle={{ flex: 1 }}
@@ -501,7 +502,7 @@ const AddGoalModal: React.FC<{
                             onPress={handleSave}
                             accessibilityRole="button"
                         >
-                            <Text className="text-white font-bold">Create goal</Text>
+                            <Text className="text-white font-inter-bold">Create goal</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -519,26 +520,26 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
     const overallPct = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
     return (
-        <View className="mx-4 mt-3 bg-brand-primary rounded-2xl p-4">
+        <View className="mx-5 mt-3 bg-brand-primary-dark rounded-card p-4">
             <View className="flex-row justify-between items-center mb-3">
                 <View>
-                    <Text className="text-white/70 text-xs mb-0.5">Total saved</Text>
-                    <Text className="text-white text-2xl font-bold">
+                    <Text className="text-white/70 text-xs mb-0.5 font-inter">Total saved</Text>
+                    <Text className="text-white text-2xl font-inter-bold">
                         ₹{totalSaved.toLocaleString('en-IN')}
                     </Text>
-                    <Text className="text-white/70 text-xs">
+                    <Text className="text-white/70 text-xs font-inter">
                         of ₹{totalTarget.toLocaleString('en-IN')} across {goals.length} goal
                         {goals.length !== 1 ? 's' : ''}
                     </Text>
                 </View>
                 <View className="items-center">
                     <View className="w-14 h-14 rounded-full border-4 border-white/30 items-center justify-center">
-                        <Text className="text-white font-bold text-lg">{overallPct}%</Text>
+                        <Text className="text-white font-inter-bold text-lg">{overallPct}%</Text>
                     </View>
                     {completed > 0 && (
                         <View className="flex-row items-center mt-1">
                             <Star size={11} color="rgba(255,255,255,0.8)" />
-                            <Text className="text-white/80 text-xs ml-1">
+                            <Text className="text-white/80 text-xs ml-1 font-inter">
                                 {completed} done
                             </Text>
                         </View>
@@ -546,7 +547,7 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
                 </View>
             </View>
 
-            <BarFill percent={overallPct} trackClassName="bg-white/20" fillClassName="bg-white" />
+            <BarFill percent={overallPct} trackClassName="bg-white/20" fillClassName="bg-surface-primary" />
         </View>
     );
 };
@@ -620,27 +621,27 @@ export const GoalsScreen: React.FC = () => {
                 contentContainerStyle={{ paddingBottom: 100 }}
             >
                 {/* Header */}
-                <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
+                <View className="px-5 pt-4 pb-2 flex-row justify-between items-center">
                     <View>
-                        <Text className="text-2xl font-bold text-text-primary">
+                        <Text style={TYPE.title} className="text-text-primary">
                             Savings goals
                         </Text>
-                        <Text className="text-sm text-text-secondary">
+                        <Text className="text-sm text-text-secondary font-inter">
                             {goals.length === 0
                                 ? 'Nothing set yet'
                                 : `${goals.length} goal${goals.length === 1 ? '' : 's'} on the go`}
                         </Text>
                     </View>
                     <View className="flex-row items-center gap-3">
-                        {loading && <ActivityIndicator size="small" color="#6366F1" />}
+                        {loading && <ActivityIndicator size="small" color={COLORS.brand.primary} />}
                         <PressableScale
                             onPress={() => navigation.navigate('Profile' as never)}
                             activeScale={0.92}
                             accessibilityRole="button"
                             accessibilityLabel="Your profile"
-                            className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                            className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
                         >
-                            <Text className="text-white font-bold text-base">{userInitial}</Text>
+                            <Text className="text-white font-inter-bold text-base">{userInitial}</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -651,10 +652,10 @@ export const GoalsScreen: React.FC = () => {
                 {error && (
                     <Animated.View
                         entering={FadeIn.duration(200)}
-                        className="mx-4 mt-2 flex-row items-center bg-white border border-border rounded-xl px-3 py-2.5"
+                        className="mx-5 mt-2 flex-row items-center bg-surface-primary border border-border rounded-xl px-3 py-2.5"
                     >
-                        <CloudOff size={14} color="#6B7280" />
-                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4">
+                        <CloudOff size={14} color={COLORS.text.secondary} />
+                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4 font-inter">
                             {error}
                         </Text>
                     </Animated.View>
@@ -683,7 +684,7 @@ export const GoalsScreen: React.FC = () => {
                         ))
                     ) : (
                         <EmptyState
-                            icon={<PiggyBank color="#6366F1" size={36} />}
+                            icon={<PiggyBank color={COLORS.brand.primary} size={36} />}
                             title="No goals yet"
                             body="Set one savings goal, a trip, an emergency fund, a new phone, and this screen tracks how close you are and what it takes each month."
                             actionLabel="Create your first goal"
@@ -695,7 +696,7 @@ export const GoalsScreen: React.FC = () => {
 
             {goals.length > 0 && (
                 <PressableScale
-                    className="absolute bottom-6 right-6 bg-brand-primary w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                    className="absolute bottom-6 right-6 bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center shadow-lg"
                     onPress={() => setAddModalVisible(true)}
                     activeScale={0.92}
                     accessibilityRole="button"

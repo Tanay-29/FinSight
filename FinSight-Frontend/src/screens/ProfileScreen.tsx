@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
-import { COLORS } from '../theme/tokens';
+import { COLORS, TYPE } from '../theme/tokens';
 import Constants from 'expo-constants';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
@@ -53,9 +53,9 @@ const SettingsRow: React.FC<{
             <Text className={`text-base ${danger ? 'text-loss' : 'text-text-primary'}`}>
                 {label}
             </Text>
-            {hint ? <Text className="text-xs text-text-tertiary mt-0.5">{hint}</Text> : null}
+            {hint ? <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{hint}</Text> : null}
         </View>
-        {rightElement ?? <ChevronRight size={16} color="#9CA3AF" />}
+        {rightElement ?? <ChevronRight size={16} color={COLORS.text.tertiary} />}
     </Pressable>
 );
 
@@ -166,7 +166,7 @@ export const ProfileScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 80 }}
             >
-                <View className="px-4 pt-4 pb-2 flex-row items-center">
+                <View className="px-5 pt-4 pb-2 flex-row items-center">
                     <TouchableOpacity
                         onPress={() => navigation.goBack()}
                         className="mr-2 -ml-1"
@@ -174,24 +174,24 @@ export const ProfileScreen: React.FC = () => {
                         accessibilityRole="button"
                         accessibilityLabel="Go back"
                     >
-                        <ChevronLeft size={26} color="#111827" />
+                        <ChevronLeft size={26} color={COLORS.text.primary} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-text-primary">Profile</Text>
+                    <Text style={TYPE.heading} className="text-text-primary">Profile</Text>
                 </View>
 
                 {/* User Card */}
-                <View className="mx-4 mt-3 bg-white border border-border rounded-xl p-4">
+                <View className="mx-5 mt-3 bg-surface-primary border border-border rounded-xl p-4">
                     <View className="flex-row items-center">
-                        <View className="w-16 h-16 rounded-full bg-brand-primary items-center justify-center mr-4">
-                            <Text className="text-2xl text-white font-bold">{initial}</Text>
+                        <View className="w-16 h-16 rounded-full bg-brand-primary-dark items-center justify-center mr-4">
+                            <Text className="text-2xl text-white font-inter-bold">{initial}</Text>
                         </View>
                         <View className="flex-1">
-                            <Text className="text-xl font-bold text-text-primary">{displayName}</Text>
-                            {email ? <Text className="text-sm text-text-secondary">{email}</Text> : null}
+                            <Text className="text-xl font-inter-bold text-text-primary">{displayName}</Text>
+                            {email ? <Text className="text-sm text-text-secondary font-inter">{email}</Text> : null}
                             <View className="flex-row items-center mt-1.5">
                                 <View className="bg-brand-primary/10 rounded-full px-3 py-1 flex-row items-center">
-                                    <Flame size={11} color="#6366F1" />
-                                    <Text className="text-xs font-semibold text-brand-primary ml-1">
+                                    <Flame size={11} color={COLORS.brand.primary} />
+                                    <Text className="text-xs font-inter-semibold text-brand-primary ml-1">
                                         {streak > 0 ? `${streak} day streak` : 'No streak yet'}
                                     </Text>
                                 </View>
@@ -201,16 +201,16 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {isPremium ? (
-                    <View className="mx-4 mt-4 bg-white border border-border rounded-xl p-4">
+                    <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4">
                         <View className="flex-row items-center">
-                            <View className="w-9 h-9 rounded-xl bg-indigo-50 items-center justify-center mr-3">
-                                <Sparkles size={18} color="#6366F1" />
+                            <View className="w-9 h-9 rounded-xl bg-brand-soft items-center justify-center mr-3">
+                                <Sparkles size={18} color={COLORS.brand.primary} />
                             </View>
                             <View className="flex-1">
-                                <Text className="text-base font-bold text-text-primary">
+                                <Text className="text-base font-inter-bold text-text-primary">
                                     FinSight Plus is on
                                 </Text>
-                                <Text className="text-xs text-text-secondary mt-0.5">
+                                <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                                     {entitlement?.renewsAt
                                         ? `Trial runs to ${new Date(entitlement.renewsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
                                         : 'Active on this account'}
@@ -221,7 +221,7 @@ export const ProfileScreen: React.FC = () => {
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                 accessibilityRole="button"
                             >
-                                <Text className="text-sm font-semibold text-text-secondary">Turn off</Text>
+                                <Text className="text-sm font-inter-semibold text-text-secondary">Turn off</Text>
                             </TouchableOpacity>
                         </View>
                         <Text className="text-[11px] text-text-tertiary mt-3 leading-4">
@@ -233,14 +233,14 @@ export const ProfileScreen: React.FC = () => {
                     <PressableScale
                         onPress={() => navigation.navigate('Paywall' as never)}
                         accessibilityRole="button"
-                        className="mx-4 mt-4 bg-brand-primary rounded-xl p-4 flex-row items-center"
+                        className="mx-5 mt-4 bg-brand-primary-dark rounded-card p-4 flex-row items-center"
                     >
                         <View className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center mr-3">
                             <Sparkles size={18} color="#FFFFFF" />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-base font-bold text-white">FinSight Plus</Text>
-                            <Text className="text-xs text-indigo-100 mt-0.5">
+                            <Text className="text-base font-inter-bold text-white">FinSight Plus</Text>
+                            <Text className="text-xs text-brand-edge mt-0.5 font-inter">
                                 Your coach and flashcards, whenever you want them
                             </Text>
                         </View>
@@ -249,10 +249,10 @@ export const ProfileScreen: React.FC = () => {
                 )}
 
                 {/* Primary Goal, read from the user's real goals */}
-                <View className="mx-4 mt-4 bg-white border border-border rounded-xl p-4">
+                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4">
                     <View className="flex-row items-center mb-3">
-                        <Target size={20} color="#6366F1" />
-                        <Text className="text-lg font-semibold text-text-primary ml-2">
+                        <Target size={20} color={COLORS.brand.primary} />
+                        <Text className="text-lg font-inter-semibold text-text-primary ml-2">
                             Primary goal
                         </Text>
                     </View>
@@ -264,11 +264,11 @@ export const ProfileScreen: React.FC = () => {
                                     size: 16,
                                     color: primaryGoal.color,
                                 })}
-                                <Text className="text-base font-semibold text-text-primary ml-2">
+                                <Text className="text-base font-inter-semibold text-text-primary ml-2">
                                     {primaryGoal.title}
                                 </Text>
                             </View>
-                            <Text className="text-sm text-text-secondary mb-3">
+                            <Text className="text-sm text-text-secondary mb-3 font-inter">
                                 Target: ₹{primaryGoal.targetAmount.toLocaleString('en-IN')}
                             </Text>
                             <BarFill
@@ -276,11 +276,11 @@ export const ProfileScreen: React.FC = () => {
                                     (primaryGoal.savedAmount / primaryGoal.targetAmount) * 100,
                                     100
                                 )}
-                                trackClassName="bg-white"
+                                trackClassName="bg-surface-primary"
                                 fillClassName="bg-profit"
                             />
                             <Text
-                                className="text-xs text-text-tertiary mt-1"
+                                className="text-xs text-text-tertiary mt-1 font-inter"
                                 style={{ fontVariant: ['tabular-nums'] }}
                             >
                                 ₹{primaryGoal.savedAmount.toLocaleString('en-IN')} / ₹
@@ -290,7 +290,7 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                     ) : (
                         <View className="bg-surface-secondary rounded-xl p-4">
-                            <Text className="text-sm text-text-secondary">
+                            <Text className="text-sm text-text-secondary font-inter">
                                 No goals yet. Create one from the Goals tab to see your progress here.
                             </Text>
                         </View>
@@ -298,84 +298,84 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* Settings */}
-                <View className="mx-4 mt-4 bg-white border border-border rounded-xl overflow-hidden">
+                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl overflow-hidden">
                     <View className="px-4 py-3 border-b border-border">
-                        <Text className="text-lg font-semibold text-text-primary">Settings</Text>
+                        <Text className="text-lg font-inter-semibold text-text-primary">Settings</Text>
                     </View>
 
                     <SettingsRow
-                        icon={<Bell size={16} color="#6B7280" />}
+                        icon={<Bell size={16} color={COLORS.text.secondary} />}
                         label="Budget alerts"
                         hint="Warn me when a category nears its limit"
                         rightElement={
                             <Switch
                                 value={notificationsEnabled}
                                 onValueChange={(v) => setPreference({ notifications: v })}
-                                trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
-                                thumbColor={notificationsEnabled ? '#6366F1' : '#9CA3AF'}
+                                trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
+                                thumbColor={notificationsEnabled ? COLORS.brand.primary : COLORS.text.tertiary}
                             />
                         }
                     />
                     <SettingsRow
-                        icon={<RefreshCw size={16} color="#6B7280" />}
+                        icon={<RefreshCw size={16} color={COLORS.text.secondary} />}
                         label="Read pasted bank messages"
                         hint="Detect amount and category from pasted bank SMS"
                         rightElement={
                             <Switch
                                 value={autoTrackingEnabled}
                                 onValueChange={(v) => setPreference({ autoTracking: v })}
-                                trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
-                                thumbColor={autoTrackingEnabled ? '#6366F1' : '#9CA3AF'}
+                                trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
+                                thumbColor={autoTrackingEnabled ? COLORS.brand.primary : COLORS.text.tertiary}
                             />
                         }
                     />
                     <SettingsRow
-                        icon={<Lock size={16} color="#6B7280" />}
+                        icon={<Lock size={16} color={COLORS.text.secondary} />}
                         label="Privacy and data"
                         onPress={handlePrivacy}
                     />
                     <SettingsRow
-                        icon={<Upload size={16} color="#6B7280" />}
+                        icon={<Upload size={16} color={COLORS.text.secondary} />}
                         label="Export your data"
                         hint="Save a copy of everything FinSight stores"
                         onPress={handleExport}
                         disabled={exporting}
                         rightElement={
                             exporting
-                                ? <ActivityIndicator size="small" color="#6366F1" />
+                                ? <ActivityIndicator size="small" color={COLORS.brand.primary} />
                                 : undefined
                         }
                     />
                     <SettingsRow
-                        icon={<Info size={16} color="#6B7280" />}
+                        icon={<Info size={16} color={COLORS.text.secondary} />}
                         label="About FinSight"
                         hint="What this app is, and what it is not"
                         onPress={handleAbout}
                     />
                     <SettingsRow
-                        icon={<Trash2 size={16} color="#EF4444" />}
+                        icon={<Trash2 size={16} color={COLORS.semantic.loss} />}
                         label="Delete account"
                         danger
                         onPress={handleDeleteAccount}
                         disabled={deleting}
                         rightElement={
                             deleting
-                                ? <ActivityIndicator size="small" color="#EF4444" />
+                                ? <ActivityIndicator size="small" color={COLORS.semantic.loss} />
                                 : undefined
                         }
                     />
                 </View>
 
                 <PressableScale
-                    className="mx-4 mt-4 bg-white border border-border rounded-xl p-4 items-center"
+                    className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4 items-center"
                     onPress={handleLogout}
                     accessibilityRole="button"
                 >
-                    <Text className="text-base font-semibold text-loss">Sign out</Text>
+                    <Text className="text-base font-inter-semibold text-loss">Sign out</Text>
                 </PressableScale>
 
                 <View className="items-center py-6">
-                    <Text className="text-xs text-text-tertiary">FinSight v{appVersion}</Text>
+                    <Text className="text-xs text-text-tertiary font-inter">FinSight v{appVersion}</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>

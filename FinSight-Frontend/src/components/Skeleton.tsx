@@ -13,6 +13,7 @@
 import React from 'react';
 import { View, ViewStyle } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
+import { COLORS } from '../theme/tokens';
 
 interface SkeletonProps {
     width?: number | `${number}%`;
@@ -32,7 +33,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     return (
         <Animated.View
             style={[
-                { width, height, borderRadius: radius, backgroundColor: '#E5E7EB' },
+                { width, height, borderRadius: radius, backgroundColor: COLORS.border.default },
                 // Reduced motion keeps the placeholder, drops the breathing.
                 reduced
                     ? { opacity: 0.7 }
@@ -54,8 +55,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
 /** Placeholder shaped like one course card on the Learn tab. */
 export const CourseCardSkeleton: React.FC = () => (
-    <View className="mb-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <View style={{ height: 3, backgroundColor: '#E5E7EB' }} />
+    <View className="mb-4 bg-surface-primary rounded-2xl border border-border overflow-hidden">
+        <View style={{ height: 3, backgroundColor: COLORS.border.default }} />
         <View className="p-4">
             <Skeleton width="65%" height={16} />
             <View style={{ height: 8 }} />
@@ -86,7 +87,7 @@ export const TransactionRowSkeleton: React.FC = () => (
 
 /** Placeholder shaped like one stat tile. */
 export const StatCardSkeleton: React.FC = () => (
-    <View className="flex-1 bg-white rounded-2xl p-4 items-center border border-gray-100">
+    <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
         <Skeleton width={40} height={40} radius={20} />
         <View style={{ height: 8 }} />
         <Skeleton width="45%" height={20} />

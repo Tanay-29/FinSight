@@ -22,6 +22,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../store/hooks';
 import { format, parseISO } from 'date-fns';
+import { FONTS, COLORS } from '../theme/tokens';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -57,25 +58,25 @@ const BUCKET_META: Record<Bucket, {
     needs: {
         label: 'Needs',
         target: 50,
-        color: '#3B82F6',
-        lightColor: '#EFF6FF',
-        icon: <Home size={18} color="#3B82F6" />,
+        color: '#1D4ED8',
+        lightColor: '#F2F5FD',
+        icon: <Home size={18} color="#1D4ED8" />,
         description: 'Essentials - groceries, rent, utilities, transport, health',
     },
     wants: {
         label: 'Wants',
         target: 30,
-        color: '#8B5CF6',
-        lightColor: '#F5F3FF',
-        icon: <Coffee size={18} color="#8B5CF6" />,
+        color: COLORS.brand.primaryDark,
+        lightColor: COLORS.brand.soft,
+        icon: <Coffee size={18} color={COLORS.brand.primaryDark} />,
         description: 'Lifestyle - dining, shopping, entertainment, education',
     },
     savings: {
         label: 'Savings',
         target: 20,
-        color: '#10B981',
-        lightColor: '#ECFDF5',
-        icon: <TrendingUp size={18} color="#10B981" />,
+        color: COLORS.semantic.profit,
+        lightColor: '#EFF7F2',
+        icon: <TrendingUp size={18} color={COLORS.semantic.profit} />,
         description: 'Future - investments, SIP, goal deposits',
     },
 };
@@ -97,7 +98,7 @@ const GaugeBar: React.FC<{
     const clampedActual = Math.min(actual, 100);
     const isOver = actual > target;
     return (
-        <View style={{ height: 10, backgroundColor: '#F3F4F6', borderRadius: 5, overflow: 'hidden', marginTop: 8, marginBottom: 4 }}>
+        <View style={{ height: 10, backgroundColor: COLORS.surface.tertiary, borderRadius: 5, overflow: 'hidden', marginTop: 8, marginBottom: 4 }}>
             {/* Target marker */}
             <View style={{
                 position: 'absolute', left: `${target}%`, top: -2, bottom: -2,
@@ -107,7 +108,7 @@ const GaugeBar: React.FC<{
             <View style={{
                 height: '100%',
                 width: `${clampedActual}%`,
-                backgroundColor: isOver ? '#EF4444' : color,
+                backgroundColor: isOver ? COLORS.semantic.loss : color,
                 borderRadius: 5,
             }} />
         </View>
@@ -133,7 +134,7 @@ const BucketCard: React.FC<{
     const isOver = delta > 0;
     const isGood = Math.abs(delta) <= 5; // within 5% is fine
 
-    const statusColor = isGood ? '#10B981' : isOver ? '#EF4444' : '#F59E0B';
+    const statusColor = isGood ? COLORS.semantic.profit : isOver ? COLORS.semantic.loss : COLORS.semantic.alertAmberFill;
     const StatusIcon = isGood ? CheckCircle : isOver ? XCircle : AlertTriangle;
 
     const cats = Object.entries(categoryBreakdown)
@@ -152,7 +153,7 @@ const BucketCard: React.FC<{
             borderRadius: 20,
             marginBottom: 12,
             borderWidth: 1.5,
-            borderColor: expanded ? meta.color + '40' : '#F3F4F6',
+            borderColor: expanded ? meta.color + '40' : COLORS.surface.tertiary,
             overflow: 'hidden',
         }}>
             <TouchableOpacity
@@ -171,21 +172,21 @@ const BucketCard: React.FC<{
                             {meta.icon}
                         </View>
                         <View>
-                            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>{meta.label}</Text>
-                            <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Target: {meta.target}%</Text>
+                            <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: COLORS.text.primary }}>{meta.label}</Text>
+                            <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Target: {meta.target}%</Text>
                         </View>
                     </View>
 
                     <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8, alignSelf: 'center' }}>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>
+                            <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
                                 {actualPct.toFixed(1)}%
                             </Text>
-                            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                            <Text style={{ fontSize: 12, color: COLORS.text.secondary }}>
                                 ₹{spend.toLocaleString('en-IN')}
                             </Text>
                         </View>
-                        {expanded ? <ChevronUp size={16} color="#9CA3AF" /> : <ChevronDown size={16} color="#9CA3AF" />}
+                        {expanded ? <ChevronUp size={16} color={COLORS.text.tertiary} /> : <ChevronDown size={16} color={COLORS.text.tertiary} />}
                     </View>
                 </View>
 
@@ -196,7 +197,7 @@ const BucketCard: React.FC<{
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <StatusIcon size={13} color={statusColor} />
-                        <Text style={{ fontSize: 12, color: statusColor, fontWeight: '600' }}>
+                        <Text style={{ fontSize: 12, color: statusColor, fontFamily: FONTS.semibold }}>
                             {isGood
                                 ? 'On track'
                                 : isOver
@@ -205,7 +206,7 @@ const BucketCard: React.FC<{
                         </Text>
                     </View>
                     {basis > 0 && (
-                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
+                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>
                             ₹{Math.abs(((delta / 100) * basis)).toLocaleString('en-IN')}{' '}
                             {isOver ? 'over' : 'under'}
                         </Text>
@@ -216,8 +217,8 @@ const BucketCard: React.FC<{
             {/* Expanded category breakdown */}
             {expanded && cats.length > 0 && (
                 <View style={{ paddingHorizontal: 18, paddingBottom: 16 }}>
-                    <View style={{ height: 1, backgroundColor: '#F3F4F6', marginBottom: 12 }} />
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+                    <View style={{ height: 1, backgroundColor: COLORS.surface.tertiary, marginBottom: 12 }} />
+                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
                         Breakdown
                     </Text>
                     {cats.map(([cat, amt], i) => {
@@ -226,10 +227,10 @@ const BucketCard: React.FC<{
                             <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                                 <View style={{ flex: 1 }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                                        <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>
+                                        <Text style={{ fontSize: 13, fontFamily: FONTS.semibold, color: '#423C35' }}>
                                             {CATEGORY_DISPLAY[cat] ?? cat}
                                         </Text>
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
+                                        <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
                                             ₹{amt.toLocaleString('en-IN')}
                                         </Text>
                                     </View>
@@ -237,7 +238,7 @@ const BucketCard: React.FC<{
                                         percent={Math.max(catPct, 2)}
                                         height={4}
                                         color={meta.color + 'A0'}
-                                        trackClassName="bg-gray-100"
+                                        trackClassName="bg-surface-tertiary"
                                         delay={i * 40}
                                     />
                                 </View>
@@ -340,19 +341,19 @@ const MoneyManagerScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }} edges={['top']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
 
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
-                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
                 >
-                    <ChevronLeft size={20} color="#111827" />
+                    <ChevronLeft size={20} color={COLORS.text.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>Money manager</Text>
-                    <Text style={{ fontSize: 12, color: '#9CA3AF' }}>50 / 30 / 20 Rule · {format(new Date(), 'MMMM yyyy')}</Text>
+                    <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Money manager</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>50 / 30 / 20 Rule · {format(new Date(), 'MMMM yyyy')}</Text>
                 </View>
             </View>
 
@@ -362,15 +363,15 @@ const MoneyManagerScreen: React.FC = () => {
             >
                 {/* ── Total spend summary ─────────────────────── */}
                 <View style={{
-                    backgroundColor: '#6366F1',
+                    backgroundColor: COLORS.brand.primary,
                     borderRadius: 20,
                     padding: 20,
                     marginBottom: 20,
                 }}>
-                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: FONTS.semibold, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         Spent this month
                     </Text>
-                    <Text style={{ fontSize: 36, fontWeight: '900', color: '#FFFFFF', letterSpacing: -1, marginTop: 4 }}>
+                    <Text style={{ fontSize: 36, fontFamily: FONTS.bold, color: '#FFFFFF', letterSpacing: -1, marginTop: 4 }}>
                         ₹{totalSpend.toLocaleString('en-IN')}
                     </Text>
 
@@ -389,7 +390,7 @@ const MoneyManagerScreen: React.FC = () => {
                                 const pct = ((buckets[b] / income.amount) * 100).toFixed(0);
                                 return (
                                     <View key={b} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 10, alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFFFFF' }}>{pct}%</Text>
+                                        <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: '#FFFFFF' }}>{pct}%</Text>
                                         <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
                                             {BUCKET_META[b].label}
                                         </Text>
@@ -407,24 +408,24 @@ const MoneyManagerScreen: React.FC = () => {
                 {insight && (
                     <View style={{
                         flexDirection: 'row',
-                        backgroundColor: insight.type === 'success' ? '#ECFDF5' : insight.type === 'warning' ? '#FFF7ED' : '#EFF6FF',
+                        backgroundColor: insight.type === 'success' ? '#EFF7F2' : insight.type === 'warning' ? '#FDF5EC' : '#F2F5FD',
                         borderRadius: 16,
                         padding: 14,
                         marginBottom: 20,
                         borderWidth: 1,
-                        borderColor: insight.type === 'success' ? '#BBF7D0' : insight.type === 'warning' ? '#FED7AA' : '#BFDBFE',
+                        borderColor: insight.type === 'success' ? '#CDE8D9' : insight.type === 'warning' ? '#EED9C0' : COLORS.brand.edge,
                         alignItems: 'flex-start',
                         gap: 10,
                     }}>
                         {insight.type === 'success'
-                            ? <CheckCircle size={18} color="#10B981" style={{ marginTop: 1 }} />
+                            ? <CheckCircle size={18} color={COLORS.semantic.profit} style={{ marginTop: 1 }} />
                             : insight.type === 'warning'
-                            ? <TrendingDown size={18} color="#F97316" style={{ marginTop: 1 }} />
-                            : <Zap size={18} color="#3B82F6" style={{ marginTop: 1 }} />}
+                            ? <TrendingDown size={18} color="#C2410C" style={{ marginTop: 1 }} />
+                            : <Zap size={18} color="#1D4ED8" style={{ marginTop: 1 }} />}
                         <Text style={{
                             flex: 1, fontSize: 13, lineHeight: 19,
-                            color: insight.type === 'success' ? '#065F46' : insight.type === 'warning' ? '#9A3412' : '#1E3A8A',
-                            fontWeight: '500',
+                            color: insight.type === 'success' ? '#0A5C43' : insight.type === 'warning' ? '#8A4210' : '#1A3C7A',
+                            fontFamily: FONTS.medium,
                         }}>
                             {insight.msg}
                         </Text>
@@ -434,9 +435,9 @@ const MoneyManagerScreen: React.FC = () => {
                 {/* ── Bucket cards ────────────────────────────── */}
                 {totalSpend === 0 ? (
                     <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                        <ShoppingCart size={48} color="#E5E7EB" />
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#9CA3AF', marginTop: 16 }}>No transactions this month</Text>
-                        <Text style={{ fontSize: 13, color: '#D1D5DB', marginTop: 6, textAlign: 'center' }}>
+                        <ShoppingCart size={48} color={COLORS.border.default} />
+                        <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: COLORS.text.tertiary, marginTop: 16 }}>No transactions this month</Text>
+                        <Text style={{ fontSize: 13, color: COLORS.border.strong, marginTop: 6, textAlign: 'center' }}>
                             Add some transactions and your 50/30/20 breakdown will appear here.
                         </Text>
                     </View>
@@ -456,14 +457,14 @@ const MoneyManagerScreen: React.FC = () => {
                 )}
 
                 {/* ── About the rule ──────────────────────────── */}
-                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#F3F4F6', marginTop: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>About the 50/30/20 Rule</Text>
-                    <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 18 }}>
+                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary, marginTop: 4 }}>
+                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 8 }}>About the 50/30/20 Rule</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 18 }}>
                         Popularised by US Senator Elizabeth Warren, this framework splits after-tax income into three buckets:
                         {'\n\n'}
-                        <Text style={{ fontWeight: '700', color: '#3B82F6' }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
-                        <Text style={{ fontWeight: '700', color: '#8B5CF6' }}>30% Wants</Text> - Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
-                        <Text style={{ fontWeight: '700', color: '#10B981' }}>20% Savings</Text> - Pay yourself first: SIPs, emergency fund, goal deposits.
+                        <Text style={{ fontFamily: FONTS.bold, color: '#1D4ED8' }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
+                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.brand.primaryDark }}>30% Wants</Text> - Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
+                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.semantic.profit }}>20% Savings</Text> - Pay yourself first: SIPs, emergency fund, goal deposits.
                     </Text>
                 </View>
             </ScrollView>

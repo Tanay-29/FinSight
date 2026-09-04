@@ -24,9 +24,10 @@ import Animated, {
     Easing,
     useReducedMotion,
 } from 'react-native-reanimated';
+import { MOTION } from '../theme/tokens';
 
 /** Strong ease-out. The bar covers most of its length early, then settles. */
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const EASE_OUT = Easing.bezier(...MOTION.easing.reveal);
 
 interface BarFillProps {
     /** 0 to 100. Values above 100 are clamped by the caller if that matters. */
@@ -61,7 +62,7 @@ export const BarFill: React.FC<BarFillProps> = ({
             width.set(percent);
             return;
         }
-        width.set(withDelay(delay, withTiming(percent, { duration: 520, easing: EASE_OUT })));
+        width.set(withDelay(delay, withTiming(percent, { duration: MOTION.reveal, easing: EASE_OUT })));
     }, [percent, delay, reduced, width]);
 
     const animatedStyle = useAnimatedStyle(() => ({

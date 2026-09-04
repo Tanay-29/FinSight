@@ -23,6 +23,7 @@ import { selectIsPremium } from '../store/slices/premiumSlice';
 import { AnimatedNumber } from './AnimatedNumber';
 import { PressableScale } from './PressableScale';
 import { Skeleton } from './Skeleton';
+import { FONTS, COLORS, TYPE } from '../theme/tokens';
 
 // ─── Gauge config ─────────────────────────────────────────────
 
@@ -51,19 +52,19 @@ const TRACK_D  = describeArc(CX, CY, RADIUS, 210, 360) + ` A ${RADIUS} ${RADIUS}
 // ─── Grade helper ──────────────────────────────────────────────
 
 function getGrade(score: number): { label: string; color: string } {
-    if (score >= 900) return { label: 'Financial Genius',  color: '#10B981' };
-    if (score >= 750) return { label: 'Expert',            color: '#22C55E' };
-    if (score >= 600) return { label: 'Disciplined',       color: '#84CC16' };
-    if (score >= 450) return { label: 'Building Habits',   color: '#F59E0B' };
-    if (score >= 300) return { label: 'Getting Started',   color: '#F97316' };
-    return                    { label: 'Needs Attention',  color: '#EF4444' };
+    if (score >= 900) return { label: 'Financial Genius',  color: COLORS.semantic.profit };
+    if (score >= 750) return { label: 'Expert',            color: '#17924A' };
+    if (score >= 600) return { label: 'Disciplined',       color: '#5F8C0C' };
+    if (score >= 450) return { label: 'Building Habits',   color: COLORS.semantic.alertAmberFill };
+    if (score >= 300) return { label: 'Getting Started',   color: '#C2410C' };
+    return                    { label: 'Needs Attention',  color: COLORS.semantic.loss };
 }
 
 /** Icon and tint for quest 1, 2 and 3, in order. */
 const QUEST_ICONS = [
-    { Icon: Target, color: '#6366F1' },
-    { Icon: BookOpen, color: '#8B5CF6' },
-    { Icon: TrendingUp, color: '#10B981' },
+    { Icon: Target, color: COLORS.brand.primary },
+    { Icon: BookOpen, color: COLORS.brand.primaryDark },
+    { Icon: TrendingUp, color: COLORS.semantic.profit },
 ] as const;
 
 // ─── Arc Gauge ────────────────────────────────────────────────
@@ -94,9 +95,9 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
             <Svg width={GAUGE_SIZE} height={GAUGE_SIZE * 0.75}>
                 <Defs>
                     <LinearGradient id="gaugeFill" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <Stop offset="0%" stopColor="#6366F1" />
-                        <Stop offset="50%" stopColor="#8B5CF6" />
-                        <Stop offset="100%" stopColor="#10B981" />
+                        <Stop offset="0%" stopColor={COLORS.brand.primary} />
+                        <Stop offset="50%" stopColor={COLORS.brand.primaryDark} />
+                        <Stop offset="100%" stopColor={COLORS.semantic.profit} />
                     </LinearGradient>
                 </Defs>
 
@@ -104,7 +105,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                 <Path
                     d={TRACK_D}
                     fill="none"
-                    stroke="#E5E7EB"
+                    stroke={COLORS.border.default}
                     strokeWidth={STROKE}
                     strokeLinecap="round"
                 />
@@ -143,14 +144,24 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                     height: GAUGE_SIZE * 0.75, alignItems: 'center', justifyContent: 'center',
                 }}
             >
+                {/* The one hero number in the app, and the reason the display
+                    face exists. Instrument Serif ships a single weight, so
+                    there is no fontWeight here on purpose: the emphasis comes
+                    from the size. */}
                 <AnimatedNumber
                     value={score}
-                    style={{ fontSize: 34, fontWeight: '800', color: '#111827', fontVariant: ['tabular-nums'] }}
+                    style={{
+                        ...TYPE.display,
+                        color: COLORS.text.primary,
+                        fontVariant: ['tabular-nums'],
+                    }}
                 />
-                <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>/ 1000</Text>
+                <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginTop: 2 }}>
+                    of 1000
+                </Text>
             </View>
 
-            <Text style={{ fontSize: 14, fontWeight: '700', color: grade.color, marginTop: -12 }}>
+            <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: grade.color, marginTop: -12 }}>
                 {grade.label}
             </Text>
         </View>
@@ -207,8 +218,8 @@ const FinSightIQCard: React.FC = () => {
             backgroundColor: '#FFFFFF',
             borderRadius: 24,
             borderWidth: 1.5,
-            borderColor: '#EEF2FF',
-            shadowColor: '#6366F1',
+            borderColor: COLORS.brand.soft,
+            shadowColor: COLORS.brand.primary,
             shadowOpacity: 0.08,
             shadowRadius: 16,
             elevation: 4,
@@ -220,10 +231,10 @@ const FinSightIQCard: React.FC = () => {
                 paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8,
             }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' }}>
-                        <BrainCircuit size={18} color="#6366F1" />
+                    <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center' }}>
+                        <BrainCircuit size={18} color={COLORS.brand.primary} />
                     </View>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }}>FinSight IQ</Text>
+                    <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary }}>FinSight IQ</Text>
                 </View>
                 <PressableScale
                     onPress={handleRefresh}
@@ -232,11 +243,11 @@ const FinSightIQCard: React.FC = () => {
                     accessibilityRole="button"
                     accessibilityLabel="Get a fresh read on your score"
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.surface.secondary, alignItems: 'center', justifyContent: 'center' }}
                 >
                     {adviceLoading
-                        ? <ActivityIndicator size="small" color="#6366F1" />
-                        : <RefreshCw size={15} color="#9CA3AF" />}
+                        ? <ActivityIndicator size="small" color={COLORS.brand.primary} />
+                        : <RefreshCw size={15} color={COLORS.text.tertiary} />}
                 </PressableScale>
             </View>
 
@@ -249,29 +260,29 @@ const FinSightIQCard: React.FC = () => {
             {advice ? (
                 <View style={{
                     marginHorizontal: 16, marginBottom: 12,
-                    backgroundColor: '#F5F3FF',
+                    backgroundColor: COLORS.brand.soft,
                     borderRadius: 16,
                     padding: 14,
                     borderWidth: 1,
-                    borderColor: '#EDE9FE',
+                    borderColor: COLORS.brand.soft,
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-                        <MessageCircle size={15} color="#6366F1" style={{ marginTop: 1 }} />
+                        <MessageCircle size={15} color={COLORS.brand.primary} style={{ marginTop: 1 }} />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6366F1', marginBottom: 3 }}>
+                            <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.brand.primary, marginBottom: 3 }}>
                                 Sensei says
                             </Text>
-                            <Text style={{ fontSize: 13, color: '#374151', lineHeight: 19, fontWeight: '500' }}>
+                            <Text style={{ fontSize: 13, color: '#423C35', lineHeight: 19, fontFamily: FONTS.medium }}>
                                 {advice.mood}
                             </Text>
-                            <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 4 }}>
+                            <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17, marginTop: 4 }}>
                                 {advice.explanation}
                             </Text>
                         </View>
                     </View>
                 </View>
             ) : adviceLoading ? (
-                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: '#F9FAFB', borderRadius: 16 }}>
+                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: COLORS.surface.secondary, borderRadius: 16 }}>
                     <Skeleton width="30%" height={11} />
                     <View style={{ height: 10 }} />
                     <Skeleton width="95%" height={12} />
@@ -282,15 +293,15 @@ const FinSightIQCard: React.FC = () => {
                 // The score above is computed on the phone and is always right.
                 // Only the model's read on it needs the server, so say that
                 // rather than leaving the space blank or spinning for ever.
-                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: '#F9FAFB', borderRadius: 16, flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <CloudOff size={14} color="#9CA3AF" style={{ marginTop: 2 }} />
+                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: COLORS.surface.secondary, borderRadius: 16, flexDirection: 'row', alignItems: 'flex-start' }}>
+                    <CloudOff size={14} color={COLORS.text.tertiary} style={{ marginTop: 2 }} />
                     <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 17 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17 }}>
                             {adviceError}
                         </Text>
                         <Text
                             onPress={handleRefresh}
-                            style={{ fontSize: 12, fontWeight: '700', color: '#6366F1', marginTop: 6 }}
+                            style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.brand.primary, marginTop: 6 }}
                         >
                             Try again
                         </Text>
@@ -308,7 +319,7 @@ const FinSightIQCard: React.FC = () => {
             {advice?.quests?.length ? (
                 <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18 }}>
                     <Text style={{
-                        fontSize: 11, fontWeight: '700', color: '#9CA3AF',
+                        fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary,
                         textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10,
                     }}>
                         Do next
@@ -325,22 +336,22 @@ const FinSightIQCard: React.FC = () => {
                                     gap: 10,
                                     paddingVertical: 9,
                                     borderTopWidth: idx === 0 ? 0 : 1,
-                                    borderTopColor: '#F3F4F6',
+                                    borderTopColor: COLORS.surface.tertiary,
                                 }}
                             >
                                 <Icon size={15} color={color} style={{ marginTop: 2 }} />
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
+                                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
                                         {quest.title}
                                     </Text>
                                     <Text
                                         numberOfLines={2}
-                                        style={{ fontSize: 12, color: '#6B7280', lineHeight: 17, marginTop: 1 }}
+                                        style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17, marginTop: 1 }}
                                     >
                                         {quest.description}
                                     </Text>
                                 </View>
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginTop: 1 }}>
+                                <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.text.tertiary, marginTop: 1 }}>
                                     +{quest.points}
                                 </Text>
                             </View>

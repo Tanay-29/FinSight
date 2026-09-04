@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
-    TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
+    TrendingUp, Heart, BookOpen, Home, Package,
     ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank,
 } from 'lucide-react-native';
 import { goalIcon } from '../theme/icons';
@@ -18,42 +18,47 @@ import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { BudgetBar } from '../components/BudgetBar';
 import { BarFill } from '../components/BarFill';
 import { EmptyState } from '../components/EmptyState';
+import type { Category } from '../utils/categories';
 import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory } from '../utils/categories';
+import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
 import { PressableScale } from '../components/PressableScale';
 import { resolveMonthlyIncome, savingsRate, savingsRateVerdict } from '../utils/income';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
 // ─── Icon helpers (Lucide) ───────────────────────────────────────
 
-const CATEGORY_ICON_MAP: Record<string, React.ComponentType<any>> = {
+// Keyed on the canonical union only. Legacy spellings never reach this map,
+// because normaliseCategory resolves them on the way in.
+const CATEGORY_ICON_MAP: Record<Category, React.ComponentType<any>> = {
     dining: Utensils,
-    shopping: ShoppingBag,
-    transport: Car,
     groceries: ShoppingCart,
+    transport: Car,
+    shopping: ShoppingBag,
     utilities: Zap,
-    entertainment: Film,
-    investments: TrendingUp,
-    health: Heart,
+    housing: Home,
     healthcare: Heart,
     education: BookOpen,
-    housing: Home,
-    rent: Home,
-    miscellaneous: Package,
+    entertainment: Film,
+    investments: TrendingUp,
+    other: Package,
 };
 
-const getCategoryIconNode = (category: string, size = 16, color = '#6B7280') => {
-    const IconComponent = CATEGORY_ICON_MAP[normaliseCategory(category)] || DollarSign;
-    return <IconComponent size={size} color={color} />;
+/** The icon for a category, in that category's own colour unless told otherwise. */
+const getCategoryIconNode = (category: string, size = 16, color?: string) => {
+    const key = normaliseCategory(category);
+    const IconComponent = CATEGORY_ICON_MAP[key];
+    return <IconComponent size={size} color={color ?? CATEGORY_COLORS[key]} strokeWidth={1.8} />;
 };
 
-const getCategoryColor = (category: string) => {
-    const map: Record<string, string> = {
-        dining: '#F97316', shopping: '#EC4899', transport: '#3B82F6', groceries: '#10B981',
-        utilities: '#EAB308', entertainment: '#8B5CF6', investments: '#6366F1', health: '#EF4444',
-        education: '#14B8A6', housing: '#F59E0B'
-    };
-    return map[category.toLowerCase()] || '#9CA3AF';
-};
+/**
+ * There were three copies of the category colour map in the tree, each with
+ * different values and different keys. This one keyed on `health` and `rent`,
+ * which normaliseCategory maps away, and had no entry at all for `other`, so
+ * anything unrecognised fell through to a grey that failed contrast anyway.
+ * CATEGORY_COLORS is the only copy now, and it is typed against the canonical
+ * union so a bad key cannot compile.
+ */
+const getCategoryColor = (category: string) => CATEGORY_COLORS[normaliseCategory(category)];
 
 // ─── Bar Chart ───────────────────────────────────────────────────
 
@@ -77,10 +82,10 @@ const SpendingBarChart: React.FC<{
     if (data.length === 0) {
         return (
             <View className="py-6 px-2 items-center">
-                <Text className="text-text-secondary text-sm text-center">
+                <Text className="text-text-secondary text-sm text-center font-inter">
                     Nothing logged in {monthLabel} yet.
                 </Text>
-                <Text className="text-text-tertiary text-xs text-center mt-1 leading-4">
+                <Text className="text-text-tertiary text-xs text-center mt-1 leading-4 font-inter">
                     This card and the budgets below cover one calendar month, so they
                     start again on the 1st. Earlier spending is still on the Feed.
                 </Text>
@@ -99,15 +104,15 @@ const SpendingBarChart: React.FC<{
                     <View key={item.name} className="mb-3.5">
                         <View className="flex-row items-baseline justify-between mb-1.5">
                             <Text
-                                className="text-sm font-medium text-text-primary flex-1 mr-3"
+                                className="text-sm font-inter-medium text-text-primary flex-1 mr-3"
                                 numberOfLines={1}
                             >
                                 {item.name}
                             </Text>
-                            <Text className="text-sm font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+                            <Text className="text-sm font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
                                 ₹{item.amount.toLocaleString('en-IN')}
                             </Text>
-                            <Text className="text-xs text-text-tertiary ml-2 w-9 text-right">
+                            <Text className="text-xs text-text-tertiary ml-2 w-9 text-right font-inter">
                                 {share}%
                             </Text>
                         </View>
@@ -143,23 +148,23 @@ const EditBudgetModal: React.FC<{
                 className="flex-1 justify-center items-center bg-black/50"
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View className="bg-white w-[85%] rounded-2xl p-6">
-                    <Text className="text-xl font-bold text-text-primary mb-4">Edit the {budget?.category} budget</Text>
-                    <Text className="text-sm text-text-secondary mb-2">Monthly limit (₹)</Text>
+                <View className="bg-surface-primary w-[85%] p-6" style={{ borderRadius: RADIUS.card }}>
+                    <Text style={TYPE.heading} className="text-text-primary mb-4">Edit the {budget?.category} budget</Text>
+                    <Text className="text-sm text-text-secondary mb-2 font-inter">Monthly limit (₹)</Text>
                     <TextInput
-                        className="bg-surface-tertiary p-3 rounded-lg text-lg text-text-primary mb-6"
+                        className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter"
                         value={limit}
                         onChangeText={setLimit}
                         keyboardType="numeric"
                         placeholder="Enter amount"
                     />
                     {error && (
-                        <Text className="text-loss text-sm mb-4 -mt-3">{error}</Text>
+                        <Text className="text-loss text-sm mb-4 -mt-3 font-inter">{error}</Text>
                     )}
 
                     <View className="flex-row justify-end gap-3">
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
-                            <Text className="text-text-secondary font-semibold">Cancel</Text>
+                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
                         </TouchableOpacity>
                         <PressableScale
                             onPress={() => {
@@ -167,9 +172,9 @@ const EditBudgetModal: React.FC<{
                                 if (!isNaN(amount) && amount > 0) onSave(amount);
                             }}
                             accessibilityRole="button"
-                            className="bg-brand-primary px-6 py-2 rounded-lg"
+                            className="bg-brand-primary-dark px-6 py-2.5 rounded-control"
                         >
-                            <Text className="text-white font-semibold">Save</Text>
+                            <Text className="text-white font-inter-semibold">Save</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -207,11 +212,11 @@ const CreateBudgetModal: React.FC<{
                 className="flex-1 justify-center items-center bg-black/50"
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View className="bg-white w-[85%] rounded-2xl p-6">
-                    <Text className="text-xl font-bold text-text-primary mb-4">New budget</Text>
-                    <Text className="text-sm text-text-secondary mb-2">Category</Text>
+                <View className="bg-surface-primary w-[85%] p-6" style={{ borderRadius: RADIUS.card }}>
+                    <Text style={TYPE.heading} className="text-text-primary mb-4">New budget</Text>
+                    <Text className="text-sm text-text-secondary mb-2 font-inter">Category</Text>
                     {CATEGORIES.length === 0 && (
-                        <Text className="text-sm text-text-tertiary mb-4 leading-5">
+                        <Text className="text-sm text-text-tertiary mb-4 leading-5 font-inter">
                             Every category already has a budget this month. Tap one in the
                             list to change its limit.
                         </Text>
@@ -220,7 +225,7 @@ const CreateBudgetModal: React.FC<{
                         {CATEGORIES.map((cat) => (
                             <TouchableOpacity
                                 key={cat.id}
-                                className={`px-3 py-2 rounded-full border ${selectedCategoryId === cat.id ? 'bg-brand-primary border-brand-primary' : 'bg-white border-border'}`}
+                                className={`px-3 py-2 rounded-full border ${selectedCategoryId === cat.id ? 'bg-brand-primary border-brand-primary' : 'bg-surface-primary border-border'}`}
                                 onPress={() => setSelectedCategoryId(cat.id)}
                             >
                                 <Text className={selectedCategoryId === cat.id ? 'text-white' : 'text-text-primary'}>
@@ -229,21 +234,21 @@ const CreateBudgetModal: React.FC<{
                             </TouchableOpacity>
                         ))}
                     </View>
-                    <Text className="text-sm text-text-secondary mb-2">Monthly limit (₹)</Text>
+                    <Text className="text-sm text-text-secondary mb-2 font-inter">Monthly limit (₹)</Text>
                     <TextInput
-                        className="bg-surface-tertiary p-3 rounded-lg text-lg text-text-primary mb-6"
+                        className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter"
                         value={limit}
                         onChangeText={setLimit}
                         keyboardType="numeric"
                         placeholder="Enter amount"
                     />
                     {error && (
-                        <Text className="text-loss text-sm mb-4 -mt-3">{error}</Text>
+                        <Text className="text-loss text-sm mb-4 -mt-3 font-inter">{error}</Text>
                     )}
 
                     <View className="flex-row justify-end gap-3">
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
-                            <Text className="text-text-secondary font-semibold">Cancel</Text>
+                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
                         </TouchableOpacity>
                         <PressableScale
                             onPress={() => {
@@ -251,9 +256,9 @@ const CreateBudgetModal: React.FC<{
                                 if (selectedCategoryId && !isNaN(amount) && amount > 0) onSave(selectedCategoryId, amount);
                             }}
                             accessibilityRole="button"
-                            className="bg-brand-primary px-6 py-2 rounded-lg"
+                            className="bg-brand-primary-dark px-6 py-2.5 rounded-control"
                         >
-                            <Text className="text-white font-semibold">Save</Text>
+                            <Text className="text-white font-inter-semibold">Save</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -396,29 +401,29 @@ export const VitalsScreen: React.FC = () => {
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
                 {/* Header */}
-                <View className="px-4 pt-4 pb-2 flex-row justify-between items-center">
+                <View className="pt-4 pb-2 flex-row justify-between items-center" style={{ paddingHorizontal: GUTTER }}>
                     <View>
-                        <Text className="text-2xl font-bold text-text-primary">Financial vitals</Text>
-                        <Text className="text-sm text-text-secondary">{format(new Date(), 'MMMM yyyy')}</Text>
+                        <Text style={TYPE.title} className="text-text-primary">Financial vitals</Text>
+                        <Text style={TYPE.caption} className="text-text-tertiary mt-0.5">{format(new Date(), 'MMMM yyyy')}</Text>
                     </View>
                     <View className="flex-row items-center gap-3">
-                        {budgetsLoading && <ActivityIndicator size="small" color="#6366F1" />}
+                        {budgetsLoading && <ActivityIndicator size="small" color={COLORS.brand.primary} />}
                         <PressableScale
                             onPress={() => navigation.navigate('Profile' as never)}
                             activeScale={0.92}
                             accessibilityRole="button"
                             accessibilityLabel="Your profile"
-                            className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                            className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
                         >
-                            <Text className="text-white font-bold text-base">{userInitial}</Text>
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-white">{userInitial}</Text>
                         </PressableScale>
                     </View>
                 </View>
 
                 {budgetsError && (
-                    <View className="mx-4 mt-2 flex-row items-start bg-white border border-border rounded-xl px-3 py-2.5">
-                        <CloudOff size={14} color="#6B7280" style={{ marginTop: 2 }} />
-                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4">
+                    <View className="mt-2 flex-row items-start bg-alert-bg border border-border rounded-control px-3.5 py-3" style={{ marginHorizontal: GUTTER }}>
+                        <CloudOff size={15} color={COLORS.semantic.alertAmber} strokeWidth={1.8} style={{ marginTop: 1 }} />
+                        <Text style={TYPE.caption} className="text-text-secondary ml-2.5 flex-1">
                             {budgetsError}
                         </Text>
                     </View>
@@ -426,7 +431,7 @@ export const VitalsScreen: React.FC = () => {
 
                 {hasNothingLogged ? (
                     <EmptyState
-                        icon={<Wallet color="#6366F1" size={36} />}
+                        icon={<Wallet color={COLORS.brand.primary} size={36} />}
                         title="Nothing to show yet"
                         body="Every number on this screen comes from what you have spent. Log an expense and your burn rate, categories and budgets start filling in."
                         actionLabel="Add an expense"
@@ -438,22 +443,22 @@ export const VitalsScreen: React.FC = () => {
                 {/* No-spend days. Deliberately the first thing on the screen:
                     it is the one panel that has something good to say on a day
                     with no money in it. */}
-                <View className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4">
+                <View className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4">
                     <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mr-3">
-                            <Leaf color="#10B981" size={18} />
+                        <View className="w-10 h-10 rounded-full bg-profit-bg items-center justify-center mr-3">
+                            <Leaf color={COLORS.semantic.profit} size={18} />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-sm font-bold text-text-primary">
+                            <Text className="text-sm font-inter-bold text-text-primary">
                                 {noSpend.thisMonth} clear day{noSpend.thisMonth === 1 ? '' : 's'} this month
                             </Text>
-                            <Text className="text-xs text-text-secondary mt-0.5">
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                                 {noSpendMessage(noSpend)}
                             </Text>
                         </View>
                         {noSpend.currentRun > 0 && (
-                            <View className="bg-emerald-50 rounded-full px-3 py-1.5 ml-2">
-                                <Text className="text-xs font-extrabold text-emerald-700">
+                            <View className="bg-profit-bg rounded-full px-3 py-1.5 ml-2">
+                                <Text className="text-xs font-inter-bold text-profit">
                                     {noSpend.currentRun} in a row
                                 </Text>
                             </View>
@@ -465,16 +470,16 @@ export const VitalsScreen: React.FC = () => {
                     Money left in the account counts as saved. Counting only
                     investment debits told a student who spent four of their
                     ten thousand that they had saved nothing. */}
-                <View className="mx-4 mt-3 bg-white rounded-2xl border border-gray-100 p-4">
+                <View className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4">
                     <View className="flex-row items-center mb-2">
-                        <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center mr-3">
-                            <PiggyBank color="#6366F1" size={18} />
+                        <View className="w-10 h-10 rounded-full bg-brand-soft items-center justify-center mr-3">
+                            <PiggyBank color={COLORS.brand.primary} size={18} />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-sm font-bold text-text-primary">
+                            <Text className="text-sm font-inter-bold text-text-primary">
                                 Kept this month
                             </Text>
-                            <Text className="text-xs text-text-secondary mt-0.5">
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                                 {income.source === 'unknown'
                                     ? 'Log what came in and this fills itself'
                                     : income.source === 'estimated'
@@ -488,7 +493,7 @@ export const VitalsScreen: React.FC = () => {
                             const verdict = savingsRateVerdict(rate);
                             return (
                                 <Text
-                                    className={`text-2xl font-bold ${
+                                    className={`text-2xl font-inter-bold ${
                                         verdict.tone === 'good'
                                             ? 'text-profit'
                                             : verdict.tone === 'ok'
@@ -512,7 +517,7 @@ export const VitalsScreen: React.FC = () => {
                                     accessibilityRole="button"
                                     className="bg-surface-secondary rounded-xl py-2.5 items-center mt-1"
                                 >
-                                    <Text className="text-sm font-semibold text-brand-primary">
+                                    <Text className="text-sm font-inter-semibold text-brand-primary">
                                         Add income
                                     </Text>
                                 </PressableScale>
@@ -532,7 +537,7 @@ export const VitalsScreen: React.FC = () => {
                                                 : 'bg-alert-critical'
                                     }
                                 />
-                                <Text className="text-xs text-text-secondary mt-2">
+                                <Text className="text-xs text-text-secondary mt-2 font-inter">
                                     {verdict.label}. Twenty percent is the figure the 50/30/20 rule
                                     asks for.
                                 </Text>
@@ -547,55 +552,55 @@ export const VitalsScreen: React.FC = () => {
                     They are two readings of the same thing, so they sit in one
                     card with a single way through to the pace screen. */}
                 <PressableScale
-                    className="mx-4 mt-3 bg-white border border-gray-100 rounded-2xl p-4"
+                    className="mx-5 mt-3 bg-surface-primary border border-border rounded-2xl p-4"
                     onPress={() => navigation.navigate('BurnRate' as never)}
                     accessibilityRole="button"
                     accessibilityLabel="Recent spending. Open your spending pace."
                 >
                     <View className="flex-row">
                         <View className="flex-1">
-                            <Text className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                            <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-1">
                                 Today
                             </Text>
-                            <Text className="text-2xl font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+                            <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
                                 ₹{recentSpending.spentToday.toLocaleString('en-IN')}
                             </Text>
                         </View>
-                        <View className="w-px bg-border mx-4" />
+                        <View className="w-px bg-border mx-5" />
                         <View className="flex-1">
-                            <Text className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                            <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-1">
                                 This week
                             </Text>
-                            <Text className="text-2xl font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+                            <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
                                 ₹{recentSpending.spentThisWeek.toLocaleString('en-IN')}
                             </Text>
                         </View>
                     </View>
 
                     <View className="flex-row items-center justify-end mt-3 pt-3 border-t border-border">
-                        <Text className="text-xs font-semibold text-brand-primary mr-1">
+                        <Text className="text-xs font-inter-semibold text-brand-primary mr-1">
                             Where the month is heading
                         </Text>
-                        <ChevronRight size={14} color="#6366F1" />
+                        <ChevronRight size={14} color={COLORS.brand.primary} />
                     </View>
                 </PressableScale>
 
                 {/* Monthly Budget Summary, and the 50/30/20 view of the same
                     money. */}
                 <TouchableOpacity
-                    className="mx-4 mt-4 bg-white border border-border rounded-xl p-4"
+                    className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4"
                     activeOpacity={0.85}
                     onPress={() => navigation.navigate('MoneyManager' as never)}
                     accessibilityRole="button"
                     accessibilityLabel="Monthly budget. Open the 50/30/20 breakdown."
                 >
                     <View className="flex-row justify-between items-center mb-2">
-                        <Text className="text-sm text-text-secondary">Monthly budget</Text>
-                        <Text className="text-sm font-semibold text-text-primary">{overallPercentage}% used</Text>
+                        <Text className="text-sm text-text-secondary font-inter">Monthly budget</Text>
+                        <Text className="text-sm font-inter-semibold text-text-primary">{overallPercentage}% used</Text>
                     </View>
                     <View className="flex-row items-baseline mb-2">
-                        <Text className="text-3xl font-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
-                        <Text className="text-base text-text-tertiary ml-2">/ ₹{totalBudget.toLocaleString('en-IN')}</Text>
+                        <Text className="text-3xl font-inter-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
+                        <Text className="text-base text-text-tertiary ml-2 font-inter">/ ₹{totalBudget.toLocaleString('en-IN')}</Text>
                     </View>
                     <BarFill
                         percent={Math.min(overallPercentage, 100)}
@@ -603,15 +608,15 @@ export const VitalsScreen: React.FC = () => {
                         fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
                     />
                     <View className="flex-row items-center justify-end mt-3">
-                        <Text className="text-xs font-semibold text-brand-primary mr-1">50/30/20 breakdown</Text>
-                        <ChevronRight size={14} color="#6366F1" />
+                        <Text className="text-xs font-inter-semibold text-brand-primary mr-1">50/30/20 breakdown</Text>
+                        <ChevronRight size={14} color={COLORS.brand.primary} />
                     </View>
                 </TouchableOpacity>
 
                 {/* Category Spending, and the recurring charges hiding inside
                     those categories. */}
-                <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4">
-                    <Text className="text-lg font-semibold text-text-primary mb-3">Category spending</Text>
+                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4">
+                    <Text className="text-lg font-inter-semibold text-text-primary mb-3">Category spending</Text>
                     <SpendingBarChart data={chartData} monthLabel={format(new Date(), 'MMMM')} />
                     <TouchableOpacity
                         className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
@@ -620,12 +625,12 @@ export const VitalsScreen: React.FC = () => {
                         accessibilityRole="button"
                     >
                         <View className="flex-1 mr-3">
-                            <Text className="text-sm font-semibold text-text-primary">Find recurring charges</Text>
-                            <Text className="text-xs text-text-secondary mt-0.5">
+                            <Text className="text-sm font-inter-semibold text-text-primary">Find recurring charges</Text>
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                                 Subscriptions and bills hiding in these categories
                             </Text>
                         </View>
-                        <ChevronRight size={16} color="#9CA3AF" />
+                        <ChevronRight size={16} color={COLORS.text.tertiary} />
                     </TouchableOpacity>
                 </View>
 
@@ -633,28 +638,28 @@ export const VitalsScreen: React.FC = () => {
                     card whose entire content is a link to another tab is an
                     advert, not a panel. */}
                 {topGoal && (
-                <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4">
+                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4">
                     <View className="flex-row justify-between items-center mb-4">
-                        <Text className="text-lg font-semibold text-text-primary">Your top goal</Text>
+                        <Text style={TYPE.heading} className="text-text-primary">Your top goal</Text>
                         <TouchableOpacity
                             onPress={() => navigation.navigate('Goals' as never)}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Text className="text-brand-primary font-bold text-sm">All goals</Text>
+                            <Text className="text-brand-primary font-inter-bold text-sm">All goals</Text>
                         </TouchableOpacity>
                     </View>
 
                             <View className="flex-row items-center mb-3">
-                                <View className="w-12 h-12 bg-indigo-50 rounded-full items-center justify-center mr-3">
-                                    {React.createElement(goalIcon(topGoal.icon), { size: 22, color: '#6366F1' })}
+                                <View className="w-12 h-12 bg-brand-soft rounded-full items-center justify-center mr-3">
+                                    {React.createElement(goalIcon(topGoal.icon), { size: 22, color: COLORS.brand.primary })}
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-base font-bold text-text-primary">{topGoal.name || topGoal.title}</Text>
-                                    <Text className="text-xs text-text-secondary mt-1">
+                                    <Text className="text-base font-inter-bold text-text-primary">{topGoal.name || topGoal.title}</Text>
+                                    <Text className="text-xs text-text-secondary mt-1 font-inter">
                                         ₹{safeCurrentAmount.toLocaleString('en-IN')} / ₹{safeTargetAmount.toLocaleString('en-IN')}
                                     </Text>
                                 </View>
-                                <Text className="text-lg font-bold text-brand-primary">
+                                <Text className="text-lg font-inter-bold text-brand-primary">
                                     {Math.round(goalProgressPercentage)}%
                                 </Text>
                             </View>
@@ -662,7 +667,7 @@ export const VitalsScreen: React.FC = () => {
                             <BarFill percent={goalProgressPercentage} height={10} fillClassName="bg-brand-primary" />
 
                             {topGoal.deadline && (
-                                <Text className="text-xs text-text-tertiary mt-2 text-right">
+                                <Text className="text-xs text-text-tertiary mt-2 text-right font-inter">
                                     Target {format(parseISO(topGoal.deadline), 'MMM yyyy')}
                                 </Text>
                             )}
@@ -670,11 +675,11 @@ export const VitalsScreen: React.FC = () => {
                 )}
 
                 {/* Budget Breakdown */}
-                <View className="mx-4 mt-5 bg-white border border-border rounded-xl p-4 mb-8">
+                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4 mb-8">
                     <View className="flex-row justify-between items-center mb-3">
-                        <Text className="text-lg font-semibold text-text-primary">Budgets</Text>
+                        <Text style={TYPE.heading} className="text-text-primary">Budgets</Text>
                         <TouchableOpacity onPress={() => setCreateModalVisible(true)}>
-                            <Text className="text-brand-primary font-bold text-sm">Add budget</Text>
+                            <Text className="text-brand-primary font-inter-bold text-sm">Add budget</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -717,7 +722,7 @@ export const VitalsScreen: React.FC = () => {
             </ScrollView>
 
             <PressableScale
-                className="absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                className="absolute bottom-6 right-6 bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center shadow-lg"
                 onPress={() => navigation.navigate('AddTransaction' as never)}
                 activeScale={0.92}
                 accessibilityRole="button"

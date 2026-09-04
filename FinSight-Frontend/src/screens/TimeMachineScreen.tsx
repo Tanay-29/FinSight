@@ -24,6 +24,7 @@ import {
 } from '../utils/projections';
 import AnimatedNumber from '../components/AnimatedNumber';
 import * as haptics from '../utils/haptics';
+import { COLORS } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<any, 'TimeMachine'>;
 
@@ -100,27 +101,27 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
     const monthly = toMonthly(parsed, frequency);
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'bottom']}>
+        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-5 py-3.5 bg-white border-b border-gray-100 flex-row items-center">
+            <View className="px-5 py-3.5 bg-surface-primary border-b border-border flex-row items-center">
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
                     accessibilityRole="button"
                     accessibilityLabel="Go back"
-                    className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3"
+                    className="w-9 h-9 rounded-full bg-surface-tertiary items-center justify-center mr-3"
                 >
-                    <ArrowLeft size={18} color="#374151" />
+                    <ArrowLeft size={18} color="#423C35" />
                 </TouchableOpacity>
                 <View className="flex-1">
-                    <Text className="text-base font-extrabold text-gray-900">Time Machine</Text>
-                    <Text className="text-xs text-gray-400">What a habit is really costing you</Text>
+                    <Text className="text-base font-inter-bold text-text-primary">Time Machine</Text>
+                    <Text className="text-xs text-text-tertiary font-inter">What a habit is really costing you</Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {/* Presets */}
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
+                <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-2">
                     Start from a habit
                 </Text>
                 <View className="flex-row flex-wrap gap-2 mb-5">
@@ -131,9 +132,9 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                                 key={preset.label}
                                 onPress={() => applyPreset(preset)}
                                 accessibilityRole="button"
-                                className={`px-3.5 py-2 rounded-full border ${active ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-200'}`}
+                                className={`px-3.5 py-2 rounded-full border ${active ? 'bg-brand-primary-dark border-brand-primary-dark' : 'bg-surface-primary border-border-strong'}`}
                             >
-                                <Text className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-600'}`}>
+                                <Text className={`text-xs font-inter-semibold ${active ? 'text-white' : 'text-text-secondary'}`}>
                                     {preset.label}
                                 </Text>
                             </PressableScale>
@@ -142,12 +143,12 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
 
                 {/* Amount and frequency */}
-                <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-                    <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
+                <View className="bg-surface-primary rounded-2xl border border-border p-4 mb-4">
+                    <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-2">
                         {activePreset ? `What your ${activePreset.label.toLowerCase()} costs` : 'Amount'}
                     </Text>
-                    <View className="flex-row items-center border-b border-gray-100 pb-3 mb-3">
-                        <Text className="text-2xl font-bold text-gray-400 mr-1">₹</Text>
+                    <View className="flex-row items-center border-b border-border pb-3 mb-3">
+                        <Text className="text-2xl font-inter-bold text-text-tertiary mr-1">₹</Text>
                         <TextInput
                             value={amount}
                             onChangeText={setAmount}
@@ -157,14 +158,14 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                                     ? `What your ${activePreset.label.toLowerCase()} costs each time`
                                     : 'Amount spent'
                             }
-                            className="flex-1 text-2xl font-bold text-gray-900 p-0"
+                            className="flex-1 text-2xl font-inter-bold text-text-primary p-0"
                             placeholder={activePreset ? String(activePreset.typical) : '0'}
-                            placeholderTextColor="#D1D5DB"
+                            placeholderTextColor={COLORS.border.strong}
                         />
                     </View>
 
                     {activePreset && parsed === 0 && (
-                        <Text className="text-xs text-gray-400 mb-3 -mt-1">
+                        <Text className="text-xs text-text-tertiary mb-3 -mt-1 font-inter">
                             Put in what yours actually costs. {formatCompactINR(activePreset.typical)} is
                             just a common figure.
                         </Text>
@@ -176,16 +177,16 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                                 onPress={() => { haptics.select(); setFrequency(f); }}
                                 activeOpacity={0.85}
                                 accessibilityRole="button"
-                                className={`flex-1 py-2.5 rounded-xl items-center ${frequency === f ? 'bg-indigo-50 border border-indigo-200' : 'bg-gray-50 border border-gray-100'}`}
+                                className={`flex-1 py-2.5 rounded-xl items-center ${frequency === f ? 'bg-brand-soft border border-brand-edge' : 'bg-surface-secondary border border-border'}`}
                             >
-                                <Text className={`text-xs font-semibold ${frequency === f ? 'text-indigo-600' : 'text-gray-500'}`}>
+                                <Text className={`text-xs font-inter-semibold ${frequency === f ? 'text-brand-primary-dark' : 'text-text-secondary'}`}>
                                     {FREQUENCY_LABELS[f]}
                                 </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
                     {parsed > 0 && (
-                        <Text className="text-xs text-gray-400 mt-3">
+                        <Text className="text-xs text-text-tertiary mt-3 font-inter">
                             That is about {formatCompactINR(monthly)} a month.
                         </Text>
                     )}
@@ -193,32 +194,32 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
 
                 {/* Years and rate */}
                 <View className="flex-row gap-3 mb-4">
-                    <View className="flex-1 bg-white rounded-2xl border border-gray-100 p-4">
-                        <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Years</Text>
+                    <View className="flex-1 bg-surface-primary rounded-2xl border border-border p-4">
+                        <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-2">Years</Text>
                         <View className="flex-row flex-wrap gap-1.5">
                             {YEAR_OPTIONS.map((y) => (
                                 <PressableScale
                                     key={y}
                                     onPress={() => { haptics.select(); setYears(y); }}
                                     accessibilityRole="button"
-                                    className={`px-3 py-1.5 rounded-lg ${years === y ? 'bg-indigo-600' : 'bg-gray-100'}`}
+                                    className={`px-3 py-1.5 rounded-lg ${years === y ? 'bg-brand-primary-dark' : 'bg-surface-tertiary'}`}
                                 >
-                                    <Text className={`text-xs font-bold ${years === y ? 'text-white' : 'text-gray-500'}`}>{y}</Text>
+                                    <Text className={`text-xs font-inter-bold ${years === y ? 'text-white' : 'text-text-secondary'}`}>{y}</Text>
                                 </PressableScale>
                             ))}
                         </View>
                     </View>
-                    <View className="flex-1 bg-white rounded-2xl border border-gray-100 p-4">
-                        <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Return</Text>
+                    <View className="flex-1 bg-surface-primary rounded-2xl border border-border p-4">
+                        <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-2">Return</Text>
                         <View className="flex-row flex-wrap gap-1.5">
                             {RATE_OPTIONS.map((r) => (
                                 <PressableScale
                                     key={r}
                                     onPress={() => { haptics.select(); setRate(r); }}
                                     accessibilityRole="button"
-                                    className={`px-3 py-1.5 rounded-lg ${rate === r ? 'bg-indigo-600' : 'bg-gray-100'}`}
+                                    className={`px-3 py-1.5 rounded-lg ${rate === r ? 'bg-brand-primary-dark' : 'bg-surface-tertiary'}`}
                                 >
-                                    <Text className={`text-xs font-bold ${rate === r ? 'text-white' : 'text-gray-500'}`}>{r}%</Text>
+                                    <Text className={`text-xs font-inter-bold ${rate === r ? 'text-white' : 'text-text-secondary'}`}>{r}%</Text>
                                 </PressableScale>
                             ))}
                         </View>
@@ -227,36 +228,36 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
 
                 {/* Result */}
                 {parsed === 0 ? (
-                    <View className="bg-white border border-dashed border-gray-200 rounded-3xl p-6 mb-4 items-center">
-                        <TrendingUp size={22} color="#D1D5DB" />
-                        <Text className="text-sm text-gray-400 text-center mt-2.5 leading-5">
+                    <View className="bg-surface-primary border border-dashed border-border-strong rounded-3xl p-6 mb-4 items-center">
+                        <TrendingUp size={22} color={COLORS.border.strong} />
+                        <Text className="text-sm text-text-tertiary text-center mt-2.5 leading-5 font-inter">
                             Put in what the habit costs you and this shows what the same money
                             would be worth invested instead.
                         </Text>
                     </View>
                 ) : (
-                <View className="bg-indigo-600 rounded-3xl p-5 mb-4">
+                <View className="bg-brand-primary-dark rounded-3xl p-5 mb-4">
                     <View className="flex-row items-center mb-1">
-                        <TrendingUp size={16} color="#C7D2FE" />
-                        <Text className="text-xs font-bold text-indigo-200 uppercase tracking-wide ml-1.5">
+                        <TrendingUp size={16} color={COLORS.brand.edge} />
+                        <Text className="text-xs font-inter-bold text-brand-edge uppercase tracking-wide ml-1.5">
                             Invested instead, after {years} years
                         </Text>
                     </View>
                     <AnimatedNumber
                         value={futureValue}
                         format={formatCompactINR}
-                        className="text-4xl font-extrabold text-white mt-1"
+                        className="text-4xl font-inter-bold text-white mt-1"
                     />
-                    <View className="flex-row mt-4 pt-4 border-t border-indigo-500">
+                    <View className="flex-row mt-4 pt-4 border-t border-brand-primary">
                         <View className="flex-1">
-                            <Text className="text-xs text-indigo-200">You put in</Text>
-                            <Text className="text-base font-bold text-white mt-0.5">
+                            <Text className="text-xs text-brand-edge font-inter">You put in</Text>
+                            <Text className="text-base font-inter-bold text-white mt-0.5">
                                 {formatCompactINR(contributed)}
                             </Text>
                         </View>
                         <View className="flex-1">
-                            <Text className="text-xs text-indigo-200">Compounding added</Text>
-                            <Text className="text-base font-bold text-emerald-300 mt-0.5">
+                            <Text className="text-xs text-brand-edge font-inter">Compounding added</Text>
+                            <Text className="text-base font-inter-bold text-profit-on-brand mt-0.5">
                                 {formatCompactINR(growth)}
                             </Text>
                         </View>
@@ -266,39 +267,39 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
 
                 {/* Chart */}
                 {parsed > 0 && (
-                    <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+                    <View className="bg-surface-primary rounded-2xl border border-border p-4 mb-4">
                         <View className="flex-row items-center justify-between mb-3">
-                            <Text className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                            <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider">
                                 Growth over time
                             </Text>
                             <View className="flex-row items-center gap-3">
                                 <View className="flex-row items-center">
-                                    <View className="w-2.5 h-2.5 rounded-full bg-indigo-500 mr-1" />
-                                    <Text className="text-xs text-gray-500">Value</Text>
+                                    <View className="w-2.5 h-2.5 rounded-full bg-brand-primary mr-1" />
+                                    <Text className="text-xs text-text-secondary font-inter">Value</Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <View className="w-2.5 h-2.5 rounded-full bg-gray-300 mr-1" />
-                                    <Text className="text-xs text-gray-500">Paid in</Text>
+                                    <View className="w-2.5 h-2.5 rounded-full bg-border-strong mr-1" />
+                                    <Text className="text-xs text-text-secondary font-inter">Paid in</Text>
                                 </View>
                             </View>
                         </View>
                         <Svg width="100%" height={CHART_H + 20} viewBox={`0 -10 ${CHART_W} ${CHART_H + 20}`}>
-                            <Line x1={0} y1={CHART_H} x2={CHART_W} y2={CHART_H} stroke="#F3F4F6" strokeWidth={1} />
-                            <Path d={contributedPath} fill="none" stroke="#D1D5DB" strokeWidth={2} strokeDasharray="4 4" />
-                            <Path d={valuePath} fill="none" stroke="#6366F1" strokeWidth={3} strokeLinecap="round" />
-                            <Circle cx={CHART_W} cy={0} r={4} fill="#6366F1" />
+                            <Line x1={0} y1={CHART_H} x2={CHART_W} y2={CHART_H} stroke={COLORS.surface.tertiary} strokeWidth={1} />
+                            <Path d={contributedPath} fill="none" stroke={COLORS.border.strong} strokeWidth={2} strokeDasharray="4 4" />
+                            <Path d={valuePath} fill="none" stroke={COLORS.brand.primary} strokeWidth={3} strokeLinecap="round" />
+                            <Circle cx={CHART_W} cy={0} r={4} fill={COLORS.brand.primary} />
                         </Svg>
                         <View className="flex-row justify-between mt-1">
-                            <Text className="text-xs text-gray-400">Today</Text>
-                            <Text className="text-xs text-gray-400">{years} years</Text>
+                            <Text className="text-xs text-text-tertiary font-inter">Today</Text>
+                            <Text className="text-xs text-text-tertiary font-inter">{years} years</Text>
                         </View>
                     </View>
                 )}
 
                 {/* Honesty note */}
-                <View className="flex-row bg-gray-100 rounded-2xl p-3.5">
-                    <Info size={14} color="#9CA3AF" style={{ marginTop: 2 }} />
-                    <Text className="text-xs text-gray-500 leading-5 ml-2 flex-1">
+                <View className="flex-row bg-surface-tertiary rounded-2xl p-3.5">
+                    <Info size={14} color={COLORS.text.tertiary} style={{ marginTop: 2 }} />
+                    <Text className="text-xs text-text-secondary leading-5 ml-2 flex-1 font-inter">
                         These figures are before inflation and tax, and assume a steady return that
                         real markets do not give you. Treat it as a sense of scale, not a forecast.
                     </Text>

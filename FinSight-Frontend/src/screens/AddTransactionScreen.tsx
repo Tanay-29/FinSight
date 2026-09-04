@@ -25,6 +25,7 @@ import { parseBankSMS } from '../utils/smartCategorizer';
 import { CATEGORIES, INCOME_SOURCES } from '../utils/categories';
 import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
+import { COLORS } from '../theme/tokens';
 
 export default function AddTransactionScreen() {
     const navigation = useNavigation();
@@ -111,7 +112,7 @@ export default function AddTransactionScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 className="flex-1"
             >
-                <View className="px-4 py-4 flex-row items-center border-b border-border bg-white">
+                <View className="px-4 py-4 flex-row items-center border-b border-border bg-surface-primary">
                     <TouchableOpacity
                         onPress={() => navigation.goBack()}
                         className="mr-3"
@@ -119,29 +120,29 @@ export default function AddTransactionScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="Go back"
                     >
-                        <ChevronLeft size={28} color="#111827" />
+                        <ChevronLeft size={28} color={COLORS.text.primary} />
                     </TouchableOpacity>
-                    <Text className="text-xl font-bold text-text-primary">Add a transaction</Text>
+                    <Text className="text-xl font-inter-bold text-text-primary">Add a transaction</Text>
                 </View>
 
                 <ScrollView
-                    className="flex-1 px-4 pt-4"
+                    className="flex-1 px-5 pt-4"
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6">
+                    <View className="bg-brand-soft border border-brand-edge rounded-2xl p-4 mb-6">
                         <View className="flex-row items-center mb-2">
-                            <Sparkles size={18} color="#4F46E5" />
-                            <Text className="text-base font-bold text-indigo-700 ml-2">Smart paste</Text>
+                            <Sparkles size={18} color={COLORS.brand.primaryDark} />
+                            <Text className="text-base font-inter-bold text-brand-primary-dark ml-2">Smart paste</Text>
                         </View>
-                        <Text className="text-xs text-indigo-600/80 mb-3">
+                        <Text className="text-xs text-brand-primary-dark/80 mb-3 font-inter">
                             Paste your bank SMS below and the amount, merchant and category are
                             read out of it.
                         </Text>
                         <TextInput
-                            className="bg-white border border-indigo-100 rounded-xl p-3 text-sm text-text-primary mb-3 min-h-[80px]"
+                            className="bg-surface-primary border border-brand-edge rounded-xl p-3 text-sm text-text-primary mb-3 min-h-[80px] font-inter"
                             placeholder="e.g. INR 649.00 debited from A/c XX1234 at NETFLIX on 21-Mar-26"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={COLORS.text.tertiary}
                             multiline
                             textAlignVertical="top"
                             value={smsText}
@@ -157,8 +158,8 @@ export default function AddTransactionScreen() {
                                 entering={FadeIn.duration(180)}
                                 className="flex-row items-start mb-3"
                             >
-                                <AlertCircle size={13} color="#DC2626" style={{ marginTop: 2 }} />
-                                <Text className="text-xs text-loss ml-1.5 flex-1 leading-4">
+                                <AlertCircle size={13} color={COLORS.semantic.alertCritical} style={{ marginTop: 2 }} />
+                                <Text className="text-xs text-loss ml-1.5 flex-1 leading-4 font-inter">
                                     {notice}
                                 </Text>
                             </Animated.View>
@@ -167,16 +168,16 @@ export default function AddTransactionScreen() {
                         <PressableScale
                             onPress={handleSmartPaste}
                             accessibilityRole="button"
-                            className={`flex-row justify-center items-center py-3 rounded-xl ${isParsed ? 'bg-profit' : 'bg-indigo-600'}`}
+                            className={`flex-row justify-center items-center py-3 rounded-xl ${isParsed ? 'bg-profit' : 'bg-brand-primary-dark'}`}
                         >
                             {isParsed ? <CheckCircle2 size={18} color="white" /> : <Sparkles size={18} color="white" />}
-                            <Text className="text-white font-bold ml-2">
+                            <Text className="text-white font-inter-bold ml-2">
                                 {isParsed ? 'Filled in below' : 'Read this message'}
                             </Text>
                         </PressableScale>
                     </View>
 
-                    <Text className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-3 ml-1">
+                    <Text className="text-sm font-inter-bold text-text-secondary uppercase tracking-wider mb-3 ml-1">
                         Details
                     </Text>
 
@@ -194,7 +195,7 @@ export default function AddTransactionScreen() {
                                     style={segmentStyle(type === t)}
                                 >
                                     <Text
-                                        className={`font-semibold ${
+                                        className={`font-inter-semibold ${
                                             type === t
                                                 ? t === 'debit' ? 'text-alert-critical' : 'text-profit'
                                                 : 'text-text-secondary'
@@ -208,33 +209,33 @@ export default function AddTransactionScreen() {
                     </View>
 
                     <View className="flex-row gap-3 mb-4">
-                        <View className="flex-1 bg-white border border-border rounded-xl p-3">
-                            <Text className="text-xs text-text-secondary mb-1">Amount (₹)</Text>
+                        <View className="flex-1 bg-surface-primary border border-border rounded-xl p-3">
+                            <Text className="text-xs text-text-secondary mb-1 font-inter">Amount (₹)</Text>
                             <TextInput
-                                className="text-xl font-bold text-text-primary p-0"
+                                className="text-xl font-inter-bold text-text-primary p-0"
                                 keyboardType="numeric"
                                 placeholder="0"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={COLORS.text.tertiary}
                                 value={amount}
                                 onChangeText={setAmount}
                             />
                         </View>
-                        <View className="flex-1 bg-white border border-border rounded-xl p-3">
-                            <Text className="text-xs text-text-secondary mb-1">
+                        <View className="flex-1 bg-surface-primary border border-border rounded-xl p-3">
+                            <Text className="text-xs text-text-secondary mb-1 font-inter">
                                 {type === 'debit' ? 'Merchant' : 'From'}
                             </Text>
                             <TextInput
-                                className="text-lg font-semibold text-text-primary p-0"
+                                className="text-lg font-inter-semibold text-text-primary p-0"
                                 placeholder={type === 'debit' ? 'e.g. Zomato' : 'e.g. Dad'}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={COLORS.text.tertiary}
                                 value={merchant}
                                 onChangeText={setMerchant}
                             />
                         </View>
                     </View>
 
-                    <View className="bg-white border border-border rounded-xl p-4 mb-8">
-                        <Text className="text-xs text-text-secondary mb-3">
+                    <View className="bg-surface-primary border border-border rounded-xl p-4 mb-8">
+                        <Text className="text-xs text-text-secondary mb-3 font-inter">
                             {type === 'debit' ? 'Category' : 'Where it came from'}
                         </Text>
                         <View className="flex-row flex-wrap gap-2">
@@ -253,7 +254,7 @@ export default function AddTransactionScreen() {
                                         accessibilityState={{ selected }}
                                         className={`px-3 py-2 rounded-full border ${selected ? 'bg-brand-primary border-brand-primary' : 'bg-surface-secondary border-border'}`}
                                     >
-                                        <Text className={`text-sm ${selected ? 'text-white font-bold' : 'text-text-primary'}`}>
+                                        <Text className={`text-sm ${selected ? 'text-white font-inter-bold' : 'text-text-primary'}`}>
                                             {label}
                                         </Text>
                                     </PressableScale>
@@ -263,7 +264,7 @@ export default function AddTransactionScreen() {
                     </View>
                 </ScrollView>
 
-                <View className="p-4 bg-white border-t border-border">
+                <View className="p-4 bg-surface-primary border-t border-border">
                     <PressableScale
                         onPress={handleSave}
                         disabled={!amount || syncStatus === 'syncing'}
@@ -273,7 +274,7 @@ export default function AddTransactionScreen() {
                         {syncStatus === 'syncing' ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text className="text-white text-lg font-bold">Save</Text>
+                            <Text className="text-white text-lg font-inter-bold">Save</Text>
                         )}
                     </PressableScale>
                 </View>

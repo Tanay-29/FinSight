@@ -33,6 +33,7 @@ import {
     CategoryTotal, QuizRound,
 } from '../utils/spendQuiz';
 import * as haptics from '../utils/haptics';
+import { COLORS } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<any, 'GuessSpend'>;
 
@@ -49,9 +50,9 @@ const ChoiceButton: React.FC<{
         containerStyle={{ flex: 1 }}
         accessibilityRole="button"
         accessibilityLabel={`I spent more on ${option.label}`}
-        className="bg-white border-2 border-gray-100 rounded-2xl py-7 px-3 items-center justify-center"
+        className="bg-surface-primary border-2 border-border rounded-2xl py-7 px-3 items-center justify-center"
     >
-        <Text className="text-base font-bold text-gray-900 text-center" numberOfLines={2}>
+        <Text className="text-base font-inter-bold text-text-primary text-center" numberOfLines={2}>
             {option.label}
         </Text>
     </PressableScale>
@@ -67,15 +68,15 @@ const RevealRow: React.FC<{
 }> = ({ option, max, isTruth, wasPicked, delay }) => (
     <View className="mb-3">
         <View className="flex-row items-center mb-1.5">
-            <Text className="text-sm font-bold text-gray-900 flex-1" numberOfLines={1}>
+            <Text className="text-sm font-inter-bold text-text-primary flex-1" numberOfLines={1}>
                 {option.label}
             </Text>
             {wasPicked && (
-                <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-2">
+                <Text className="text-[10px] font-inter-bold uppercase tracking-wider text-text-tertiary mr-2">
                     your pick
                 </Text>
             )}
-            <Text className="text-sm font-extrabold text-gray-900" style={{ fontVariant: ['tabular-nums'] }}>
+            <Text className="text-sm font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
                 {formatCompactINR(option.amount)}
             </Text>
         </View>
@@ -83,14 +84,14 @@ const RevealRow: React.FC<{
         <BarFill
             percent={Math.max((option.amount / max) * 100, 3)}
             height={10}
-            color={isTruth ? '#6366F1' : '#D1D5DB'}
-            trackClassName="bg-gray-100"
+            color={isTruth ? COLORS.brand.primary : COLORS.border.strong}
+            trackClassName="bg-surface-tertiary"
             delay={delay}
         />
 
         {/* The count is the lesson. A big total made of many small buys is the
             one people never see coming. */}
-        <Text className="text-xs text-gray-400 mt-1.5">
+        <Text className="text-xs text-text-tertiary mt-1.5 font-inter">
             {option.count} purchase{option.count === 1 ? '' : 's'}, averaging{' '}
             {formatCompactINR(averagePurchase(option))}
         </Text>
@@ -174,27 +175,27 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'bottom']}>
+        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-5 py-3.5 bg-white border-b border-gray-100 flex-row items-center">
+            <View className="px-5 py-3.5 bg-surface-primary border-b border-border flex-row items-center">
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
                     accessibilityRole="button"
                     accessibilityLabel="Go back"
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3"
+                    className="w-9 h-9 rounded-full bg-surface-tertiary items-center justify-center mr-3"
                 >
-                    <ArrowLeft size={18} color="#374151" />
+                    <ArrowLeft size={18} color="#423C35" />
                 </TouchableOpacity>
                 <View className="flex-1">
-                    <Text className="text-base font-extrabold text-gray-900">Which was more?</Text>
-                    <Text className="text-xs text-gray-400">
+                    <Text className="text-base font-inter-bold text-text-primary">Which was more?</Text>
+                    <Text className="text-xs text-text-tertiary font-inter">
                         Your own spending, last {WINDOW_DAYS} days
                     </Text>
                 </View>
                 {rounds.length > 0 && !finished && (
-                    <Text className="text-xs font-bold text-gray-400">
+                    <Text className="text-xs font-inter-bold text-text-tertiary">
                         {index + 1} / {rounds.length}
                     </Text>
                 )}
@@ -203,7 +204,7 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
             <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
                 {rounds.length === 0 ? (
                     <EmptyState
-                        icon={<Scale color="#6366F1" size={34} />}
+                        icon={<Scale color={COLORS.brand.primary} size={34} />}
                         title="Not enough to compare yet"
                         body={
                             totals.length < 2
@@ -215,14 +216,14 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                     />
                 ) : finished ? (
                     <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(300)}>
-                        <View className="bg-white rounded-3xl border border-gray-100 p-6 items-center mb-4">
-                            <Text className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                        <View className="bg-surface-primary rounded-3xl border border-border p-6 items-center mb-4">
+                            <Text className="text-xs font-inter-bold uppercase tracking-widest text-text-tertiary">
                                 You got
                             </Text>
-                            <Text className="text-5xl font-extrabold text-gray-900 mt-1">
+                            <Text className="text-5xl font-inter-bold text-text-primary mt-1">
                                 {score} of {rounds.length}
                             </Text>
-                            <Text className="text-sm text-gray-500 text-center mt-3 leading-5">
+                            <Text className="text-sm text-text-secondary text-center mt-3 leading-5 font-inter">
                                 {score === rounds.length
                                     ? 'You know your own spending better than most people know theirs.'
                                     : score === 0
@@ -232,13 +233,13 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                         </View>
 
                         {worst && (
-                            <View className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 flex-row items-start">
-                                <Lightbulb size={18} color="#D97706" style={{ marginTop: 1 }} />
+                            <View className="bg-alert-bg border border-alert-bg rounded-2xl p-4 mb-4 flex-row items-start">
+                                <Lightbulb size={18} color={COLORS.semantic.alertAmber} style={{ marginTop: 1 }} />
                                 <View className="flex-1 ml-3">
-                                    <Text className="text-sm font-bold text-amber-900">
+                                    <Text className="text-sm font-inter-bold text-alert-amber">
                                         {worst.label} is bigger than you think
                                     </Text>
-                                    <Text className="text-xs text-amber-800 mt-1 leading-5">
+                                    <Text className="text-xs text-alert-amber mt-1 leading-5 font-inter">
                                         {formatCompactINR(worst.amount)} across {worst.count} purchase
                                         {worst.count === 1 ? '' : 's'}, averaging{' '}
                                         {formatCompactINR(averagePurchase(worst))}. Small amounts are
@@ -252,19 +253,19 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                         <PressableScale
                             onPress={restart}
                             accessibilityRole="button"
-                            className="bg-white border border-gray-200 rounded-2xl py-4 items-center flex-row justify-center mb-3"
+                            className="bg-surface-primary border border-border-strong rounded-pill h-[52px] justify-center items-center flex-row justify-center mb-3"
                         >
-                            <RotateCcw size={16} color="#6B7280" />
-                            <Text className="text-gray-700 font-bold text-base ml-2">Play again</Text>
+                            <RotateCcw size={16} color={COLORS.text.secondary} />
+                            <Text className="text-text-secondary font-inter-bold text-base ml-2">Play again</Text>
                         </PressableScale>
 
                         <PressableScale
                             onPress={() => { haptics.tap(); navigation.goBack(); }}
                             accessibilityRole="button"
-                            className="bg-indigo-600 rounded-2xl py-4 items-center flex-row justify-center"
+                            className="bg-brand-primary-dark rounded-pill h-[52px] justify-center items-center flex-row justify-center"
                         >
                             <Check size={18} color="white" />
-                            <Text className="text-white font-bold text-base ml-2">Done</Text>
+                            <Text className="text-white font-inter-bold text-base ml-2">Done</Text>
                         </PressableScale>
                     </Animated.View>
                 ) : round && truth ? (
@@ -272,10 +273,10 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                         key={index}
                         entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260)}
                     >
-                        <Text className="text-xl font-extrabold text-gray-900 text-center mt-2">
+                        <Text className="text-xl font-inter-bold text-text-primary text-center mt-2">
                             Which did you spend more on?
                         </Text>
-                        <Text className="text-sm text-gray-500 text-center mt-2 mb-6 leading-5">
+                        <Text className="text-sm text-text-secondary text-center mt-2 mb-6 leading-5 font-inter">
                             No checking. Go with what you remember.
                         </Text>
 
@@ -289,16 +290,16 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                                 <View
                                     className={`rounded-2xl p-4 mb-4 flex-row items-center ${
                                         wasRight
-                                            ? 'bg-emerald-50 border border-emerald-100'
-                                            : 'bg-red-50 border border-red-100'
+                                            ? 'bg-profit-bg border border-profit-bg'
+                                            : 'bg-loss-bg border border-loss-bg'
                                     }`}
                                 >
                                     {wasRight
-                                        ? <Check size={18} color="#059669" strokeWidth={3} />
-                                        : <X size={18} color="#DC2626" strokeWidth={3} />}
+                                        ? <Check size={18} color="#0B6A4D" strokeWidth={3} />
+                                        : <X size={18} color={COLORS.semantic.alertCritical} strokeWidth={3} />}
                                     <Text
-                                        className={`text-sm font-semibold ml-2 flex-1 ${
-                                            wasRight ? 'text-emerald-800' : 'text-red-800'
+                                        className={`text-sm font-inter-semibold ml-2 flex-1 ${
+                                            wasRight ? 'text-profit' : 'text-loss'
                                         }`}
                                     >
                                         {wasRight
@@ -307,7 +308,7 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                                     </Text>
                                 </View>
 
-                                <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+                                <View className="bg-surface-primary rounded-2xl border border-border p-4 mb-4">
                                     <RevealRow
                                         option={round.left}
                                         max={Math.max(round.left.amount, round.right.amount)}
@@ -327,9 +328,9 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                                 <PressableScale
                                     onPress={next}
                                     accessibilityRole="button"
-                                    className="bg-indigo-600 rounded-2xl py-4 items-center"
+                                    className="bg-brand-primary-dark rounded-pill h-[52px] justify-center items-center"
                                 >
-                                    <Text className="text-white font-bold text-base">
+                                    <Text className="text-white font-inter-bold text-base">
                                         {index + 1 < rounds.length ? 'Next' : 'See how you did'}
                                     </Text>
                                 </PressableScale>

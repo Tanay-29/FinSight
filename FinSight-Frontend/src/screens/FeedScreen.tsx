@@ -45,6 +45,7 @@ import { EmptyState } from '../components/EmptyState';
 import { PressableScale } from '../components/PressableScale';
 import FinSightIQCard from '../components/FinSightIQCard';
 import { format } from 'date-fns';
+import { COLORS, TYPE, RADIUS, GUTTER, ELEVATION, FONTS } from '../theme/tokens';
 
 export const FeedScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -143,17 +144,17 @@ export const FeedScreen: React.FC = () => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor="#6366F1"
-                        colors={['#6366F1']}
+                        tintColor={COLORS.brand.primary}
+                        colors={[COLORS.brand.primary]}
                     />
                 }
             >
-                <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
+                <View className="pt-4 pb-2 flex-row items-center justify-between" style={{ paddingHorizontal: GUTTER }}>
                     <View className="flex-1 mr-3">
-                        <Text className="text-2xl font-bold text-text-primary">
+                        <Text style={TYPE.title} className="text-text-primary">
                             {greeting}, {displayName}
                         </Text>
-                        <Text className="text-sm text-text-secondary">
+                        <Text style={TYPE.caption} className="text-text-tertiary mt-0.5">
                             {format(today, 'EEEE, MMMM d')}
                         </Text>
                     </View>
@@ -162,9 +163,9 @@ export const FeedScreen: React.FC = () => {
                         activeScale={0.92}
                         accessibilityRole="button"
                         accessibilityLabel="Your profile"
-                        className="w-10 h-10 rounded-full bg-indigo-600 items-center justify-center"
+                        className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
                     >
-                        <Text className="text-white font-bold text-base">
+                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-white">
                             {displayName.charAt(0).toUpperCase()}
                         </Text>
                     </PressableScale>
@@ -173,10 +174,10 @@ export const FeedScreen: React.FC = () => {
                 {syncFailed && (
                     <Animated.View
                         entering={FadeIn.duration(200)}
-                        className="mx-4 mt-2 flex-row items-center bg-surface-secondary border border-border rounded-xl px-3 py-2.5"
+                        className="mt-2 flex-row items-center bg-alert-bg border border-border rounded-control px-3.5 py-3" style={{ marginHorizontal: GUTTER }}
                     >
-                        <CloudOff size={14} color="#6B7280" />
-                        <Text className="text-xs text-text-secondary ml-2 flex-1">
+                        <CloudOff size={15} color={COLORS.semantic.alertAmber} strokeWidth={1.8} />
+                        <Text style={TYPE.caption} className="text-text-secondary ml-2.5 flex-1">
                             Showing what was saved on this device. Pull down to try again.
                         </Text>
                     </Animated.View>
@@ -184,7 +185,7 @@ export const FeedScreen: React.FC = () => {
 
                 {hasNothingLogged ? (
                     <EmptyState
-                        icon={<Wallet color="#6366F1" size={36} />}
+                        icon={<Wallet color={COLORS.brand.primaryDark} size={34} strokeWidth={1.6} />}
                         title="Start with one expense"
                         body="FinSight works out where your money goes from what you log. Add a single expense and the rest of this screen fills in."
                         actionLabel="Add your first expense"
@@ -203,9 +204,9 @@ export const FeedScreen: React.FC = () => {
                             />
                         </View>
 
-                        <View className="mt-4 mx-4 bg-white border border-border rounded-xl overflow-hidden mb-6">
-                            <View className="px-4 py-3 border-b border-border">
-                                <Text className="text-lg font-semibold text-text-primary">
+                        <View className="mt-4 bg-surface-primary border border-border overflow-hidden mb-6" style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}>
+                            <View className="px-5 py-4 border-b border-border">
+                                <Text style={TYPE.heading} className="text-text-primary">
                                     Recent transactions
                                 </Text>
                             </View>
@@ -234,9 +235,9 @@ export const FeedScreen: React.FC = () => {
                                     </Animated.View>
                                 ))
                             ) : (
-                                <View className="p-4 items-center">
-                                    <Text className="text-text-secondary">
-                                        Nothing logged yet this month.
+                                <View className="px-5 py-8 items-center">
+                                    <Text style={TYPE.body} className="text-text-secondary">
+                                        Nothing logged in the last 30 days.
                                     </Text>
                                 </View>
                             )}
@@ -246,13 +247,14 @@ export const FeedScreen: React.FC = () => {
             </ScrollView>
 
             <PressableScale
-                className="absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                className="absolute bottom-6 right-6 bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center"
+                style={ELEVATION.lifted}
                 onPress={() => navigation.navigate('AddTransaction' as never)}
                 activeScale={0.92}
                 accessibilityRole="button"
                 accessibilityLabel="Add a transaction"
             >
-                <Plus color="white" size={24} />
+                <Plus color={COLORS.text.inverse} size={24} strokeWidth={2.2} />
             </PressableScale>
         </SafeAreaView>
     );

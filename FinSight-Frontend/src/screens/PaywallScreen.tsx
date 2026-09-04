@@ -30,6 +30,7 @@ import { startPurchase, selectIsPremium, clearPremiumError } from '../store/slic
 import { PLANS, DEFAULT_PLAN, TRIAL_DAYS, VALUE_PROPS, FEATURE_COPY, PlanId, PremiumFeature } from '../config/premium';
 import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
+import { COLORS } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<any, 'Paywall'>;
 
@@ -63,7 +64,7 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
     const plan = PLANS.find((p) => p.id === selected)!;
 
     return (
-        <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <SafeAreaView className="flex-1 bg-surface-primary" edges={['top', 'bottom']}>
             <StatusBar barStyle="dark-content" />
 
             <View className="px-5 pt-2 pb-1 flex-row justify-end">
@@ -73,7 +74,7 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                     accessibilityRole="button"
                     accessibilityLabel="Close"
                 >
-                    <X size={22} color="#9CA3AF" />
+                    <X size={22} color={COLORS.text.tertiary} />
                 </TouchableOpacity>
             </View>
 
@@ -82,11 +83,11 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View entering={reduced ? FadeIn.duration(180) : FadeInDown.duration(320)}>
-                    <View className="w-14 h-14 rounded-2xl bg-indigo-50 items-center justify-center mb-5">
-                        <Sparkles size={26} color="#6366F1" />
+                    <View className="w-14 h-14 rounded-2xl bg-brand-soft items-center justify-center mb-5">
+                        <Sparkles size={26} color={COLORS.brand.primary} />
                     </View>
 
-                    <Text className="text-[28px] leading-9 font-bold text-text-primary tracking-tight">
+                    <Text className="text-[28px] leading-9 font-inter-bold text-text-primary tracking-tight">
                         {headline ? headline.title : 'Keep the coach.'}
                     </Text>
                     <Text className="text-[15px] leading-6 text-text-secondary mt-2.5">
@@ -98,8 +99,8 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                     <View className="mt-7 mb-7">
                         {VALUE_PROPS.map((prop) => (
                             <View key={prop} className="flex-row items-start mb-3">
-                                <View className="w-5 h-5 rounded-full bg-emerald-50 items-center justify-center mt-0.5 mr-3">
-                                    <Check size={12} color="#10B981" strokeWidth={3} />
+                                <View className="w-5 h-5 rounded-full bg-profit-bg items-center justify-center mt-0.5 mr-3">
+                                    <Check size={12} color={COLORS.semantic.profit} strokeWidth={3} />
                                 </View>
                                 <Text className="text-[15px] leading-6 text-text-primary flex-1">
                                     {prop}
@@ -120,16 +121,16 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                                 className="mb-3 rounded-2xl px-4 py-3.5 flex-row items-center"
                                 style={{
                                     borderWidth: active ? 2 : 1,
-                                    borderColor: active ? '#6366F1' : '#E5E7EB',
-                                    backgroundColor: active ? '#EEF2FF' : '#FFFFFF',
+                                    borderColor: active ? COLORS.brand.primary : COLORS.border.default,
+                                    backgroundColor: active ? COLORS.brand.soft : '#FFFFFF',
                                 }}
                             >
                                 <View
                                     className="w-5 h-5 rounded-full items-center justify-center mr-3"
                                     style={{
                                         borderWidth: 2,
-                                        borderColor: active ? '#6366F1' : '#D1D5DB',
-                                        backgroundColor: active ? '#6366F1' : 'transparent',
+                                        borderColor: active ? COLORS.brand.primary : COLORS.border.strong,
+                                        backgroundColor: active ? COLORS.brand.primary : 'transparent',
                                     }}
                                 >
                                     {active && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
@@ -137,12 +138,12 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
 
                                 <View className="flex-1">
                                     <View className="flex-row items-center">
-                                        <Text className="text-base font-bold text-text-primary">
+                                        <Text className="text-base font-inter-bold text-text-primary">
                                             {p.label}
                                         </Text>
                                         {p.badge && (
-                                            <View className="bg-emerald-100 rounded-full px-2 py-0.5 ml-2">
-                                                <Text className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">
+                                            <View className="bg-profit-bg rounded-full px-2 py-0.5 ml-2">
+                                                <Text className="text-[10px] font-inter-bold text-profit uppercase tracking-wide">
                                                     {p.badge}
                                                 </Text>
                                             </View>
@@ -150,14 +151,14 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                                     </View>
                                     {/* Both prices in the same place, so the yearly
                                         plan can be compared without doing the sum. */}
-                                    <Text className="text-xs text-text-secondary mt-0.5">
+                                    <Text className="text-xs text-text-secondary mt-0.5 font-inter">
                                         ₹{p.perMonth}/month
                                         {p.id === 'annual' ? `, billed ₹${p.price} a year` : ', billed monthly'}
                                     </Text>
                                 </View>
 
                                 {p.savings && (
-                                    <Text className="text-xs font-bold text-emerald-600">
+                                    <Text className="text-xs font-inter-bold text-profit">
                                         Save {p.savings}%
                                     </Text>
                                 )}
@@ -167,7 +168,7 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
 
                     {error && (
                         <Animated.View entering={FadeIn.duration(180)} className="mt-1 mb-1">
-                            <Text className="text-loss text-sm leading-5">{error}</Text>
+                            <Text className="text-loss text-sm leading-5 font-inter">{error}</Text>
                         </Animated.View>
                     )}
 
@@ -175,20 +176,20 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                         onPress={purchase}
                         disabled={purchasing || isPremium}
                         accessibilityRole="button"
-                        className={`rounded-2xl py-4 items-center mt-4 ${purchasing ? 'bg-brand-primary/60' : 'bg-brand-primary'}`}
+                        className={`rounded-pill h-[52px] justify-center items-center mt-4 ${purchasing ? 'bg-brand-primary/60' : 'bg-brand-primary'}`}
                     >
                         {purchasing ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text className="text-white font-bold text-base">
+                            <Text className="text-white font-inter-bold text-base">
                                 {isPremium ? 'You already have Plus' : `Start ${TRIAL_DAYS} days free`}
                             </Text>
                         )}
                     </PressableScale>
 
                     <View className="flex-row items-center justify-center mt-3.5">
-                        <ShieldCheck size={13} color="#9CA3AF" />
-                        <Text className="text-xs text-text-tertiary ml-1.5 text-center">
+                        <ShieldCheck size={13} color={COLORS.text.tertiary} />
+                        <Text className="text-xs text-text-tertiary ml-1.5 text-center font-inter">
                             Free for {TRIAL_DAYS} days, then ₹{plan.price} a {plan.period}. Cancel any time.
                         </Text>
                     </View>
@@ -198,15 +199,15 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                         className="items-center mt-4 py-2"
                         accessibilityRole="button"
                     >
-                        <Text className="text-sm font-semibold text-text-secondary">
+                        <Text className="text-sm font-inter-semibold text-text-secondary">
                             Not now
                         </Text>
                     </TouchableOpacity>
 
                     {/* Said in the app, not only in a commit message. */}
                     <View className="flex-row items-start bg-surface-secondary rounded-xl px-3 py-2.5 mt-6">
-                        <Info size={13} color="#6B7280" style={{ marginTop: 1 }} />
-                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4">
+                        <Info size={13} color={COLORS.text.secondary} style={{ marginTop: 1 }} />
+                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4 font-inter">
                             Demonstration only. No payment is taken and no card details are asked
                             for anywhere in this app. The button below unlocks the features on this
                             account so the flow can be shown end to end.

@@ -29,6 +29,7 @@ import { updateTransactionCategory } from '../store/slices/transactionsSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
 import { normaliseCategory } from '../utils/categories';
+import { MOTION, COLORS, TYPE } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<any, 'SwipeCategorise'>;
 
@@ -36,17 +37,17 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_W * 0.28;
 
 const CATEGORIES = [
-    { key: 'dining', label: 'Dining', icon: Utensils, color: '#F97316' },
-    { key: 'groceries', label: 'Groceries', icon: ShoppingCart, color: '#10B981' },
-    { key: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#EC4899' },
-    { key: 'transport', label: 'Transport', icon: Car, color: '#3B82F6' },
-    { key: 'utilities', label: 'Utilities', icon: Zap, color: '#EAB308' },
-    { key: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: '#8B5CF6' },
-    { key: 'healthcare', label: 'Health', icon: HeartPulse, color: '#14B8A6' },
-    { key: 'housing', label: 'Rent', icon: Home, color: '#6366F1' },
-    { key: 'investments', label: 'Investments', icon: TrendingUp, color: '#10B981' },
-    { key: 'education', label: 'Education', icon: GraduationCap, color: '#3B82F6' },
-    { key: 'other', label: 'Other', icon: Package, color: '#9CA3AF' },
+    { key: 'dining', label: 'Dining', icon: Utensils, color: '#C2410C' },
+    { key: 'groceries', label: 'Groceries', icon: ShoppingCart, color: COLORS.semantic.profit },
+    { key: 'shopping', label: 'Shopping', icon: ShoppingBag, color: '#BE185D' },
+    { key: 'transport', label: 'Transport', icon: Car, color: '#1D4ED8' },
+    { key: 'utilities', label: 'Utilities', icon: Zap, color: '#8A5406' },
+    { key: 'entertainment', label: 'Entertainment', icon: Clapperboard, color: COLORS.brand.primaryDark },
+    { key: 'healthcare', label: 'Health', icon: HeartPulse, color: '#0F766E' },
+    { key: 'housing', label: 'Rent', icon: Home, color: COLORS.brand.primary },
+    { key: 'investments', label: 'Investments', icon: TrendingUp, color: COLORS.semantic.profit },
+    { key: 'education', label: 'Education', icon: GraduationCap, color: '#1D4ED8' },
+    { key: 'other', label: 'Other', icon: Package, color: COLORS.text.tertiary },
 ] as const;
 
 const categoryMeta = (key: string) =>
@@ -126,7 +127,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
             merchant: current.merchant ?? '',
         }));
         Animated.timing(position, {
-            toValue: { x: SCREEN_W, y: 0 }, duration: 220, useNativeDriver: false,
+            toValue: { x: SCREEN_W, y: 0 }, duration: MOTION.quick, useNativeDriver: false,
         }).start(advance);
     }, [advance, position, current, dispatch]);
 
@@ -183,21 +184,21 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
     const Icon = meta?.icon ?? Package;
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'bottom']}>
+        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-5 py-3.5 bg-white border-b border-gray-100 flex-row items-center">
+            <View className="px-5 py-3.5 bg-surface-primary border-b border-border flex-row items-center">
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
                     accessibilityRole="button"
                     accessibilityLabel="Go back"
-                    className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3"
+                    className="w-9 h-9 rounded-full bg-surface-tertiary items-center justify-center mr-3"
                 >
-                    <ArrowLeft size={18} color="#374151" />
+                    <ArrowLeft size={18} color="#423C35" />
                 </TouchableOpacity>
                 <View className="flex-1">
-                    <Text className="text-base font-extrabold text-gray-900">Tidy Up</Text>
-                    <Text className="text-xs text-gray-400">
+                    <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
+                    <Text className="text-xs text-text-tertiary font-inter">
                         {done ? 'All done' : `${deck.length - index} left to check`}
                     </Text>
                 </View>
@@ -205,39 +206,39 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
 
             {deck.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-10">
-                    <Sparkles size={36} color="#D1D5DB" />
-                    <Text className="text-base font-bold text-gray-900 mt-4 text-center">
+                    <Sparkles size={36} color={COLORS.border.strong} />
+                    <Text className="text-base font-inter-bold text-text-primary mt-4 text-center">
                         Nothing to tidy
                     </Text>
-                    <Text className="text-sm text-gray-500 mt-2 text-center leading-5">
+                    <Text className="text-sm text-text-secondary mt-2 text-center leading-5 font-inter">
                         Every transaction already has a category you chose. Come back after
                         importing a few more.
                     </Text>
                 </View>
             ) : done ? (
                 <View className="flex-1 items-center justify-center px-10">
-                    <View className="w-20 h-20 rounded-full bg-emerald-50 items-center justify-center mb-5">
-                        <Check size={38} color="#10B981" />
+                    <View className="w-20 h-20 rounded-full bg-profit-bg items-center justify-center mb-5">
+                        <Check size={38} color={COLORS.semantic.profit} />
                     </View>
-                    <Text className="text-2xl font-extrabold text-gray-900 text-center">Deck cleared</Text>
-                    <Text className="text-sm text-gray-500 mt-2 text-center leading-5">
+                    <Text style={TYPE.title} className="text-text-primary text-center">Deck cleared</Text>
+                    <Text className="text-sm text-text-secondary mt-2 text-center leading-5 font-inter">
                         {confirmed} confirmed, {corrected} corrected. Your spending charts just
                         got more accurate.
                     </Text>
                     <PressableScale
                         onPress={() => { haptics.tap(); navigation.goBack(); }}
                         accessibilityRole="button"
-                        className="bg-indigo-600 rounded-2xl py-4 px-10 mt-8"
+                        className="bg-brand-primary-dark rounded-pill h-[52px] justify-center px-10 mt-8"
                     >
-                        <Text className="text-white font-bold text-base">Done</Text>
+                        <Text className="text-white font-inter-bold text-base">Done</Text>
                     </PressableScale>
                 </View>
             ) : picking ? (
                 <ScrollView contentContainerStyle={{ padding: 20 }}>
-                    <Text className="text-lg font-bold text-gray-900 mb-1">
+                    <Text className="text-lg font-inter-bold text-text-primary mb-1">
                         Where does this belong?
                     </Text>
-                    <Text className="text-sm text-gray-500 mb-5">
+                    <Text className="text-sm text-text-secondary mb-5 font-inter">
                         {current?.merchant || 'Unknown merchant'}, ₹{(current?.amount ?? 0).toLocaleString('en-IN')}
                     </Text>
                     <View className="flex-row flex-wrap gap-2.5">
@@ -250,10 +251,10 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                                     activeOpacity={0.85}
                                     accessibilityRole="button"
                                     accessibilityLabel={c.label}
-                                    className="bg-white border border-gray-200 rounded-2xl px-4 py-3 flex-row items-center"
+                                    className="bg-surface-primary border border-border-strong rounded-2xl px-4 py-3 flex-row items-center"
                                 >
                                     <CIcon size={16} color={c.color} />
-                                    <Text className="text-sm font-semibold text-gray-700 ml-2">{c.label}</Text>
+                                    <Text className="text-sm font-inter-semibold text-text-secondary ml-2">{c.label}</Text>
                                 </TouchableOpacity>
                             );
                         })}
@@ -263,7 +264,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         accessibilityRole="button"
                         className="mt-6 items-center py-3"
                     >
-                        <Text className="text-sm text-gray-400">Cancel</Text>
+                        <Text className="text-sm text-text-tertiary font-inter">Cancel</Text>
                     </TouchableOpacity>
                 </ScrollView>
             ) : (
@@ -278,40 +279,40 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                                 { rotate },
                             ],
                         }}
-                        className="bg-white rounded-3xl border border-gray-100 p-6"
+                        className="bg-surface-primary rounded-3xl border border-border p-6"
                     >
                         {/* Swipe hints */}
                         <Animated.View style={{ opacity: acceptOpacity }} className="absolute top-5 left-5 z-10">
-                            <View className="border-2 border-emerald-500 rounded-xl px-3 py-1">
-                                <Text className="text-emerald-500 font-extrabold text-sm">CORRECT</Text>
+                            <View className="border-2 border-profit rounded-xl px-3 py-1">
+                                <Text className="text-profit font-inter-bold text-sm">CORRECT</Text>
                             </View>
                         </Animated.View>
                         <Animated.View style={{ opacity: rejectOpacity }} className="absolute top-5 right-5 z-10">
-                            <View className="border-2 border-red-500 rounded-xl px-3 py-1">
-                                <Text className="text-red-500 font-extrabold text-sm">CHANGE</Text>
+                            <View className="border-2 border-loss rounded-xl px-3 py-1">
+                                <Text className="text-loss font-inter-bold text-sm">CHANGE</Text>
                             </View>
                         </Animated.View>
 
                         <View className="items-center pt-6">
-                            <Text className="text-3xl font-extrabold text-gray-900">
+                            <Text className="text-3xl font-inter-bold text-text-primary">
                                 ₹{(current?.amount ?? 0).toLocaleString('en-IN')}
                             </Text>
-                            <Text className="text-base text-gray-600 mt-1.5">
+                            <Text className="text-base text-text-secondary mt-1.5 font-inter">
                                 {current?.merchant || 'Unknown merchant'}
                             </Text>
-                            <Text className="text-xs text-gray-400 mt-0.5">{current?.date?.slice(0, 10)}</Text>
+                            <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{current?.date?.slice(0, 10)}</Text>
 
-                            <View className="h-px bg-gray-100 w-full my-5" />
+                            <View className="h-px bg-surface-tertiary w-full my-5" />
 
-                            <Text className="text-xs text-gray-400 uppercase tracking-widest mb-2">
+                            <Text className="text-xs text-text-tertiary uppercase tracking-widest mb-2 font-inter">
                                 We think this is
                             </Text>
                             <View
                                 className="flex-row items-center rounded-2xl px-4 py-2.5"
-                                style={{ backgroundColor: `${meta?.color ?? '#9CA3AF'}1A` }}
+                                style={{ backgroundColor: `${meta?.color ?? COLORS.text.tertiary}1A` }}
                             >
                                 <Icon size={18} color={meta?.color} />
-                                <Text className="text-base font-bold ml-2" style={{ color: meta?.color }}>
+                                <Text className="text-base font-inter-bold ml-2" style={{ color: meta?.color }}>
                                     {meta?.label}
                                 </Text>
                             </View>
@@ -324,22 +325,22 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                             activeOpacity={0.85}
                             accessibilityRole="button"
                             accessibilityLabel="Change category"
-                            className="w-16 h-16 rounded-full bg-white border-2 border-red-200 items-center justify-center"
+                            className="w-16 h-16 rounded-full bg-surface-primary border-2 border-loss-bg items-center justify-center"
                         >
-                            <XIcon size={26} color="#EF4444" />
+                            <XIcon size={26} color={COLORS.semantic.loss} />
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={accept}
                             activeOpacity={0.85}
                             accessibilityRole="button"
                             accessibilityLabel="Category is correct"
-                            className="w-16 h-16 rounded-full bg-white border-2 border-emerald-200 items-center justify-center"
+                            className="w-16 h-16 rounded-full bg-surface-primary border-2 border-profit-bg items-center justify-center"
                         >
-                            <Check size={26} color="#10B981" />
+                            <Check size={26} color={COLORS.semantic.profit} />
                         </TouchableOpacity>
                     </View>
 
-                    <Text className="text-xs text-gray-400 mt-5 text-center">
+                    <Text className="text-xs text-text-tertiary mt-5 text-center font-inter">
                         Swipe right if it is right, left to change it
                     </Text>
                 </View>

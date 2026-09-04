@@ -4,7 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { COLORS } from '../theme/tokens';
+import { TrendingUp } from 'lucide-react-native';
+import { FONTS, COLORS, TYPE, RADIUS, SPACING } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
 import { setUser, fetchUserProfile } from '../store/slices/authSlice';
 import { setEntitlement } from '../store/slices/premiumSlice';
@@ -100,9 +101,47 @@ export const RootNavigator = () => {
     // Hold the spinner until the intro flag is known too, or the panels appear
     // for a frame and vanish.
     if (isLoading || awaitingFirstProfile || introSeen === undefined) {
+        // App.tsx deliberately holds the native splash until Inter is in, so
+        // that launch has no seam in it. This used to undo that: a bare
+        // spinner on a flat white background, which read as a second,
+        // different app starting one frame after the first one finished. It
+        // carries the splash's mark and colour instead, so the two moments
+        // are one moment.
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.primary }}>
-                <ActivityIndicator size="large" color="#6366F1" />
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: COLORS.brand.primaryDark,
+                }}
+            >
+                <View
+                    style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: RADIUS.pill - 6,
+                        backgroundColor: 'rgba(255,255,255,0.16)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <TrendingUp size={30} color={COLORS.text.inverse} strokeWidth={1.8} />
+                </View>
+                <Text
+                    style={{
+                        ...TYPE.heading,
+                        color: COLORS.text.inverse,
+                        marginTop: SPACING[4],
+                    }}
+                >
+                    FinSight
+                </Text>
+                <ActivityIndicator
+                    size="small"
+                    color="rgba(255,255,255,0.75)"
+                    style={{ marginTop: SPACING[5] }}
+                />
             </View>
         );
     }
@@ -111,18 +150,18 @@ export const RootNavigator = () => {
     // Sending this user to onboarding would overwrite the real one.
     if (user && !profile && profileError) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.primary, paddingHorizontal: 32 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.text.primary, textAlign: 'center' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface.secondary, paddingHorizontal: SPACING[8] }}>
+                <Text style={{ ...TYPE.heading, color: COLORS.text.primary, textAlign: 'center' }}>
                     Could not load your account
                 </Text>
-                <Text style={{ fontSize: 14, color: COLORS.text.secondary, textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+                <Text style={{ ...TYPE.body, color: COLORS.text.secondary, textAlign: 'center', marginTop: SPACING[2] }}>
                     {profileError}
                 </Text>
                 <Pressable
                     onPress={() => dispatch(fetchUserProfile(user.uid))}
-                    style={{ marginTop: 20, backgroundColor: COLORS.brand.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 14 }}
+                    style={{ marginTop: SPACING[5], backgroundColor: COLORS.brand.primaryDark, paddingHorizontal: SPACING[8], paddingVertical: SPACING[3], borderRadius: RADIUS.pill }}
                 >
-                    <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Try again</Text>
+                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.inverse }}>Try again</Text>
                 </Pressable>
             </View>
         );
@@ -134,7 +173,7 @@ export const RootNavigator = () => {
                 headerShown: false,
                 // Without an explicit background the native stack composites each
                 // push over the window's own colour, which flashes on Android.
-                contentStyle: { backgroundColor: COLORS.surface.primary },
+                contentStyle: { backgroundColor: COLORS.surface.secondary },
                 // The platform's own push is the right transition. Reduced motion
                 // keeps the change legible but drops the travel.
                 animation: reduced ? 'fade' : 'default',

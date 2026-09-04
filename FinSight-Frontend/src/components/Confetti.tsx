@@ -14,10 +14,21 @@
  */
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
+import { COLORS, CATEGORY_COLORS } from '../theme/tokens';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EC4899', '#3B82F6', '#8B5CF6'];
+// Confetti is the one place a spread of hues is the point rather than a
+// failure of restraint, so it borrows from the category set instead of
+// inventing a sixth palette.
+const PIECE_COLORS = [
+    COLORS.brand.primary,
+    COLORS.semantic.profit,
+    COLORS.semantic.alertAmberFill,
+    CATEGORY_COLORS.shopping,
+    CATEGORY_COLORS.transport,
+    COLORS.brand.primaryDark,
+];
 
 interface Piece {
     startX: number;
@@ -36,7 +47,7 @@ function buildPieces(count: number): Piece[] {
         driftX: (Math.random() - 0.5) * 220,
         delay: Math.random() * 0.35,
         size: 6 + Math.random() * 8,
-        color: COLORS[i % COLORS.length],
+        color: PIECE_COLORS[i % PIECE_COLORS.length],
         spins: 1 + Math.random() * 3,
         isCircle: Math.random() > 0.6,
     }));
