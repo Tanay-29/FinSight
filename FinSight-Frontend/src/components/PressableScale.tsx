@@ -14,8 +14,9 @@
  * is the latency people actually notice.
  */
 import React, { useState } from 'react';
-import { Pressable, PressableProps, ViewStyle, StyleProp } from 'react-native';
+import { Pressable, PressableProps, View, ViewStyle, StyleProp } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
+import { MOTION } from '../theme/tokens';
 
 interface PressableScaleProps extends Omit<PressableProps, 'style'> {
     children: React.ReactNode;
@@ -55,20 +56,30 @@ export const PressableScale: React.FC<PressableScaleProps> = ({
             pressRetentionOffset={{ top: 12, bottom: 12, left: 12, right: 12 }}
             {...rest}
         >
+            {/*
+              * The animated node carries ONLY the transform, and the caller's
+              * className and style go on a plain View inside it.
+              *
+              * They used to be on the Animated.View itself, and NativeWind's
+              * class styles never arrived: buttons rendered with no background,
+              * no radius and no flex-row, so a white label sat invisible on the
+              * canvas. Every call site that styles a PressableScale through
+              * className was affected, which is most of them. A plain View is a
+              * component NativeWind definitely handles, and nesting costs
+              * nothing because the parent still scales the whole thing.
+              */}
             <Animated.View
-                className={className}
-                style={[
-                    style,
-                    {
-                        transform: [{ scale }],
-                        opacity: reduced && pressed ? 0.85 : 1,
-                        transitionProperty: ['transform', 'opacity'],
-                        transitionDuration: 120,
-                        transitionTimingFunction: 'ease-out',
-                    } as ViewStyle,
-                ]}
+                style={{
+                    transform: [{ scale }],
+                    opacity: reduced && pressed ? 0.85 : 1,
+                    transitionProperty: ['transform', 'opacity'],
+                    transitionDuration: MOTION.press,
+                    transitionTimingFunction: 'ease-out',
+                } as ViewStyle}
             >
-                {children}
+                <View className={className} style={style}>
+                    {children}
+                </View>
             </Animated.View>
         </Pressable>
     );
