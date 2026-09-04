@@ -137,7 +137,7 @@ const LoginScreen: React.FC = () => {
                             {isSignUp ? 'Create your account' : 'Welcome back'}
                         </Text>
                         <TouchableOpacity onPress={toggleMode} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-brand-primary-dark">
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-brand-link">
                                 {isSignUp ? 'Sign in' : 'Sign up'}
                             </Text>
                         </TouchableOpacity>
@@ -215,7 +215,7 @@ const LoginScreen: React.FC = () => {
                             className="self-end mb-1"
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                            <Text style={TYPE.callout} className="text-brand-primary-dark">
+                            <Text style={TYPE.callout} className="text-brand-link">
                                 {resetting ? 'Sending...' : 'Forgot password?'}
                             </Text>
                         </TouchableOpacity>

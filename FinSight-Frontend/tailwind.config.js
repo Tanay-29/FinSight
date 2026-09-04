@@ -1,59 +1,80 @@
 /** @type {import('tailwindcss').Config} */
-const { PALETTE } = require('./src/theme/palette');
+
+/**
+ * Colour is resolved through CSS variables defined in src/global.css, which is
+ * generated from src/theme/palette.js. That indirection is what lets one class
+ * name serve both themes: `bg-surface-primary` is white on light and #1F1B16 on
+ * dark without a single `dark:` variant anywhere in the app.
+ *
+ * Channels are space separated so Tailwind's <alpha-value> still applies, which
+ * keeps things like `bg-brand-primary/10` and `bg-black/50` working.
+ */
+const c = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
 
 module.exports = {
     content: ['./App.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
     presets: [require('nativewind/preset')],
-    // Tailwind defaults this to 'media', and NativeWind's web runtime then
-    // throws on load: its own MutationObserver calls colorScheme.set(), which
-    // refuses to run under 'media'. The app crashed to a blank page on web
-    // because of it. Nobody had noticed, because it has only ever been run on
-    // Android and in Expo Go, where this code path does not execute.
-    //
-    // Inert on native and today on web too: there is not a single `dark:`
-    // class in the tree yet. It is also what dark mode will need when the
-    // roadmap gets to it.
-    darkMode: 'class',
     theme: {
         extend: {
-            // Colours come from src/theme/palette.js so class names and the JS
-            // tokens in src/theme/tokens.ts can never drift apart again.
             colors: {
                 brand: {
-                    primary: PALETTE.brand.primary,
-                    'primary-dark': PALETTE.brand.primaryDark,
-                    soft: PALETTE.brand.soft,
-                    edge: PALETTE.brand.edge,
-                    'on-dark': PALETTE.brand.onDark,
+                    primary: c('brand-primary'),
+                    'primary-dark': c('brand-primary-dark'),
+                    link: c('brand-link'),
+                    soft: c('brand-soft'),
+                    edge: c('brand-edge'),
+                    'on-dark': c('brand-on-dark'),
                 },
                 profit: {
-                    DEFAULT: PALETTE.profit.base,
-                    bg: PALETTE.profit.bg,
-                    'on-brand': PALETTE.profit.onBrand,
+                    DEFAULT: c('profit-base'),
+                    bg: c('profit-bg'),
+                    'on-brand': c('profit-on-brand'),
                 },
                 loss: {
-                    DEFAULT: PALETTE.loss.base,
-                    bg: PALETTE.loss.bg,
+                    DEFAULT: c('loss-base'),
+                    bg: c('loss-bg'),
                 },
                 alert: {
-                    amber: PALETTE.alert.amber,
-                    'amber-fill': PALETTE.alert.amberFill,
-                    critical: PALETTE.alert.critical,
-                    bg: PALETTE.alert.bg,
+                    amber: c('alert-amber'),
+                    'amber-fill': c('alert-amber-fill'),
+                    critical: c('alert-critical'),
+                    bg: c('alert-bg'),
                 },
-                text: PALETTE.text,
-                surface: PALETTE.surface,
+                text: {
+                    primary: c('text-primary'),
+                    secondary: c('text-secondary'),
+                    tertiary: c('text-tertiary'),
+                    muted: c('text-muted'),
+                    inverse: c('text-inverse'),
+                },
+                surface: {
+                    primary: c('surface-primary'),
+                    secondary: c('surface-secondary'),
+                    tertiary: c('surface-tertiary'),
+                },
                 border: {
-                    DEFAULT: PALETTE.border.base,
-                    strong: PALETTE.border.strong,
-                    focus: PALETTE.border.focus,
+                    DEFAULT: c('border-base'),
+                    strong: c('border-strong'),
+                    focus: c('border-focus'),
                 },
                 pii: {
-                    mask: PALETTE.pii.mask,
-                    'mask-bg': PALETTE.pii.maskBg,
-                    highlight: PALETTE.pii.highlight,
+                    mask: c('pii-mask'),
+                    'mask-bg': c('pii-mask-bg'),
+                    highlight: c('pii-highlight'),
                 },
-                category: PALETTE.category,
+                category: {
+                    dining: c('category-dining'),
+                    groceries: c('category-groceries'),
+                    transport: c('category-transport'),
+                    shopping: c('category-shopping'),
+                    utilities: c('category-utilities'),
+                    housing: c('category-housing'),
+                    healthcare: c('category-healthcare'),
+                    education: c('category-education'),
+                    entertainment: c('category-entertainment'),
+                    investments: c('category-investments'),
+                    other: c('category-other'),
+                },
             },
             // Weight is carried by the family name, never by `font-weight`.
             // Android does not synthesise weights for a custom font, so
@@ -104,5 +125,10 @@ module.exports = {
             },
         },
     },
+    // Tailwind defaults this to 'media', and NativeWind's web runtime then
+    // throws on load: its own MutationObserver calls colorScheme.set(), which
+    // refuses to run under 'media'. The app crashed to a blank page on web
+    // because of it.
+    darkMode: 'class',
     plugins: [],
 };

@@ -179,7 +179,7 @@ const TimeMachineScreen: React.FC<Props> = ({ navigation }) => {
                                 accessibilityRole="button"
                                 className={`flex-1 py-2.5 rounded-xl items-center ${frequency === f ? 'bg-brand-soft border border-brand-edge' : 'bg-surface-secondary border border-border'}`}
                             >
-                                <Text className={`text-xs font-inter-semibold ${frequency === f ? 'text-brand-primary-dark' : 'text-text-secondary'}`}>
+                                <Text className={`text-xs font-inter-semibold ${frequency === f ? 'text-brand-link' : 'text-text-secondary'}`}>
                                     {FREQUENCY_LABELS[f]}
                                 </Text>
                             </TouchableOpacity>

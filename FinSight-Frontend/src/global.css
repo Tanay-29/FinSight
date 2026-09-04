@@ -1,3 +1,104 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Colour lives here as CSS variables so that one class name can serve both
+ * themes. tailwind.config.js points every colour at rgb(var(--c-...)), which
+ * means bg-surface-primary and text-text-tertiary already theme themselves and
+ * not one of the roughly nine hundred class names in the app had to change.
+ *
+ * GENERATED FROM src/theme/palette.js. Do not hand edit: change the palette
+ * and regenerate, or the two will drift, which is the exact failure the
+ * palette was created to end.
+ *
+ * Channels are space separated rather than hex so Tailwind can apply its
+ * <alpha-value>, which is what keeps bg-brand-primary/10 working.
+ */
+@layer base {
+    :root {
+        --c-brand-primary: 99 102 241;
+        --c-brand-primary-dark: 79 70 229;
+        --c-brand-link: 79 70 229;
+        --c-brand-soft: 238 242 255;
+        --c-brand-edge: 199 210 254;
+        --c-brand-on-dark: 221 227 255;
+        --c-profit-base: 14 124 90;
+        --c-profit-bg: 227 242 234;
+        --c-profit-on-brand: 182 237 212;
+        --c-loss-base: 192 57 47;
+        --c-loss-bg: 251 233 230;
+        --c-alert-amber: 154 99 0;
+        --c-alert-amber-fill: 245 158 11;
+        --c-alert-critical: 176 51 42;
+        --c-alert-bg: 251 240 220;
+        --c-text-primary: 26 22 19;
+        --c-text-secondary: 92 84 75;
+        --c-text-tertiary: 117 108 98;
+        --c-text-muted: 167 158 146;
+        --c-text-inverse: 255 255 255;
+        --c-surface-primary: 255 255 255;
+        --c-surface-secondary: 247 243 237;
+        --c-surface-tertiary: 240 235 227;
+        --c-border-base: 230 224 216;
+        --c-border-strong: 211 203 192;
+        --c-border-focus: 99 102 241;
+        --c-pii-mask: 117 108 98;
+        --c-pii-mask-bg: 240 235 227;
+        --c-pii-highlight: 238 242 255;
+        --c-category-dining: 194 65 12;
+        --c-category-groceries: 65 105 12;
+        --c-category-transport: 29 78 216;
+        --c-category-shopping: 190 24 93;
+        --c-category-utilities: 138 84 6;
+        --c-category-housing: 109 40 217;
+        --c-category-healthcare: 15 118 110;
+        --c-category-education: 14 116 144;
+        --c-category-entertainment: 162 28 175;
+        --c-category-investments: 4 120 87;
+        --c-category-other: 107 100 95;
+    }
+
+    .dark:root {
+        --c-brand-primary: 99 102 241;
+        --c-brand-primary-dark: 79 70 229;
+        --c-brand-link: 165 180 252;
+        --c-brand-soft: 35 33 53;
+        --c-brand-edge: 58 54 99;
+        --c-brand-on-dark: 221 227 255;
+        --c-profit-base: 63 191 143;
+        --c-profit-bg: 22 48 42;
+        --c-profit-on-brand: 182 237 212;
+        --c-loss-base: 242 112 95;
+        --c-loss-bg: 51 32 29;
+        --c-alert-amber: 217 164 65;
+        --c-alert-amber-fill: 245 158 11;
+        --c-alert-critical: 242 112 95;
+        --c-alert-bg: 51 41 26;
+        --c-text-primary: 242 237 229;
+        --c-text-secondary: 195 184 170;
+        --c-text-tertiary: 158 148 136;
+        --c-text-muted: 110 100 89;
+        --c-text-inverse: 22 19 15;
+        --c-surface-primary: 31 27 22;
+        --c-surface-secondary: 22 19 15;
+        --c-surface-tertiary: 42 37 32;
+        --c-border-base: 51 45 38;
+        --c-border-strong: 69 61 52;
+        --c-border-focus: 129 140 248;
+        --c-pii-mask: 158 148 136;
+        --c-pii-mask-bg: 42 37 32;
+        --c-pii-highlight: 35 33 53;
+        --c-category-dining: 240 121 63;
+        --c-category-groceries: 143 191 63;
+        --c-category-transport: 110 155 255;
+        --c-category-shopping: 240 106 158;
+        --c-category-utilities: 217 164 65;
+        --c-category-housing: 169 139 255;
+        --c-category-healthcare: 63 191 176;
+        --c-category-education: 69 175 209;
+        --c-category-entertainment: 224 106 209;
+        --c-category-investments: 63 191 143;
+        --c-category-other: 167 158 146;
+    }
+}

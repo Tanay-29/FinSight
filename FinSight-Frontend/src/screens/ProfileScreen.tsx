@@ -10,11 +10,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
-import { COLORS, TYPE } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS } from '../theme/tokens';
+import { useScheme, type ThemePref } from '../theme/theme';
 import Constants from 'expo-constants';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles,
+    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles, Moon,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
@@ -60,6 +61,7 @@ const SettingsRow: React.FC<{
 );
 
 export const ProfileScreen: React.FC = () => {
+    const { pref, setPref } = useScheme();
     const navigation = useNavigation();
     const { user, profile } = useAppSelector((state) => state.auth);
     const goals = useAppSelector((state) => state.goals.items);
@@ -303,6 +305,47 @@ export const ProfileScreen: React.FC = () => {
                         <Text className="text-lg font-inter-semibold text-text-primary">Settings</Text>
                     </View>
 
+                    {/* Appearance leads the list because it changes the whole
+                        app, where the rows under it each change one feature. */}
+                    <SettingsRow
+                        icon={<Moon size={16} color={COLORS.text.secondary} />}
+                        label="Appearance"
+                        hint={
+                            pref === 'system'
+                                ? 'Following your phone'
+                                : pref === 'dark' ? 'Always dark' : 'Always light'
+                        }
+                        rightElement={
+                            <View
+                                className="flex-row bg-surface-tertiary p-1"
+                                style={{ borderRadius: RADIUS.control }}
+                            >
+                                {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => (
+                                    <Pressable
+                                        key={opt}
+                                        onPress={() => { haptics.tap(); setPref(opt); }}
+                                        accessibilityRole="button"
+                                        accessibilityState={{ selected: pref === opt }}
+                                        accessibilityLabel={`Appearance, ${opt}`}
+                                        className="px-2.5 py-1.5"
+                                        style={{
+                                            borderRadius: RADIUS.chip,
+                                            backgroundColor: pref === opt
+                                                ? COLORS.surface.primary
+                                                : 'transparent',
+                                        }}
+                                    >
+                                        <Text
+                                            style={TYPE.micro}
+                                            className={pref === opt ? 'text-text-primary' : 'text-text-tertiary'}
+                                        >
+                                            {opt === 'system' ? 'Auto' : opt}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        }
+                    />
                     <SettingsRow
                         icon={<Bell size={16} color={COLORS.text.secondary} />}
                         label="Budget alerts"

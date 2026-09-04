@@ -133,9 +133,9 @@ export default function AddTransactionScreen() {
                     <View className="bg-brand-soft border border-brand-edge rounded-2xl p-4 mb-6">
                         <View className="flex-row items-center mb-2">
                             <Sparkles size={18} color={COLORS.brand.primaryDark} />
-                            <Text className="text-base font-inter-bold text-brand-primary-dark ml-2">Smart paste</Text>
+                            <Text className="text-base font-inter-bold text-brand-link ml-2">Smart paste</Text>
                         </View>
-                        <Text className="text-xs text-brand-primary-dark/80 mb-3 font-inter">
+                        <Text className="text-xs text-brand-link/80 mb-3 font-inter">
                             Paste your bank SMS below and the amount, merchant and category are
                             read out of it.
                         </Text>

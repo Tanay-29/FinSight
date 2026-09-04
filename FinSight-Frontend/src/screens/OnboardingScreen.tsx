@@ -255,7 +255,7 @@ const Step3Goals: React.FC<{
             <Text style={TYPE.body} className="text-text-secondary mb-2">
                 Pick as many as you like - you can always change this later.
             </Text>
-            <Text className="text-xs text-brand-primary-dark font-inter-semibold mb-6">
+            <Text className="text-xs text-brand-link font-inter-semibold mb-6">
                 Select at least one
             </Text>
             {OPTIONS.map((opt) => (

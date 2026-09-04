@@ -116,7 +116,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                     {/* Stats row */}
                     <View className="flex-row mt-4 gap-3">
                         <View className="flex-1 bg-brand-soft rounded-xl p-3 items-center">
-                            <Text className="text-lg font-inter-bold text-brand-primary-dark">{totalCount}</Text>
+                            <Text className="text-lg font-inter-bold text-brand-link">{totalCount}</Text>
                             <Text className="text-xs text-text-secondary mt-0.5 font-inter">Modules</Text>
                         </View>
                         <View className="flex-1 bg-alert-bg rounded-xl p-3 items-center">
@@ -218,7 +218,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                             </View>
                                             {module.quiz?.length && (
                                                 <View className="px-1.5 py-0.5 rounded-full bg-brand-soft">
-                                                    <Text className="text-[10px] font-inter-semibold text-brand-primary-dark">
+                                                    <Text className="text-[10px] font-inter-semibold text-brand-link">
                                                         {module.quiz.length} Qs
                                                     </Text>
                                                 </View>

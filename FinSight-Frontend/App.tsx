@@ -6,7 +6,7 @@ import { Provider } from 'react-redux';
 import { store } from './src/store/store';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { COLORS } from './src/theme/tokens';
-
+import { ThemeProvider, useScheme } from './src/theme/theme';
 import {
   useFonts,
   Inter_400Regular,
@@ -29,6 +29,31 @@ import './src/global.css';
 // few milliseconds of layout.
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 300, fade: true });
+
+/**
+ * Sits inside ThemeProvider so it can see the resolved scheme.
+ *
+ * The key on RootNavigator is deliberate. Class-based colour follows the theme
+ * on its own, but inline JS colour, every Lucide icon and SVG stroke in the
+ * app, is read during render, so a screen that is mounted and idle would keep
+ * the old palette until something else made it re-render. Remounting the stack
+ * is the one line that makes the switch complete rather than gradual. The cost
+ * is that switching theme returns you to the root of the stack, which is a
+ * fair trade for something done once and then left alone.
+ */
+const Root: React.FC = () => {
+  const { scheme } = useScheme();
+  return (
+    <NavigationContainer>
+      <StatusBar
+        style={scheme === 'dark' ? 'light' : 'dark'}
+        backgroundColor={COLORS.surface.secondary}
+        translucent={false}
+      />
+      <RootNavigator key={scheme} />
+    </NavigationContainer>
+  );
+};
 
 // ─── Root component ───────────────────────────────────────────
 
@@ -57,12 +82,11 @@ export default function App() {
 
   return (
     <Provider store={store}>
-      <SafeAreaProvider onLayout={onLayoutRootView}>
-        <NavigationContainer>
-          <StatusBar style="dark" backgroundColor={COLORS.surface.secondary} translucent={false} />
-          <RootNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <SafeAreaProvider onLayout={onLayoutRootView}>
+          <Root />
+        </SafeAreaProvider>
+      </ThemeProvider>
     </Provider>
   );
 }

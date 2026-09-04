@@ -1,41 +1,84 @@
 // Colour values live in palette.js, which tailwind.config.js also reads, so
 // class names and these JS tokens always resolve to the same hex.
+//
+// Colour is THEMED. COLORS and CATEGORY_COLORS read through getters
+// backed by whichever palette is active, so the five hundred odd call sites
+// across the app did not have to change and cannot go stale: they resolve at
+// render time, not at import time.
+//
+// The one thing that DOES capture a value is a constant evaluated at module
+// scope, because that runs once before any theme is chosen. Those are written
+// as functions instead, and there is a note on each.
 import type { TextStyle } from 'react-native';
-import { PALETTE } from './palette';
+import { PALETTE, PALETTE_DARK } from './palette';
 import type { Category } from '../utils/categories';
 
-export const COLORS = {
+export type Scheme = 'light' | 'dark';
+
+type RawPalette = typeof PALETTE;
+
+const shape = (p: RawPalette) => ({
     brand: {
-        primary: PALETTE.brand.primary,
-        primaryDark: PALETTE.brand.primaryDark,
-        soft: PALETTE.brand.soft,
-        edge: PALETTE.brand.edge,
-        onDark: PALETTE.brand.onDark,
+        primary: p.brand.primary,
+        primaryDark: p.brand.primaryDark,
+        link: p.brand.link,
+        soft: p.brand.soft,
+        edge: p.brand.edge,
+        onDark: p.brand.onDark,
     },
     semantic: {
-        profit: PALETTE.profit.base,
-        profitBg: PALETTE.profit.bg,
-        profitOnBrand: PALETTE.profit.onBrand,
-        loss: PALETTE.loss.base,
-        lossBg: PALETTE.loss.bg,
-        alertAmber: PALETTE.alert.amber,
-        alertAmberFill: PALETTE.alert.amberFill,
-        alertCritical: PALETTE.alert.critical,
-        alertBg: PALETTE.alert.bg,
+        profit: p.profit.base,
+        profitBg: p.profit.bg,
+        profitOnBrand: p.profit.onBrand,
+        loss: p.loss.base,
+        lossBg: p.loss.bg,
+        alertAmber: p.alert.amber,
+        alertAmberFill: p.alert.amberFill,
+        alertCritical: p.alert.critical,
+        alertBg: p.alert.bg,
     },
-    text: PALETTE.text,
-    surface: PALETTE.surface,
+    text: p.text,
+    surface: p.surface,
     border: {
-        default: PALETTE.border.base,
-        strong: PALETTE.border.strong,
-        focus: PALETTE.border.focus,
+        default: p.border.base,
+        strong: p.border.strong,
+        focus: p.border.focus,
     },
     pii: {
-        maskText: PALETTE.pii.mask,
-        maskBg: PALETTE.pii.maskBg,
-        highlight: PALETTE.pii.highlight,
+        maskText: p.pii.mask,
+        maskBg: p.pii.maskBg,
+        highlight: p.pii.highlight,
     },
-} as const;
+});
+
+const LIGHT = shape(PALETTE);
+const DARK = shape(PALETTE_DARK as RawPalette);
+
+let rawActive: RawPalette = PALETTE;
+let active = LIGHT;
+let current: Scheme = 'light';
+
+/**
+ * Point the tokens at a theme. Called by the provider in App.tsx and nowhere
+ * else: components read the scheme through useScheme().
+ */
+export function applyScheme(scheme: Scheme): void {
+    current = scheme;
+    rawActive = scheme === 'dark' ? (PALETTE_DARK as RawPalette) : PALETTE;
+    active = scheme === 'dark' ? DARK : LIGHT;
+}
+
+export const getScheme = (): Scheme => current;
+
+/** Every group is a getter, so a read during render gets the live theme. */
+export const COLORS = {
+    get brand() { return active.brand; },
+    get semantic() { return active.semantic; },
+    get text() { return active.text; },
+    get surface() { return active.surface; },
+    get border() { return active.border; },
+    get pii() { return active.pii; },
+};
 
 /**
  * Category colour, and the only supported way to reach it.
@@ -45,23 +88,18 @@ export const COLORS = {
  * undefined and rendering grey at runtime. That is exactly what the previous
  * map did for `housing` and `other`.
  */
-export const CATEGORY_COLORS: Record<Category, string> = PALETTE.category;
+export const CATEGORY_COLORS = Object.keys(PALETTE.category).reduce((out, key) => {
+    Object.defineProperty(out, key, {
+        get: () => rawActive.category[key as Category],
+        enumerable: true,
+    });
+    return out;
+}, {} as Record<Category, string>);
 
 /** The same hue at 12 percent, for the icon tile behind a category glyph. */
 export const categoryTint = (category: Category): string =>
     `${CATEGORY_COLORS[category]}1F`;
 
-/**
- * Seven steps, replacing thirteen declared sizes plus eight arbitrary
- * `text-[Npx]` escapes. Hierarchy is carried by weight and colour before size:
- * the app had 119 uses of one 12px step doing five different jobs.
- *
- * `display` and `title` are set in Instrument Serif, which ships a single
- * weight, so neither can lean on 700 the way an Inter scale would. Both go up
- * in size instead. Everything from `heading` down is Inter.
- *
- * `micro` is for badges and axis labels. A sentence never gets it.
- */
 /**
  * The registered font family names, one per weight.
  *

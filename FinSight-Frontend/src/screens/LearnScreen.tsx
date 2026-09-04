@@ -214,12 +214,12 @@ export const LearnScreen: React.FC = () => {
                                 : <Flame size={20} color="#C2410C" />}
                         </View>
                         <View className="flex-1">
-                            <Text className={`text-base font-inter-bold ${freezes > 0 ? 'text-brand-primary-dark' : 'text-alert-amber'}`}>
+                            <Text className={`text-base font-inter-bold ${freezes > 0 ? 'text-brand-link' : 'text-alert-amber'}`}>
                                 {freezes > 0
                                     ? `${currentStreak}-day streak protected`
                                     : `${currentStreak}-day streak at risk`}
                             </Text>
-                            <Text className={`text-xs mt-0.5 ${freezes > 0 ? 'text-brand-primary-dark' : 'text-alert-amber'}`}>
+                            <Text className={`text-xs mt-0.5 ${freezes > 0 ? 'text-brand-link' : 'text-alert-amber'}`}>
                                 {freezes > 0
                                     ? `A freeze will cover the day you missed. ${freezes} left.`
                                     : 'Finish any module today to keep it alive.'}
@@ -430,7 +430,7 @@ export const LearnScreen: React.FC = () => {
                                                 already carry the percentage, so this
                                                 row is only the next action. */}
                                             <View className="flex-row items-center justify-end">
-                                                <Text className="text-xs font-inter-semibold text-brand-primary-dark mr-1">
+                                                <Text className="text-xs font-inter-semibold text-brand-link mr-1">
                                                     {pPct === 0 ? 'Start' : pPct === 100 ? 'Review' : 'Continue'}
                                                 </Text>
                                                 <ChevronRight size={14} color={COLORS.brand.primary} />
@@ -470,7 +470,7 @@ export const LearnScreen: React.FC = () => {
                                     key={term.term + idx}
                                     className="bg-surface-primary border border-border rounded-2xl px-4 py-3.5 mb-3"
                                 >
-                                    <Text className="text-sm font-inter-bold text-brand-primary-dark mb-1">{term.term}</Text>
+                                    <Text className="text-sm font-inter-bold text-brand-link mb-1">{term.term}</Text>
                                     <Text className="text-sm text-text-secondary leading-5 font-inter">{term.definition}</Text>
                                 </View>
                             ))

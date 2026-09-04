@@ -1,5 +1,5 @@
 /**
- * Single source of truth for FinSight's colours.
+ * Single source of truth for FinSight's colours, light and dark.
  *
  * Consumed by two places, which previously each kept their own copy and had
  * drifted apart:
@@ -9,47 +9,39 @@
  * CommonJS so the Tailwind config can require() it. Add a colour here and it
  * becomes available to both.
  *
- * Values come from the Phase 0 Foundations board, see REDESIGN_PLAN.md.
- * The KEY NAMES are deliberately unchanged: roughly two hundred existing class
- * names like `text-text-primary` and `bg-surface-secondary` keep working and
- * simply resolve to the warm ramp instead of Tailwind's blue-tinted greys.
- * That is what makes this a value swap rather than a rewrite.
+ * PALETTE and PALETTE_DARK carry THE SAME KEYS. That is the contract: a token
+ * names a role, not a value, so nothing downstream has to know which theme is
+ * running. `text.primary` is the darkest ink on a light ground and the
+ * lightest on a dark one, and both are simply "the colour headings are".
  *
- * Ratios below are measured against `surface.secondary` (#F7F3ED), the app
- * canvas. WCAG AA wants 4.5:1 for normal text. Three values in the previous
- * palette did not reach it and are marked.
+ * Ratios are measured against that theme's canvas (`surface.secondary`).
+ * WCAG AA wants 4.5:1 for normal text.
  */
+
+/** Light. The warm ground, replacing Tailwind's blue-tinted greys. */
 const PALETTE = {
     /**
-     * One accent, split by job.
+     * One accent, split three ways by job, because one value cannot do all
+     * three jobs in both themes.
      *
-     * `primary` is a fill. At 4.1:1 it is short of AA the moment it becomes a
-     * word, and it was being used as a text colour in 96 places.
-     * `primaryDark` is the one to reach for whenever a label is involved,
-     * either as the label or as the thing behind it: white on it reads 6.3:1,
-     * where white on `primary` reads 4.5:1 and passed only because the button
-     * labels happen to be bold.
+     *   primary      a fill. Never a label, never behind one.
+     *   primaryDark  a button fill. White sits on it, so it must stay mid.
+     *   link         accent TEXT on the canvas. This is the one that has to
+     *                invert in dark, where a mid indigo on near-black reads
+     *                2.9:1.
      */
     brand: {
         primary: '#6366F1', //  4.1:1  fills, tints and borders only
-        primaryDark: '#4F46E5', //  5.7:1  anything carrying a label, or that is one
+        primaryDark: '#4F46E5', //  5.7:1  button fills, white on it reads 6.3:1
+        link: '#4F46E5', //  5.7:1  accent text
         soft: '#EEF2FF', //         tinted panel ground
-        edge: '#C7D2FE', //         border on a tinted panel, and nothing else
-        // Text sitting ON the accent, for the Login header, the launch screen
-        // and the Time Machine card. `edge` was being used for this and reads
-        // 3.0:1 on primary, 4.2:1 on primaryDark, so it failed either way. This
-        // clears 4.9:1 on primaryDark, which is the only accent a label may
-        // sit on.
-        onDark: '#DDE3FF',
+        edge: '#C7D2FE', //         border on a tinted panel
+        onDark: '#DDE3FF', //  4.9:1  text sitting ON the accent
     },
     profit: {
         base: '#0E7C5A', //  4.7:1  was #10B981, which reads 2.0:1
         bg: '#E3F2EA',
-        // For the dark indigo surfaces, the Time Machine growth card and the
-        // Login header. `base` is a light-ground colour and disappears there,
-        // so a semantic set without this entry is incomplete rather than
-        // restrained. 4.8:1 on brand.primaryDark.
-        onBrand: '#B6EDD4',
+        onBrand: '#B6EDD4', //  4.8:1 on primaryDark
     },
     loss: {
         base: '#C0392F', //  4.9:1  was #EF4444, which reads 3.6:1
@@ -111,4 +103,85 @@ const PALETTE = {
     },
 };
 
-module.exports = { PALETTE };
+/**
+ * Dark. A warm dark, not a blue-black one.
+ *
+ * The light ramp is hue 32 at low chroma, so the dark ramp is the same hue
+ * rather than the usual slate. A blue-black ground under a warm accent is the
+ * thing that makes most dark modes feel like a different app with the lights
+ * off, and FinSight's whole identity here is warmth.
+ *
+ * Two values deliberately do NOT invert:
+ *   primary and primaryDark stay put, because they are fills. A button is
+ *   measured against its own label, not against the page, and white on
+ *   #4F46E5 reads 6.3:1 in either theme.
+ * Everything that carries text against the canvas does invert, `link` most
+ * of all: a mid indigo on near-black reads 2.9:1 and is unusable.
+ */
+const PALETTE_DARK = {
+    brand: {
+        primary: '#6366F1', //         a fill in both themes, so unchanged
+        primaryDark: '#4F46E5', //         button fill, white on it still 6.3:1
+        link: '#A5B4FC', //  9.3:1  accent text, inverted from the light value
+        soft: '#232135', //         tinted panel ground
+        edge: '#3A3663',
+        onDark: '#DDE3FF', //         text on the accent, unchanged
+    },
+    profit: {
+        base: '#3FBF8F', //  8.0:1
+        bg: '#16302A',
+        onBrand: '#B6EDD4',
+    },
+    loss: {
+        base: '#F2705F', //  6.2:1
+        bg: '#33201D',
+    },
+    alert: {
+        amber: '#D9A441', //  8.2:1
+        amberFill: '#F59E0B', //         a fill, so unchanged
+        critical: '#F2705F',
+        bg: '#33291A',
+    },
+    text: {
+        primary: '#F2EDE5', // 15.9:1
+        secondary: '#C3B8AA', //  9.5:1
+        tertiary: '#9E9488', //  6.2:1
+        muted: '#6E6459', //  3.2:1  decorative and disabled only, as in light
+        inverse: '#16130F', //         text on a light surface
+    },
+    surface: {
+        primary: '#1F1B16', //  cards, one step up from the canvas
+        secondary: '#16130F', //  the app canvas
+        tertiary: '#2A2520', //  sunken: bar tracks, input rests, icon tiles
+    },
+    border: {
+        base: '#332D26',
+        strong: '#453D34',
+        focus: '#818CF8',
+    },
+    pii: {
+        mask: '#9E9488',
+        maskBg: '#2A2520',
+        highlight: '#232135',
+    },
+    /**
+     * The same eleven hues, lifted into the light half of the range. The light
+     * set sits at roughly 5:1 on paper by being dark; on a near-black canvas
+     * those same values fall to about 3.6:1, which is a fill and not a label.
+     */
+    category: {
+        dining: '#F0793F',
+        groceries: '#8FBF3F',
+        transport: '#6E9BFF',
+        shopping: '#F06A9E',
+        utilities: '#D9A441',
+        housing: '#A98BFF',
+        healthcare: '#3FBFB0',
+        education: '#45AFD1',
+        entertainment: '#E06AD1',
+        investments: '#3FBF8F',
+        other: '#A79E92',
+    },
+};
+
+module.exports = { PALETTE, PALETTE_DARK };

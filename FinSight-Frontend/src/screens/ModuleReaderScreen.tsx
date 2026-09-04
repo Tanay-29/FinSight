@@ -68,7 +68,7 @@ const ReadingPhase: React.FC<{
         <View className="mx-5 mt-4 bg-surface-primary rounded-2xl p-5 border border-border">
             <View className="flex-row items-center mb-3">
                 <BookOpen size={16} color={COLORS.brand.primary} />
-                <Text className="text-sm font-inter-semibold text-brand-primary-dark ml-1.5">In this module</Text>
+                <Text className="text-sm font-inter-semibold text-brand-link ml-1.5">In this module</Text>
             </View>
             <Text className="text-base text-text-secondary leading-7 font-inter">{module.content}</Text>
         </View>
@@ -172,7 +172,7 @@ const QuizPhase: React.FC<{
                     <Text className="text-xs text-text-tertiary font-inter-medium">
                         Question {qIndex + 1} of {questions.length}
                     </Text>
-                    <Text className="text-xs text-brand-primary-dark font-inter-semibold">
+                    <Text className="text-xs text-brand-link font-inter-semibold">
                         {score} correct
                     </Text>
                 </View>
@@ -347,7 +347,7 @@ const DonePhase: React.FC<{
             {streakSaved && (
                 <View className="mt-3 flex-row items-center bg-brand-soft border border-brand-edge rounded-2xl px-5 py-3">
                     <Snowflake size={20} color="#0E7490" />
-                    <Text className="text-sm font-inter-bold text-brand-primary-dark ml-2">
+                    <Text className="text-sm font-inter-bold text-brand-link ml-2">
                         Streak freeze used. Your streak is safe.
                     </Text>
                 </View>
