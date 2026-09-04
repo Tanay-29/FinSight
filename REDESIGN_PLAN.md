@@ -420,7 +420,54 @@ meets them.
    served bundle contains the change before trusting what you see:
    `curl -s "http://localhost:8081/index.bundle?platform=web&dev=true" | grep -c "<the new string>"`.
 
-### Phase 2 — Onboarding rebuild (the core personalisation fix)
+### Phase 2 and 3 — **LANDED, uncommitted**
+
+The broken promise in §1 is closed. Every question onboarding asks is now read
+back somewhere:
+
+| Field | Read where | Was |
+|---|---|---|
+| Age | The coach prompt | Orphaned |
+| Experience level | The coach prompt | Orphaned |
+| App goals | LearnScreen, and now the Feed | Used, narrowly |
+| Income range | Burn Rate, 50/30/20 | Used |
+| Risk profile | **Question removed** | Orphaned |
+
+- [x] **The risk step is gone.** It asked a brand new user what they would do
+      if their investments fell 20 percent, for a simulated brokerage deleted
+      in `edb288f`. Onboarding is four steps now, and every one of them feeds
+      something.
+- [x] **Age and experience reach the coach.** `/api/ai-advisor` takes both,
+      optionally, so an older client still works, and turns them into a line
+      about who is being spoken to: a beginner gets terms defined on first use,
+      someone experienced gets the explanations skipped. **Both go into the
+      cache key**, or a beginner would be served advice written for someone
+      experienced purely because their numbers matched.
+- [x] **Step 1 and 2 copy now describes what actually happens** rather than
+      gesturing at personalisation in general.
+- [x] **The Feed reflects the answers back**, which is Phase 2 item 6 and
+      Phase 3 in one card, because they turned out to be the same thing. It
+      names what the person said and points at the thing that answer implies
+      they have not done: budgeting with no budgets set, saving with no goal
+      created, learning either way. It returns null once there is nothing to
+      prompt, so it **disappears by being satisfied rather than by being
+      dismissed**. A card you have to close is a card that was not worth
+      showing.
+- [x] **Feed order follows the goals.** The spending summary is the budgeting
+      artefact, so it leads for someone who came to budget and sits below the
+      transaction list for someone who did not.
+
+**This changed the backend, which §0 forbids.** Phase 2 item 2 required it and
+the change is additive: two optional fields read off the request body and one
+line of prompt. No route, schema or contract was altered, and a client that
+sends neither field behaves exactly as before. `main.py` compiles. Flagging it
+because §0 and Phase 2 contradicted each other and this resolved it one way.
+
+**Also removed a buzzword from the prompt itself.** It instructed the model to
+sound "data-driven, like a personal CFO", which is precisely the voice the
+copy rules rule out, and it was shaping every line the coach has ever written.
+
+### Phase 2 — the original plan, for reference
 1. Replace or repurpose Step 5 (risk profile). It currently asks about a
    feature that doesn't exist. Options: cut it entirely, or turn it into
    something the app can act on today (e.g. how direct/gentle the coach's
@@ -541,9 +588,9 @@ differently from the NativeWind defaults currently in place. Use the
       top of this file. Direction B (Instrument Serif display) chosen.
 - [x] **Phase 1, foundation.** Landed and verified, **uncommitted**. See the
       Phase 1 section for what it did and what it deliberately left.
-- [ ] **Phase 2, onboarding rebuild.** Not started. Unblocked: the tokens
-      Phase 2 item 5 needs now exist.
-- [ ] **Phase 3, Feed personalisation.** Not started.
+- [x] **Phase 2, onboarding rebuild.** Landed. The risk step is cut, age and
+      experience reach the coach, and the Feed reflects the answers back.
+- [x] **Phase 3, Feed personalisation.** Landed, as the same card.
 - [x] **Phase 4a, system-wide styling.** Landed. Typography, the scales,
       elevation and motion applied across the tree.
 - [x] **Phase 4b, screen-level styling.** All twenty screens passed, in flow
