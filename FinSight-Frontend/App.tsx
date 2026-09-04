@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { store } from './src/store/store';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { COLORS } from './src/theme/tokens';
 
 import {
   useFonts,
@@ -13,6 +14,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif';
 import * as SplashScreen from 'expo-splash-screen';
 import './src/global.css';
 
@@ -37,6 +39,10 @@ export default function App() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    // The display face, used by TYPE.display and TYPE.title. It ships one
+    // weight, so those two steps carry their emphasis through size rather
+    // than through boldness.
+    InstrumentSerif: InstrumentSerif_400Regular,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -53,7 +59,7 @@ export default function App() {
     <Provider store={store}>
       <SafeAreaProvider onLayout={onLayoutRootView}>
         <NavigationContainer>
-          <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={false} />
+          <StatusBar style="dark" backgroundColor={COLORS.surface.secondary} translucent={false} />
           <RootNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
