@@ -506,7 +506,15 @@ copy rules rule out, and it was shaping every line the coach has ever written.
    capped reading width, generous line-height) to Module Reader and other
    dense-content screens.
 
-### Phase 4c — Dark mode — **LANDED, uncommitted**
+### Phase 4c — Dark mode — **LANDED, committed 6 September 2026**
+
+**Update, 6 September 2026:** the description below is what this phase
+looked like from reading the code. Running the built APK on a device found
+three real bugs the reasoning below did not predict — two hardcoded white
+backgrounds this phase's own token sweep should have caught but missed
+(the tab bar, the IQ card), and `text.inverse` inverting under nine icons
+sitting on the accent, which does not invert. All three are fixed and
+committed. Full account in HANDOFF.md §5j.
 
 Deferring it was the right call: because every colour already resolved through
 a token, this needed almost no per-screen work. Two mechanisms, because the app
@@ -596,23 +604,30 @@ differently from the NativeWind defaults currently in place. Use the
 - [x] **Phase 4b, screen-level styling.** All twenty screens passed, in flow
       order. Five got individual attention (Intro, Login, Onboarding, Feed,
       Vitals); the remaining fifteen shared one recipe.
-- [ ] **Phase 4c, dark mode.** Deliberately last. See its own section for why
-      waiting costs nothing and starting early costs double.
-- [ ] **Phase 5, iOS pass.** Not started.
+- [x] **Phase 4c, dark mode.** Landed, and **committed and pushed 6 September
+      2026** after a first real device run found three bugs the token layer
+      alone did not catch: the tab bar and IQ card stayed white (hardcoded
+      `'#FFFFFF'` backgrounds, not tokens), nine icons on the brand accent
+      went near-black (`text.inverse` inverts by theme, the accent it sits on
+      does not), and Auto only resolved once at cold start (NativeWind's
+      `setColorScheme` pins `Appearance` globally when given a concrete
+      value). All three fixed. See HANDOFF.md §5j for the full account,
+      including the IQ gauge's own geometry bug found in the same pass.
+- [ ] **Phase 5, iOS pass.** Not started. No Mac was available in the session
+      that fixed Phase 4c, so iOS dark mode specifically is still unverified.
 
-**33 files are modified and nothing is committed.** `FinSight-Backend/`,
-`firestore.rules`, `app.json` and `eas.json` are untouched, as §0 requires.
-The only dependency change is the one approved font package. `README.md` also
-shows as modified, but that predates this initiative and is not ours.
+**The IQ gauge decision (Phase 0, behaviour change 2) is taken, and shipped
+6 September 2026.** Single accent arc, grade word in `text.primary`, colour
+reserved for the change since last week. The six-band ramp is gone; three of
+its six colours failed AA (`Expert` 4.00:1, `Disciplined` 4.01:1, `Building
+Habits` 2.15:1), so the readable half of the old ramp was the half saying a
+student was doing badly.
 
-**Nothing here has been seen on a device.** Every claim above is from
-`npm run check` and from grep counts. The colour work was done by two scripted
-passes over 24 files, so the highest-value next step is not more code, it is
-running the app and looking at it, particularly the screens the sweep touched
-hardest: SubscriptionTracker, Flashcard and BurnRate.
-
-One decision is still open rather than blocked: whether the IQ gauge loses its
-green-to-red grade colour (Phase 0, behaviour change 2).
+**This has now been seen on a device.** A release APK was built and run on
+an Android emulator; see HANDOFF.md §5j for what running it found, including
+a real geometry bug in the gauge's SVG arc path that no amount of reading the
+code would have surfaced. iOS remains unverified, and Android was an
+emulator, not a physical phone.
 
 Three artifacts hold the full detail, all linked at the top. Keep updating the
 checkboxes above as work lands, matching the pattern `HANDOFF.md` already uses
