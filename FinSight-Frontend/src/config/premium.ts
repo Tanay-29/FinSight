@@ -73,7 +73,7 @@ export const DEFAULT_PLAN: PlanId = 'annual';
 export const TRIAL_DAYS = 7;
 
 /** Named so a gate reads as a sentence at the call site. */
-export type PremiumFeature = 'ai-coach' | 'flashcards' | 'spend-game';
+export type PremiumFeature = 'ai-coach' | 'flashcards';
 
 export const FEATURE_COPY: Record<PremiumFeature, { title: string; body: string }> = {
     'ai-coach': {
@@ -84,10 +84,6 @@ export const FEATURE_COPY: Record<PremiumFeature, { title: string; body: string 
         title: 'Turn this module into flashcards',
         body: 'Cards written from what you just read, scheduled so the ones you miss come back sooner.',
     },
-    'spend-game': {
-        title: 'Keep playing',
-        body: 'More rounds against your own categories, and the blind spot they add up to.',
-    },
 };
 
 /** What the free tier still gets, stated plainly so the paywall can be honest. */
@@ -96,13 +92,24 @@ export const FREE_ALLOWANCE = {
     aiCoachRefreshes: 3,
     /** Flashcard decks generated per calendar month on the free tier. */
     flashcardDecks: 1,
-    /** Rounds of the spending game per day on the free tier. */
-    spendGameRounds: 5,
 };
 
+/**
+ * Every line here has to be something the app actually does.
+ *
+ * "Unlimited rounds of the spending game" was removed: nothing gated the game.
+ * `'spend-game'` existed in the feature union and in FEATURE_COPY but was
+ * never passed to the paywall by any caller, so the bullet was a claim with no
+ * mechanism behind it. On a screen that also says "this is a demonstration and
+ * no payment is taken", an untrue bullet is the one thing that would undermine
+ * the rest.
+ *
+ * The replacement is true and worth saying: the two gated features are the two
+ * that cost money per use, which is why they are the ones behind the tier.
+ */
 export const VALUE_PROPS = [
     'Your coach, whenever you want a fresh read',
     'Flashcards from any module, generated on the spot',
-    'Unlimited rounds of the spending game',
+    'The two features that cost us per use, uncapped',
     'Everything you already have, unchanged',
 ];

@@ -269,12 +269,12 @@ export const COURSE_CONTENT: LearningPath[] = [
                 difficulty: 'intermediate',
                 completed: false,
                 keyPoints: [
-                    'Use apps like Groww, ICICI Securities, or HDFC Sky',
+                    'Any SEBI-registered platform works; the app matters less than the fund',
                     'Complete KYC (Know Your Customer) verification',
                     'Choose a fund based on your risk appetite',
                     'Start a SIP in 10 minutes from your phone',
                 ],
-                content: 'Modern investing is easy! Download an investing app (Groww is popular). Complete your KYC using Aadhaar & PAN. Browse funds by category (Equity, Debt, etc.). Read the fund\'s expense ratio & historical returns. If it fits your risk profile, start a SIP. Money will auto-debit from your bank account every month. You can track growth in your dashboard anytime.',
+                content: 'Modern investing is easy. Download a SEBI-registered investing app. Complete your KYC using Aadhaar & PAN. Browse funds by category (Equity, Debt, etc.). Read the fund\'s expense ratio & historical returns, and prefer a direct plan over a regular one, since a regular plan pays the app a yearly commission out of your returns. If it fits your risk profile, start a SIP. Money will auto-debit from your bank account every month. You can track growth in your dashboard anytime.',
                 quiz: [
                     {
                         question: 'What is KYC and why is it required before investing?',
@@ -309,7 +309,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                     'Don\'t invest money you\'ll need in 1-2 years',
                     'Don\'t compare your returns to your friend\'s returns',
                 ],
-                content: 'New investors often panic when markets drop 20%. Stop! Long-term investors should smile, because lower prices mean buying more units at cheaper rates. Don\'t chase "hot" funds. Don\'t invest short-term money in stocks. Don\'t check your portfolio daily; you\'ll stress yourself. Markets go up 80% of the time over 5+ year periods. Stay calm & stay invested.',
+                content: 'New investors often panic when markets drop 20%. Stop! Long-term investors should smile, because lower prices mean buying more units at cheaper rates. Don\'t chase "hot" funds. Don\'t invest short-term money in stocks. Don\'t check your portfolio daily; you\'ll stress yourself. Over long enough periods, staying invested through the drops has mattered more than timing them. Stay calm & stay invested.',
                 quiz: [
                     {
                         question: 'When the market drops 20%, what should a long-term investor ideally do?',
@@ -388,9 +388,9 @@ export const COURSE_CONTENT: LearningPath[] = [
                     'Budgeting is NOT about limiting spending',
                     'It\'s about spending INTENTIONALLY',
                     'Most people don\'t know where their money goes',
-                    '78% of Indians say they live paycheck to paycheck',
+                    'Seeing a number changes decisions that a feeling doesn\'t',
                 ],
-                content: 'A budget is simply a plan for your money. It\'s not restrictive; it\'s empowering. When you know where every rupee goes, you can make conscious choices. "Do I really want to spend ₹5,000/month on food delivery?" When you see the number, decisions change. Studies show budgeters save 15-20% more than non-budgeters. You don\'t need a fancy app; pen & paper works.',
+                content: 'A budget is simply a plan for your money. It\'s not restrictive; it\'s empowering. When you know where every rupee goes, you can make conscious choices. "Do I really want to spend ₹5,000/month on food delivery?" When you see the number, decisions change in a way that a vague sense of overspending doesn\'t. You don\'t need a fancy app; pen & paper works.',
                 quiz: [
                     {
                         question: 'What is the primary goal of budgeting?',
@@ -399,10 +399,10 @@ export const COURSE_CONTENT: LearningPath[] = [
                         explanation: 'Budgeting is about intention, not restriction. It helps you decide WHERE your money goes rather than wondering where it went.',
                     },
                     {
-                        question: 'Studies show that people who budget save how much more than those who don\'t?',
-                        options: ['1-2% more', '5-10% more', '15-20% more', '50% more'],
-                        answerIndex: 2,
-                        explanation: 'Research consistently shows that budgeters save 15-20% more because awareness of spending automatically changes behavior.',
+                        question: 'Why does writing a budget down change spending, when just intending to spend less usually doesn\'t?',
+                        options: ['It doesn\'t; intentions work just as well', 'Seeing the actual number forces a real decision, instead of a vague sense of "too much"', 'It legally obligates you to follow it', 'Apps automatically block overspending'],
+                        answerIndex: 1,
+                        explanation: 'A written number is a decision you can check yourself against. "I feel like I spend too much on food delivery" changes nothing; "I spent ₹5,000 on it this month" is something you can actually decide about.',
                     },
                     {
                         question: 'What is the first step to building a healthy budget?',
@@ -460,7 +460,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                     'Calculate your monthly need (rent, food, utilities)',
                     'Build it gradually, even ₹1,000/month helps',
                 ],
-                content: 'An emergency fund is money for unexpected events: job loss, medical emergency, car repair. Without it, you\'ll go into debt. Ideal size: 6 months of expenses (some say 3 months minimum). Calculate: Monthly Needs = Rent + Food + Utilities + Phone + Insurance. Multiply by 6. That\'s your target. Don\'t have ₹2L? Start with ₹50k. Build it over time. Keep it in a savings account earning 6-7% interest (HDFC Bank, ICICI, Axis offer good rates). NOT in investments, must be liquid.',
+                content: 'An emergency fund is money for unexpected events: job loss, medical emergency, car repair. Without it, you\'ll go into debt. Ideal size: 6 months of expenses (some say 3 months minimum). Calculate: Monthly Needs = Rent + Food + Utilities + Phone + Insurance. Multiply by 6. That\'s your target. Don\'t have ₹2L? Start with ₹50k. Build it over time. Keep it in a plain savings account, where it earns a modest 2.5-3% but you can pull it out the same day. NOT in investments, must be liquid.',
                 quiz: [
                     {
                         question: 'Why should an emergency fund NOT be kept in stock market investments?',
@@ -573,23 +573,23 @@ export const COURSE_CONTENT: LearningPath[] = [
                 completed: false,
                 keyPoints: [
                     'Income tax is a tax on your earnings',
-                    'Progressive tax: higher income = higher rate',
-                    'Tax slabs in India: vary from 0% to 30%',
+                    'Progressive tax: each slice of income above a threshold is taxed at that slice\'s rate',
+                    'The new regime is the default since FY 2023-24; the old regime with deductions is a choice you make when filing',
                     'Each year you must file ITR (income tax return)',
                 ],
-                content: 'Income earned in India is taxed by the government. Salary, business profit, rental income, investment income, all taxed. India uses a "progressive" system: earn ₹2.5L/year, zero tax. Earn ₹10L, you pay 20-30% on amount above ₹7.5L (not on entire ₹10L). This year\'s slab (2025-26): ₹0-2.5L = 0%, ₹2.5-5L = 5%, ₹5-10L = 20%, ₹10L+ = 30%. You must file ITR every year if income exceeds ₹2.5L.',
+                content: 'Income earned in India is taxed by the government. Salary, business profit, rental income, investment income, all taxed. India uses a "progressive" system: tax rises in slices as income rises, not all at once. Since FY 2023-24 the "new regime" is the default, with lower rates but none of the deductions in the modules ahead: ₹0-4L = 0%, ₹4-8L = 5%, ₹8-12L = 10%, ₹12-16L = 15%, ₹16-20L = 20%, ₹20-24L = 25%, above ₹24L = 30%. A rebate under Section 87A brings tax to zero up to roughly ₹12.75L of salary once the standard deduction is counted, which covers most people just starting out. The older regime still exists and can work out cheaper once you have enough 80C and 80D deductions to matter, but you have to opt into it. Either way, you must file ITR every year once your income crosses the exemption limit.',
                 quiz: [
                     {
                         question: 'India uses a "progressive" tax system. What does this mean?',
                         options: ['Everyone pays the same flat tax rate', 'Higher income earners pay a higher percentage in tax', 'Only businesses pay income tax', 'Tax rates decrease as income grows'],
                         answerIndex: 1,
-                        explanation: 'Progressive tax means rates increase in steps as income rises. The first ₹2.5L is tax-free; income above ₹10L is taxed at 30%.',
+                        explanation: 'Progressive tax means rates increase in steps as income rises. Under the current default regime the first ₹4L is tax-free; income above ₹24L is taxed at 30%.',
                     },
                     {
-                        question: 'If you earn ₹10L/year, are you taxed on the ENTIRE ₹10L at 30%?',
-                        options: ['Yes, the full ₹10L at 30%', 'No, only the portion above each slab threshold is taxed at that slab\'s rate', 'No, income below ₹5L is always tax-free', 'Yes, but only if you are salaried'],
+                        question: 'If you earn ₹10L/year, is your entire ₹10L taxed at the rate for your top slab?',
+                        options: ['Yes, the full ₹10L at that rate', 'No, only the portion of income inside each slab is taxed at that slab\'s rate', 'No, income below ₹5L is always tax-free', 'Yes, but only if you are salaried'],
                         answerIndex: 1,
-                        explanation: 'Tax slabs are marginal. You pay 0% on the first ₹2.5L, 5% on ₹2.5L-5L, 20% on ₹5L-10L. The 30% rate only applies to income ABOVE ₹10L.',
+                        explanation: 'Tax slabs are marginal. Under the current default regime, ₹10L in income is taxed as: 0% on the first ₹4L, 5% on the next ₹4L, and 10% on the remaining ₹2L. No slice of it is taxed at 30%.',
                     },
                     {
                         question: 'What is an ITR (Income Tax Return)?',
@@ -607,19 +607,20 @@ export const COURSE_CONTENT: LearningPath[] = [
                 difficulty: 'beginner',
                 completed: false,
                 keyPoints: [
+                    'Only available if you choose the old tax regime when filing',
                     'Section 80C allows ₹1.5L deduction per year',
                     'ELSS (Equity Linked Savings Scheme) = ₹1.5L',
                     'PPF (Public Provident Fund) = ₹1.5L',
                     'Life Insurance Premiums = ₹1.5L',
                     'Home Loan Principal Repayment = ₹1.5L',
                 ],
-                content: 'Section 80C lets you reduce taxable income by up to ₹1.5L per year. Invest ₹1.5L in ELSS mutual funds? Taxable income drops by ₹1.5L. For ₹30% tax slab, that\'s ₹45,000 tax saved! Common 80C investments: (1) ELSS = mutual funds with 3-year lock-in, ~12-15% returns. (2) PPF = government savings scheme, 7-8% returns, 15-year term. (3) NSCs, FDs, Insurance premiums qualify too. Example: If you earn ₹10L and invest ₹1.5L via ELSS, you pay tax on ₹8.5L instead of ₹10L.',
+                content: 'Section 80C only works under the old tax regime; the new regime, the default since FY 2023-24, does not allow it. If enough of these deductions make the old regime cheaper for you, 80C lets you reduce taxable income by up to ₹1.5L per year. Invest ₹1.5L in ELSS mutual funds? Taxable income drops by ₹1.5L. At the 30% slab, that\'s ₹45,000 tax saved. Common 80C investments: (1) ELSS = mutual funds with a 3-year lock-in, the shortest of any 80C option, tracking equity markets rather than a fixed rate. (2) PPF = government savings scheme, 7-8% returns, 15-year term. (3) NSCs, FDs, Insurance premiums qualify too. Example: on the old regime, earning ₹10L and investing ₹1.5L via ELSS means paying tax on ₹8.5L instead of ₹10L.',
                 quiz: [
                     {
-                        question: 'What is the maximum tax deduction allowed under Section 80C per year?',
+                        question: 'What is the maximum tax deduction allowed under Section 80C per year, on the old tax regime?',
                         options: ['₹50,000', '₹1,00,000', '₹1,50,000', '₹2,00,000'],
                         answerIndex: 2,
-                        explanation: 'Section 80C allows a maximum deduction of ₹1.5 lakh per financial year from your taxable income.',
+                        explanation: 'Section 80C allows a maximum deduction of ₹1.5 lakh per financial year from your taxable income, and only if you have chosen the old regime.',
                     },
                     {
                         question: 'ELSS mutual funds qualify for Section 80C deduction. What is their minimum lock-in period?',
@@ -643,12 +644,13 @@ export const COURSE_CONTENT: LearningPath[] = [
                 difficulty: 'beginner',
                 completed: false,
                 keyPoints: [
+                    'Like 80C, both of these only apply if you choose the old tax regime',
                     'Section 80D: Health insurance premiums deduction',
                     'Max ₹25,000 for self/family (age < 60)',
                     'Max ₹50,000 for parents (age 60+)',
                     'Section 80E: Education loan interest deduction (no limit)',
                 ],
-                content: 'Section 80D lets you deduct health insurance premiums. Cover yourself & family for ₹10,000/year premium? Deduct ₹10,000 from income = ₹3,000 tax saved (at 30% slab). Senior parents (60+)? Deduct ₹50,000. Section 80E: Taking education loan for yourself or kids? Deduct all interest paid (no limit, only interest, not principal). Examples: (1) Mediclaim policy ₹8k/year = ₹2,400 tax saved. (2) Education loan interest ₹50k/year = ₹15,000 tax saved. Smart saving!',
+                content: 'Section 80D and 80E are old-regime deductions, same as 80C in the last module. On the old regime, 80D lets you deduct health insurance premiums. Cover yourself and family for ₹10,000/year premium? Deduct ₹10,000 from income, ₹3,000 saved at the 30% slab. Senior parents (60+)? Deduct up to ₹50,000. Section 80E: taking an education loan for yourself or your kids? Deduct all interest paid, no limit, only interest, not principal. Examples: (1) Mediclaim policy ₹8k/year saves ₹2,400 in tax. (2) Education loan interest ₹50k/year saves ₹15,000. Worth knowing even if you end up on the new regime: it is exactly this kind of deduction, added up, that decides whether the old regime would have saved you more.',
                 quiz: [
                     {
                         question: 'Section 80D allows you to deduct which of the following?',
@@ -679,29 +681,29 @@ export const COURSE_CONTENT: LearningPath[] = [
                 completed: false,
                 keyPoints: [
                     'Capital gain = profit from selling an asset',
-                    'Long-term (> 1 year) = lower tax than short-term',
-                    'Equity long-term: 15% tax (below ₹1L) or 20% (above)',
-                    'Real estate long-term: 20% tax',
+                    'Long-term (more than 1 year for equity) is taxed lower than short-term',
+                    'Equity short-term gains are taxed at 20%',
+                    'Equity long-term gains above ₹1.25L a year are taxed at 12.5%; below that, exempt',
                 ],
-                content: 'Buy Reliance stock at ₹2,000, sell at ₹2,500 = ₹500 profit (capital gain). Holding period matters: (1) Short-term (< 1 year): Taxed as regular income (up to 30%). (2) Long-term (> 1 year): Lower rates. Equity funds held >1 year: 15% tax if gain ≤ ₹1L, else 20%. Property held >2 years: 20% tax. This is why you hear "buy and hold"; it\'s tax-efficient. Example: Profit ₹50k from mutual fund (1-year hold) = ₹7,500 tax (15%). Same profit short-term = ₹15,000 tax (30%). Double the tax!',
+                content: 'Buy a stock at ₹2,000, sell it at ₹2,500, and the ₹500 profit is a capital gain. How long you held it changes the rate. Equity held for a year or less: short-term gain, taxed at 20%. Equity held for more than a year: long-term gain, exempt up to ₹1.25 lakh in a year, taxed at 12.5% above that. Property held over two years is long-term too, taxed differently again. This is why "buy and hold" is a tax strategy as much as an investing one. Example: a ₹50,000 profit on equity held for two years, with no other long-term gains that year, falls inside the exemption and pays nothing. The same profit inside six months is short-term, taxed at 20%, ₹10,000 gone.',
                 quiz: [
                     {
                         question: 'You bought a stock and sold it 8 months later for a ₹20,000 profit. How is this taxed?',
-                        options: ['As Long-Term Capital Gain at 15%', 'As Short-Term Capital Gain added to regular income', 'It is completely tax-free', 'At a flat 10% rate'],
+                        options: ['As a Long-Term Capital Gain at 12.5%', 'As a Short-Term Capital Gain, taxed at 20%', 'It is completely tax-free', 'At a flat 10% rate'],
                         answerIndex: 1,
-                        explanation: 'Holding for less than 1 year = Short-Term Capital Gain (STCG). For equity, STCG is taxed at 15%. For other assets, it\'s treated as regular income.',
+                        explanation: 'Holding equity for a year or less makes any profit a Short-Term Capital Gain. For equity, that is taxed at a flat 20%, regardless of your income slab.',
                     },
                     {
                         question: 'Why do financial advisors recommend "buy and hold" as a tax strategy?',
                         options: ['Long-term gains are always tax-free', 'Long-term capital gains have lower tax rates than short-term gains', 'Markets only go up over time', 'SEBI mandates holding for 1 year minimum'],
                         answerIndex: 1,
-                        explanation: 'Holding assets longer than 1 year (equity) or 2 years (property) qualifies you for Long-Term Capital Gains tax rates which are significantly lower.',
+                        explanation: 'Holding equity longer than a year qualifies gains for Long-Term treatment: 12.5% above the yearly exemption, against 20% flat for a short-term gain.',
                     },
                     {
-                        question: 'On equity mutual funds held over 1 year, long-term gains up to ₹1 lakh per year are:',
-                        options: ['Taxed at 30%', 'Taxed at 20%', 'Completely exempt from tax', 'Taxed at 15%'],
+                        question: 'On equity held over a year, how are long-term gains up to ₹1.25 lakh in a year treated?',
+                        options: ['Taxed at 20%', 'Taxed at 12.5%', 'Completely exempt from tax', 'Taxed at 30%'],
                         answerIndex: 2,
-                        explanation: 'Under current rules, long-term capital gains (LTCG) on equity up to ₹1 lakh per year are completely tax-free. Above ₹1L, LTCG is taxed at 10% (updated rate).',
+                        explanation: 'The first ₹1.25 lakh of long-term equity gains in a year is exempt. Above that threshold the rate is 12.5%, since the July 2024 budget raised the exemption and the rate together from the earlier ₹1 lakh and 10%.',
                     },
                 ],
             },
@@ -718,7 +720,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                     'Form ITR-1 (Sahaj) for salaried individuals',
                     'Gather documents: Salary slips, bank statements, investment proof',
                 ],
-                content: 'ITR filing is now simple. (1) Gather documents: Form 16 from employer, bank statements, investment proofs (ELSS receipts, insurance premium bills). (2) Go to incometax.gov.in, login via Aadhaar. (3) Choose correct ITR form: ITR-1 for salaried, ITR-3 for business, ITR-4 for freelancers. (4) Enter income & deductions. (5) System auto-calculates tax. (6) E-verify using OTP. (7) Submit. If refund due, money hits bank in 15-30 days. Penalty for late filing: ₹5,000. Penalties for non-filing can be higher. File on time!',
+                content: 'ITR filing is now simple. (1) Gather documents: Form 16 from employer, bank statements, investment proofs (ELSS receipts, insurance premium bills). (2) Go to incometax.gov.in, login via Aadhaar. (3) Choose correct ITR form: ITR-1 for salaried, ITR-3 for business, ITR-4 for freelancers. (4) Enter income & deductions. (5) System auto-calculates tax. (6) E-verify using OTP. (7) Submit. If refund due, money hits bank in 15-30 days. Penalty for late filing under Section 234F: ₹1,000 if your total income is ₹5 lakh or less, ₹5,000 otherwise. File on time!',
                 quiz: [
                     {
                         question: 'Which ITR form should a salaried employee with no business income use?',
@@ -730,7 +732,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                         question: 'What is the usual deadline for filing your ITR in India?',
                         options: ['March 31', 'June 30', 'July 31', 'December 31'],
                         answerIndex: 2,
-                        explanation: 'The standard ITR filing deadline for individuals is July 31 of the assessment year (for the financial year ending March 31). Late filing attracts a ₹5,000 penalty.',
+                        explanation: 'The standard ITR filing deadline for individuals is July 31 of the assessment year (for the financial year ending March 31). Late filing draws a penalty under Section 234F, up to ₹5,000, or ₹1,000 if your total income is ₹5 lakh or less.',
                     },
                     {
                         question: 'What is Form 16, and why is it important for filing ITR?',
@@ -753,7 +755,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                     'Don\'t miss deadlines (penalties are steep)',
                     'Don\'t ignore tax notices, reply quickly',
                 ],
-                content: 'Biggest mistakes: (1) Hiding income. Income Tax Dept tracks bank deposits, property registrations, credit card purchases. You can\'t evade. (2) Claiming fake deductions. If audited, you must show proof. (3) Late filing after July 31, penalty ₹5k + interest. (4) Ignoring tax notices. If IT Dept sends a notice, respond within 30 days with documents. Silence = default assessment (they calculate tax for you, often higher). (5) Not keeping records. Keep receipts, invoices, statements for 5 years. Insurance? Keep policy documents. Real estate? Keep sale deed & payment receipts.',
+                content: 'Biggest mistakes: (1) Hiding income. Income Tax Dept tracks bank deposits, property registrations, credit card purchases. You can\'t evade. (2) Claiming fake deductions. If audited, you must show proof. (3) Late filing after July 31, penalty up to ₹5k under Section 234F, ₹1k if your total income is ₹5L or less, plus interest. (4) Ignoring tax notices. If IT Dept sends a notice, respond within 30 days with documents. Silence = default assessment (they calculate tax for you, often higher). (5) Not keeping records. Keep receipts, invoices, statements for 5 years. Insurance? Keep policy documents. Real estate? Keep sale deed & payment receipts.',
                 quiz: [
                     {
                         question: 'You receive a tax notice from the Income Tax Department. What should you do?',

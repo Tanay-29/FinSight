@@ -594,19 +594,41 @@ export const VitalsScreen: React.FC = () => {
                     accessibilityRole="button"
                     accessibilityLabel="Monthly budget. Open the 50/30/20 breakdown."
                 >
-                    <View className="flex-row justify-between items-center mb-2">
-                        <Text className="text-sm text-text-secondary font-inter">Monthly budget</Text>
-                        <Text className="text-sm font-inter-semibold text-text-primary">{overallPercentage}% used</Text>
-                    </View>
-                    <View className="flex-row items-baseline mb-2">
-                        <Text className="text-3xl font-inter-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
-                        <Text className="text-base text-text-tertiary ml-2 font-inter">/ ₹{totalBudget.toLocaleString('en-IN')}</Text>
-                    </View>
-                    <BarFill
-                        percent={Math.min(overallPercentage, 100)}
-                        height={12}
-                        fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
-                    />
+                    {/* No budget set is a different state from nothing spent,
+                        and the card used to conflate them: it rendered
+                        "0% used" over an empty bar against "/ Rs 0" while the
+                        user had in fact spent real money. That is the state
+                        every new account is in, and it is exactly where the
+                        Feed's "Set your first budget" prompt sends them, so it
+                        was the first thing that prompt delivered. */}
+                    {totalBudget > 0 ? (
+                        <>
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-sm text-text-secondary font-inter">Monthly budget</Text>
+                                <Text className="text-sm font-inter-semibold text-text-primary">{overallPercentage}% used</Text>
+                            </View>
+                            <View className="flex-row items-baseline mb-2">
+                                <Text className="text-3xl font-inter-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
+                                <Text className="text-base text-text-tertiary ml-2 font-inter">/ ₹{totalBudget.toLocaleString('en-IN')}</Text>
+                            </View>
+                            <BarFill
+                                percent={Math.min(overallPercentage, 100)}
+                                height={12}
+                                fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <Text className="text-sm text-text-secondary font-inter mb-2">Monthly budget</Text>
+                            <View className="flex-row items-baseline mb-2">
+                                <Text className="text-3xl font-inter-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
+                                <Text className="text-base text-text-tertiary ml-2 font-inter">spent this month</Text>
+                            </View>
+                            <Text className="text-xs text-text-secondary font-inter">
+                                No budget set yet. Set one and this becomes a number you can check against.
+                            </Text>
+                        </>
+                    )}
                     <View className="flex-row items-center justify-end mt-3">
                         <Text className="text-xs font-inter-semibold text-brand-primary mr-1">50/30/20 breakdown</Text>
                         <ChevronRight size={14} color={COLORS.brand.primary} />

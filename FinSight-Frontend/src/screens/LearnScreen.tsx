@@ -268,66 +268,6 @@ export const LearnScreen: React.FC = () => {
 
 
 
-                {/* ── Practise ────────────────────────────────────
-                    Three tools that teach by doing. They used to sit in a grid
-                    of tiles on the Vitals screen, which is where you go to see
-                    how the month is going, not to learn something. */}
-                <Text className="mx-5 mt-6 mb-1 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
-                    Practise
-                </Text>
-
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-2 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-loss-bg items-center justify-center mr-3">
-                        <Target size={20} color={COLORS.semantic.loss} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Which was more?</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            Two of your own categories, head to head. Find your blind spot
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color={COLORS.semantic.loss} />
-                </PressableScale>
-
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('SwipeCategorise'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
-                        <Layers size={20} color="#0E7490" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            Sort miscategorised transactions and teach the app as you go
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color="#0E7490" />
-                </PressableScale>
-
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('TimeMachine'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-profit-bg items-center justify-center mr-3">
-                        <Hourglass size={20} color={COLORS.semantic.profit} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Time Machine</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            What a small regular spend is worth decades from now
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color={COLORS.semantic.profit} />
-                </PressableScale>
-
-
                 {/* ── Tab Switcher ────────────────────────────── */}
                 <View className="flex-row mx-5 mt-4 bg-surface-tertiary rounded-xl p-1">
                     <TouchableOpacity
@@ -477,6 +417,74 @@ export const LearnScreen: React.FC = () => {
                         )}
                     </View>
                 )}
+                {/* Practise sits BELOW the courses, not above them.
+                    This screen's own subtitle reads "Courses, practice and a
+                    glossary", in that order, and the screen did the reverse:
+                    three practice cards stood between the stats and the course
+                    list, so the thing the tab exists for, and the only thing
+                    that feeds the streak and badges shown at the top of this
+                    same screen, was the last thing you reached. */}
+                {/* ── Practise ────────────────────────────────────
+                    Three tools that teach by doing. They used to sit in a grid
+                    of tiles on the Vitals screen, which is where you go to see
+                    how the month is going, not to learn something. */}
+                <Text className="mx-5 mt-6 mb-1 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
+                    Practise
+                </Text>
+
+                <PressableScale
+                    onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
+                    accessibilityRole="button"
+                    className="mx-5 mt-2 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-loss-bg items-center justify-center mr-3">
+                        <Target size={20} color={COLORS.semantic.loss} />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-inter-bold text-text-primary">Which was more?</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                            Two of your own categories, head to head. Find your blind spot
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color={COLORS.semantic.loss} />
+                </PressableScale>
+
+                <PressableScale
+                    onPress={() => { haptics.tap(); navigation.navigate('SwipeCategorise'); }}
+                    accessibilityRole="button"
+                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
+                        <Layers size={20} color="#0E7490" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                            Sort miscategorised transactions and teach the app as you go
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color="#0E7490" />
+                </PressableScale>
+
+                <PressableScale
+                    onPress={() => { haptics.tap(); navigation.navigate('TimeMachine'); }}
+                    accessibilityRole="button"
+                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-profit-bg items-center justify-center mr-3">
+                        <Hourglass size={20} color={COLORS.semantic.profit} />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-inter-bold text-text-primary">Time Machine</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                            What a small regular spend is worth decades from now
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color={COLORS.semantic.profit} />
+                </PressableScale>
+
+
+
             </ScrollView>
         </SafeAreaView>
     );
