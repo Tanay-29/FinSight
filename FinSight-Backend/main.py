@@ -23,6 +23,14 @@ from cache import (
     cache, make_key,
     TTL_FLASHCARDS, TTL_AI_ADVISOR,
 )
+from ratelimit import RateLimiter, rate_limited
+
+# 30 calls per hour per uid on each Gemini route: generous for anyone actually
+# using the coach or generating decks for real modules, since a normal session
+# calls this a handful of times, but bounded well below what a scripted loop
+# would run in that time. See ratelimit.py for why this is needed even with a
+# cache in front of both routes.
+GEMINI_RATE_LIMIT = RateLimiter(limit=30, window_seconds=60 * 60)
 
 load_dotenv()
 
@@ -98,6 +106,7 @@ def health():
 # --- 0. FLASHCARD GENERATOR ROUTE (POST) ---
 @app.route('/api/generate-flashcards', methods=['POST'])
 @require_auth
+@rate_limited(GEMINI_RATE_LIMIT)
 def generate_flashcards():
     try:
         body = request.get_json(force=True, silent=True) or {}
@@ -179,6 +188,7 @@ Rules:{STYLE_RULES}
 # --- 3. FINSIGHT IQ AI ADVISOR ROUTE (POST) ---
 @app.route('/api/ai-advisor', methods=['POST'])
 @require_auth
+@rate_limited(GEMINI_RATE_LIMIT)
 def get_ai_advisor():
     try:
         body = request.get_json(force=True, silent=True) or {}
