@@ -267,7 +267,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
             {redirectable > 0 && (
                 <View style={{
                     marginHorizontal: 20, marginBottom: 16,
-                    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 18,
+                    backgroundColor: COLORS.surface.primary, borderRadius: 20, padding: 18,
                     borderWidth: 1, borderColor: COLORS.border.default,
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
@@ -318,7 +318,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
             <View style={{
                 marginHorizontal: 20, marginBottom: 12,
                 flexDirection: 'row', alignItems: 'center',
-                backgroundColor: '#FFFFFF', borderRadius: 14,
+                backgroundColor: COLORS.surface.primary, borderRadius: 14,
                 borderWidth: 1, borderColor: COLORS.surface.tertiary,
                 paddingHorizontal: 14, paddingVertical: 10, gap: 8,
             }}>
@@ -384,7 +384,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                             <View
                                 key={c.normalised}
                                 style={{
-                                    backgroundColor: '#FFFFFF',
+                                    backgroundColor: COLORS.surface.primary,
                                     borderRadius: 18,
                                     padding: 16,
                                     marginBottom: 10,

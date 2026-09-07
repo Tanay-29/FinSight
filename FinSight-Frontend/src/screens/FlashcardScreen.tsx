@@ -123,7 +123,7 @@ const FlipCard: React.FC<{
                     position: 'absolute', width: '100%', height: '100%',
                     backfaceVisibility: 'hidden',
                     transform: [{ rotateY: frontInterpolate }],
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: COLORS.surface.primary,
                     borderRadius: 24,
                     borderWidth: 1.5,
                     borderColor: COLORS.brand.soft,
@@ -317,7 +317,7 @@ const ResultsScreen: React.FC<{
                 <TouchableOpacity
                     onPress={onRestart}
                     style={{
-                        backgroundColor: '#FFFFFF', borderRadius: 16,
+                        backgroundColor: COLORS.surface.primary, borderRadius: 16,
                         paddingVertical: 14, alignItems: 'center',
                         flexDirection: 'row', justifyContent: 'center', gap: 8,
                         borderWidth: 1.5, borderColor: COLORS.border.default,
@@ -491,7 +491,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
             <View style={{
                 flexDirection: 'row', alignItems: 'center',
                 paddingHorizontal: 20, paddingVertical: 14,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: COLORS.surface.primary,
                 borderBottomWidth: 1, borderBottomColor: COLORS.surface.tertiary,
             }}>
                 <TouchableOpacity

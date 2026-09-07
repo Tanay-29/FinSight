@@ -354,7 +354,7 @@ export const FeedScreen: React.FC = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Add a transaction"
             >
-                <Plus color={COLORS.text.inverse} size={24} strokeWidth={2.2} />
+                <Plus color={COLORS.brand.onAccent} size={24} strokeWidth={2.2} />
             </PressableScale>
         </SafeAreaView>
     );

@@ -153,7 +153,7 @@ const BucketCard: React.FC<{
 
     return (
         <View style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLORS.surface.primary,
             borderRadius: 20,
             marginBottom: 12,
             borderWidth: 1.5,
@@ -461,7 +461,7 @@ const MoneyManagerScreen: React.FC = () => {
                 )}
 
                 {/* ── About the rule ──────────────────────────── */}
-                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary, marginTop: 4 }}>
+                <View style={{ backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary, marginTop: 4 }}>
                     <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 8 }}>About the 50/30/20 Rule</Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 18 }}>
                         Popularised by US Senator Elizabeth Warren, this framework splits after-tax income into three buckets:

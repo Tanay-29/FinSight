@@ -17,7 +17,7 @@
  * "system" keeps following the phone when it changes at sunset.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useColorScheme as useSystemScheme } from 'react-native';
+import { Platform, useColorScheme as useSystemScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'nativewind';
 import { applyScheme, type Scheme } from './tokens';
@@ -69,10 +69,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Both systems get pointed at the same answer before anything paints.
     applyScheme(scheme);
 
-    // Always the resolved scheme, never the preference. See the note above.
+    // Native gets the PREFERENCE, web gets the resolved scheme, and the two
+    // platforms need opposite things here.
+    //
+    // NativeWind's setColorScheme calls Appearance.setColorScheme() for any
+    // concrete value, which pins React Native's Appearance for the whole app.
+    // Once pinned, useColorScheme() above reports our own last write instead of
+    // the device, so "system" freezes at whatever the phone was when the app
+    // launched and no later change can reach it. Passing 'system' calls
+    // Appearance.setColorScheme(null) and lets the device through again.
+    //
+    // Web is the case the concrete value was written for: under class-based
+    // dark mode, 'system' removes the dark class rather than resolving it, so
+    // there the resolved scheme is still what has to be sent.
     useEffect(() => {
-        setColorScheme(scheme);
-    }, [scheme, setColorScheme]);
+        setColorScheme(Platform.OS === 'web' ? scheme : pref);
+    }, [pref, scheme, setColorScheme]);
 
     const setPref = useCallback((next: ThemePref) => {
         setPrefState(next);

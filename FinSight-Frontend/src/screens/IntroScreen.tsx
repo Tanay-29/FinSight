@@ -244,7 +244,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onDone }) => {
                     >
                         {last ? 'Get started' : 'Next'}
                     </Text>
-                    <ArrowRight size={18} color={COLORS.text.inverse} strokeWidth={2} />
+                    <ArrowRight size={18} color={COLORS.brand.onAccent} strokeWidth={2} />
                 </PressableScale>
 
                 <Text style={TYPE.caption} className="text-text-tertiary text-center mt-4">

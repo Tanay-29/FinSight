@@ -37,6 +37,9 @@ const PALETTE = {
         soft: '#EEF2FF', //         tinted panel ground
         edge: '#C7D2FE', //         border on a tinted panel
         onDark: '#DDE3FF', //  4.9:1  text sitting ON the accent
+        onAccent: '#FFFFFF', //  6.3:1 on primaryDark. Does NOT invert: the
+        //                     accent is the same colour in both themes, so
+        //                     anything sitting on it must be too.
     },
     profit: {
         base: '#0E7C5A', //  4.7:1  was #10B981, which reads 2.0:1
@@ -126,6 +129,7 @@ const PALETTE_DARK = {
         soft: '#232135', //         tinted panel ground
         edge: '#3A3663',
         onDark: '#DDE3FF', //         text on the accent, unchanged
+        onAccent: '#FFFFFF', //         same value in both themes, deliberately
     },
     profit: {
         base: '#3FBF8F', //  8.0:1

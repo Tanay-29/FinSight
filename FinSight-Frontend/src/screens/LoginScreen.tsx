@@ -113,7 +113,7 @@ const LoginScreen: React.FC = () => {
                 >
                     <View className="flex-row items-center mb-5">
                         <View className="w-9 h-9 bg-white/20 items-center justify-center mr-2.5" style={{ borderRadius: RADIUS.tile }}>
-                            <TrendingUp size={18} color={COLORS.text.inverse} strokeWidth={1.8} />
+                            <TrendingUp size={18} color={COLORS.brand.onAccent} strokeWidth={1.8} />
                         </View>
                         <Text style={TYPE.heading} className="text-white">FinSight</Text>
                     </View>
@@ -254,7 +254,7 @@ const LoginScreen: React.FC = () => {
                         }}
                     >
                         {isLoading ? (
-                            <ActivityIndicator color={COLORS.text.inverse} />
+                            <ActivityIndicator color={COLORS.brand.onAccent} />
                         ) : (
                             <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-white">
                                 {isSignUp ? 'Create account' : 'Sign in'}

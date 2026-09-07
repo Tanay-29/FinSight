@@ -110,7 +110,7 @@ const SelectCard: React.FC<{
                 style={{ backgroundColor: COLORS.brand.primaryDark }}
                 className="w-6 h-6 rounded-full items-center justify-center ml-3"
             >
-                <Check size={13} color={COLORS.text.inverse} strokeWidth={3} />
+                <Check size={13} color={COLORS.brand.onAccent} strokeWidth={3} />
             </View>
         )}
     </TouchableOpacity>
@@ -484,7 +484,7 @@ const OnboardingScreen: React.FC = () => {
                                 <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-white mr-2">
                                     {step === TOTAL_STEPS ? 'Get Started' : 'Continue'}
                                 </Text>
-                                <ChevronRight size={18} color={COLORS.text.inverse} strokeWidth={2} />
+                                <ChevronRight size={18} color={COLORS.brand.onAccent} strokeWidth={2} />
                             </>
                         )}
                     </PressableScale>

@@ -38,26 +38,62 @@ function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
+/**
+ * One arc, given a start angle and how far to sweep clockwise.
+ *
+ * Takes a sweep rather than an end angle on purpose. The previous version took
+ * an end angle and derived the large-arc flag from `(end - start + 360) % 360`,
+ * which cannot tell a 240 degree sweep from a 120 degree one: both land on the
+ * same end angle. It could therefore not express this gauge at all, and the
+ * track was built by chaining a second arc command from 360 back to 330 with
+ * sweep 1 and large 0, a combination no arc satisfies. SVG resolved it by
+ * drawing a wedge across the top of the gauge, which is what shipped.
+ */
+function arcPath(cx: number, cy: number, r: number, startDeg: number, sweepDeg: number): string {
     const s = polarToCartesian(cx, cy, r, startDeg);
-    const e = polarToCartesian(cx, cy, r, endDeg);
-    const large = (endDeg - startDeg + 360) % 360 > 180 ? 1 : 0;
+    const e = polarToCartesian(cx, cy, r, startDeg + sweepDeg);
+    const large = sweepDeg > 180 ? 1 : 0;
     return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
 }
 
-// The full track arc (210° → 330° going clockwise = 210° → 450°, i.e. 210°→330° via 360°)
-const TRACK_D  = describeArc(CX, CY, RADIUS, 210, 360) + ` A ${RADIUS} ${RADIUS} 0 0 1 ${polarToCartesian(CX, CY, RADIUS, 330).x} ${polarToCartesian(CX, CY, RADIUS, 330).y}`;
+/**
+ * The dial: 240 degrees, opening at the bottom and symmetric about the top.
+ *
+ * 0 degrees is the top, so starting at 240 (lower left) and sweeping 240
+ * clockwise ends at 120 (lower right). The old start of 210 was not symmetric
+ * about anything and pushed the whole arc onto the left of the card.
+ */
+const START_DEG = 240;
+const SWEEP_DEG = 240;
+
+const TRACK_D = arcPath(CX, CY, RADIUS, START_DEG, SWEEP_DEG);
 
 
 // ─── Grade helper ──────────────────────────────────────────────
 
-function getGrade(score: number): { label: string; color: string } {
-    if (score >= 900) return { label: 'Financial Genius',  color: COLORS.semantic.profit };
-    if (score >= 750) return { label: 'Expert',            color: '#17924A' };
-    if (score >= 600) return { label: 'Disciplined',       color: '#5F8C0C' };
-    if (score >= 450) return { label: 'Building Habits',   color: COLORS.semantic.alertAmberFill };
-    if (score >= 300) return { label: 'Getting Started',   color: '#C2410C' };
-    return                    { label: 'Needs Attention',  color: COLORS.semantic.loss };
+/**
+ * The grade word. Deliberately no colour any more.
+ *
+ * This used to return six colours across six bands, green through amber to
+ * red. Three of the six failed AA as text on the card: Expert at 4.00:1,
+ * Disciplined at 4.01:1 and Building Habits at 2.15:1. So the readable half of
+ * the ramp was the half telling a student they were doing badly.
+ *
+ * The deeper reason for dropping it is that this is a behavioural score on the
+ * first thing a student sees, and a green-to-red ring renders it as a verdict.
+ * The paper already names confidence-without-competence as a risk of this
+ * score, and the design direction already rejects social comparison as a
+ * shame vector specific to money; a red dial is the same instinct pointed
+ * inward. The arc is one accent now and the word is ink. Colour is reserved
+ * for the change since last week, which is the part a person can act on.
+ */
+function getGrade(score: number): string {
+    if (score >= 900) return 'Financial Genius';
+    if (score >= 750) return 'Expert';
+    if (score >= 600) return 'Disciplined';
+    if (score >= 450) return 'Building Habits';
+    if (score >= 300) return 'Getting Started';
+    return 'Needs Attention';
 }
 
 /**
@@ -78,32 +114,22 @@ const questStyle = (idx: number) => ({
 const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
     const grade = getGrade(score);
 
-    // Compute the fill arc end angle
-    const fillPct = Math.min(score / 1000, 1);
-    const totalDeg = 240; // 210→330 via 360 = 240 degrees of arc
-    const fillDeg  = fillPct * totalDeg;
-    const fillEndDeg = (210 + fillDeg) % 360;
-
-    // Build fill arc path
-    const fillD = fillDeg > 0
-        ? describeArc(CX, CY, RADIUS,
-            210,
-            fillEndDeg === 0 ? 359.99 : fillEndDeg,
-          )
-        : '';
-
-    // Needle dot position
-    const dotAngle = 210 + fillDeg;
-    const dot = polarToCartesian(CX, CY, RADIUS, dotAngle);
+    const fillPct = Math.min(Math.max(score / 1000, 0), 1);
+    const fillDeg = fillPct * SWEEP_DEG;
+    const fillD = fillDeg > 0 ? arcPath(CX, CY, RADIUS, START_DEG, fillDeg) : '';
+    const dot = polarToCartesian(CX, CY, RADIUS, START_DEG + fillDeg);
 
     return (
         <View style={{ alignItems: 'center' }}>
             <Svg width={GAUGE_SIZE} height={GAUGE_SIZE * 0.75}>
                 <Defs>
                     <LinearGradient id="gaugeFill" x1="0%" y1="0%" x2="100%" y2="0%">
+                        {/* One accent, not a grade ramp. It runs light to dark
+                            across the sweep so the arc still reads as having a
+                            direction, without the green end implying a pass
+                            mark. */}
                         <Stop offset="0%" stopColor={COLORS.brand.primary} />
-                        <Stop offset="50%" stopColor={COLORS.brand.primaryDark} />
-                        <Stop offset="100%" stopColor={COLORS.semantic.profit} />
+                        <Stop offset="100%" stopColor={COLORS.brand.primaryDark} />
                     </LinearGradient>
                 </Defs>
 
@@ -111,7 +137,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                 <Path
                     d={TRACK_D}
                     fill="none"
-                    stroke={COLORS.border.default}
+                    stroke={COLORS.surface.tertiary}
                     strokeWidth={STROKE}
                     strokeLinecap="round"
                 />
@@ -133,8 +159,8 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                         cx={dot.x}
                         cy={dot.y}
                         r={STROKE / 2 + 2}
-                        fill="#FFFFFF"
-                        stroke={grade.color}
+                        fill={COLORS.surface.primary}
+                        stroke={COLORS.brand.primaryDark}
                         strokeWidth={3}
                     />
                 )}
@@ -167,8 +193,8 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                 </Text>
             </View>
 
-            <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: grade.color, marginTop: -12 }}>
-                {grade.label}
+            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginTop: -12 }}>
+                {grade}
             </Text>
         </View>
     );
@@ -221,7 +247,7 @@ const FinSightIQCard: React.FC = () => {
             entering={reduced ? FadeIn.duration(180) : FadeIn.duration(320)}
             style={{
             marginHorizontal: 16, marginTop: 12, marginBottom: 4,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLORS.surface.primary,
             borderRadius: 24,
             borderWidth: 1.5,
             borderColor: COLORS.brand.soft,

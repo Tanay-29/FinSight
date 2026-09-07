@@ -25,6 +25,7 @@ const shape = (p: RawPalette) => ({
         soft: p.brand.soft,
         edge: p.brand.edge,
         onDark: p.brand.onDark,
+        onAccent: p.brand.onAccent,
     },
     semantic: {
         profit: p.profit.base,
@@ -230,7 +231,12 @@ export const RADIUS = {
 export const ELEVATION = {
     flat: {
         borderWidth: 1,
-        borderColor: PALETTE.border.base,
+        // A getter, not PALETTE.border.base. A constant here is read once on
+        // import and would hold the light hairline for the life of the app,
+        // which is the same trap the four module-scope colour constants fell
+        // into. Nothing uses ELEVATION.flat yet, so this is closing the hole
+        // before someone does.
+        get borderColor() { return rawActive.border.base; },
     },
     lifted: {
         shadowColor: '#3A2E22',

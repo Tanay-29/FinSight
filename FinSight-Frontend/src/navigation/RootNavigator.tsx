@@ -126,12 +126,12 @@ export const RootNavigator = () => {
                         justifyContent: 'center',
                     }}
                 >
-                    <TrendingUp size={30} color={COLORS.text.inverse} strokeWidth={1.8} />
+                    <TrendingUp size={30} color={COLORS.brand.onAccent} strokeWidth={1.8} />
                 </View>
                 <Text
                     style={{
                         ...TYPE.heading,
-                        color: COLORS.text.inverse,
+                        color: COLORS.brand.onAccent,
                         marginTop: SPACING[4],
                     }}
                 >
@@ -161,7 +161,7 @@ export const RootNavigator = () => {
                     onPress={() => dispatch(fetchUserProfile(user.uid))}
                     style={{ marginTop: SPACING[5], backgroundColor: COLORS.brand.primaryDark, paddingHorizontal: SPACING[8], paddingVertical: SPACING[3], borderRadius: RADIUS.pill }}
                 >
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.inverse }}>Try again</Text>
+                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }}>Try again</Text>
                 </Pressable>
             </View>
         );

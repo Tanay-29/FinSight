@@ -147,10 +147,10 @@ const QuizPhase: React.FC<{
     };
 
     const getOptionStyle = (idx: number) => {
-        if (!answered) return { borderColor: COLORS.border.default, backgroundColor: '#FFFFFF' };
+        if (!answered) return { borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary };
         if (idx === q.answerIndex) return { borderColor: COLORS.semantic.profit, backgroundColor: '#F2F8F4' };
         if (idx === selectedOption) return { borderColor: COLORS.semantic.loss, backgroundColor: '#FDF6F4' };
-        return { borderColor: COLORS.border.default, backgroundColor: '#FFFFFF' };
+        return { borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary };
     };
 
     const getOptionTextColor = (idx: number) => {
@@ -399,7 +399,7 @@ const DonePhase: React.FC<{
                     onPress={onFlashcards}
                     activeOpacity={0.85}
                     style={{
-                        backgroundColor: '#FFFFFF',
+                        backgroundColor: COLORS.surface.primary,
                         borderRadius: 18, paddingVertical: 16,
                         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                         borderWidth: 1.5, borderColor: COLORS.brand.soft,

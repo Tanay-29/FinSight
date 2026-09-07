@@ -240,7 +240,7 @@ const BurnRateScreen: React.FC = () => {
                                     { label: 'Per day', value: `₹${burnRate.daily_avg.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: 'per day', color: COLORS.semantic.alertAmberFill },
                                     { label: 'On track for', value: `₹${burnRate.projected_monthly.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: 'this month', color: STATUS_COLORS[burnRate.status] },
                                 ].map((m) => (
-                                    <View key={m.label} style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
+                                    <View key={m.label} style={{ flex: 1, backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
                                         <Text style={{ fontSize: 10, color: COLORS.text.tertiary, fontFamily: FONTS.semibold, textTransform: 'uppercase', letterSpacing: 0.5 }}>{m.label}</Text>
                                         <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: m.color, marginTop: 4 }}>{m.value}</Text>
                                         <Text style={{ fontSize: 10, color: COLORS.text.tertiary, marginTop: 2 }}>{m.sub}</Text>
@@ -250,7 +250,7 @@ const BurnRateScreen: React.FC = () => {
 
                             {/* Projection vs Budget */}
                             {burnRate.total_budget > 0 && (
-                                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
+                                <View style={{ backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                                         <Text style={{ fontSize: 13, color: COLORS.text.secondary, fontFamily: FONTS.semibold }}>Against your budget</Text>
                                         <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: burnRate.budget_variance && burnRate.budget_variance > 0 ? COLORS.semantic.loss : COLORS.semantic.profit }}>
@@ -267,7 +267,7 @@ const BurnRateScreen: React.FC = () => {
 
                             {/* Top Categories */}
                             {burnRate.top_categories.length > 0 && (
-                                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
+                                <View style={{ backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: COLORS.surface.tertiary }}>
                                     <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 12 }}>Top categories</Text>
                                     {burnRate.top_categories.map((cat, i) => (
                                         <View key={cat.category} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -320,7 +320,7 @@ const BurnRateScreen: React.FC = () => {
                                     return (
                                         <View
                                             key={i}
-                                            style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: COLORS.surface.tertiary }}
+                                            style={{ backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: COLORS.surface.tertiary }}
                                         >
                                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                                 <View style={{ flex: 1 }}>
