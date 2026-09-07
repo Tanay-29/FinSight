@@ -3,7 +3,8 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
-import { store } from './src/store/store';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from './src/store/store';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { COLORS } from './src/theme/tokens';
 import { ThemeProvider, useScheme } from './src/theme/theme';
@@ -82,11 +83,18 @@ export default function App() {
 
   return (
     <Provider store={store}>
-      <ThemeProvider>
-        <SafeAreaProvider onLayout={onLayoutRootView}>
-          <Root />
-        </SafeAreaProvider>
-      </ThemeProvider>
+      {/* null rather than a loading component: rehydrating from AsyncStorage
+          is near-instant, and the native splash is already covering this
+          moment, the same reasoning App.tsx already applies to font loading
+          above. A second loading screen here would be the seam that keeping
+          the splash up was written to avoid. */}
+      <PersistGate loading={null} persistor={persistor}>
+        <ThemeProvider>
+          <SafeAreaProvider onLayout={onLayoutRootView}>
+            <Root />
+          </SafeAreaProvider>
+        </ThemeProvider>
+      </PersistGate>
     </Provider>
   );
 }

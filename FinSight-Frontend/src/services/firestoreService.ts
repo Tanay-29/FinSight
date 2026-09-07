@@ -88,6 +88,19 @@ export interface FirestoreTransaction {
     date: string;
     source: 'auto' | 'manual';
     notes?: string;
+    /**
+     * What the parser guessed at save time, for a transaction that went
+     * through Smart Paste. Set once and never touched again, including by a
+     * later Tidy Up correction, which updates `category` only.
+     *
+     * Without this, correcting a transaction overwrote the very prediction it
+     * would need to be scored against, and the accuracy study the paper's
+     * section 7.4 calls for had no ground truth to compare against. With it,
+     * `predictedCategory !== category` on any transaction is a wrong guess,
+     * countable directly from the transactions collection with no separate
+     * event log to keep in sync.
+     */
+    predictedCategory?: string;
 }
 
 export interface FirestoreBudget {
@@ -136,15 +149,42 @@ export async function addTransactionToFirestore(
     return ref.id;
 }
 
-/** Get recent transactions (last N) */
-export async function getRecentTransactions(
+/**
+ * Every transaction on or after `sinceISO`, newest first.
+ *
+ * This replaced `getRecentTransactions`, which took `count = 20` and was
+ * called with no argument from the one place that used it. That meant
+ * `state.transactions.items` was never more than the twenty most recent rows,
+ * of either direction, from any month, while twelve consumers read that array
+ * believing they had a window: `computeBurnRate` and `computeRule503020` want
+ * the calendar month, `summariseNoSpendDays` walks every day of it, the Feed
+ * compares two thirty-day windows, and SubscriptionTracker's own header says
+ * it looks back ninety days.
+ *
+ * At three to five logged transactions a day, twenty rows is four to six days.
+ * On the 20th of a month that understated burn rate roughly threefold and
+ * reported ON_TRACK, and told someone who had spent money every day that they
+ * had thirteen clear ones. The formulas were right; the input was silently
+ * truncated.
+ *
+ * `date` is stored as an ISO 8601 string, which sorts lexicographically in
+ * chronological order, so a string range works and needs no schema change. The
+ * range and the sort are on the same field, so this stays a single-field index
+ * and no composite index has to be deployed.
+ *
+ * `cap` is a ceiling against a runaway read, not a window. It is deliberately
+ * far above what ninety days of honest logging produces.
+ */
+export async function getTransactionsSince(
     userId: string,
-    count: number = 20
+    sinceISO: string,
+    cap: number = 500
 ): Promise<FirestoreTransaction[]> {
     const q = query(
         collection(db, 'users', userId, 'transactions'),
+        where('date', '>=', sinceISO),
         orderBy('date', 'desc'),
-        limit(count)
+        limit(cap)
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreTransaction));
@@ -299,7 +339,8 @@ export async function correctTransactionCategory(
     userId: string,
     transactionId: string,
     category: string,
-    merchant: string
+    merchant: string,
+    predictedCategory?: string,
 ): Promise<void> {
     await updateDoc(
         doc(db, 'users', userId, 'transactions', transactionId),
@@ -312,10 +353,60 @@ export async function correctTransactionCategory(
     try {
         await setDoc(
             doc(db, 'users', userId, 'category_corrections', transactionId),
-            { merchant: key, category, correctedAt: new Date().toISOString() }
+            {
+                merchant: key,
+                category,
+                // Present only when this transaction was ever auto-parsed, so
+                // the accuracy study can tell "the parser guessed X, this is
+                // Y" apart from "there was never a guess to score".
+                ...(predictedCategory ? { predictedCategory } : {}),
+                correctedAt: new Date().toISOString(),
+            }
         );
     } catch {
         // Logging is a nice-to-have; the category change already succeeded.
+    }
+}
+
+/**
+ * Log that the parser's guess and what the user actually chose disagreed, for
+ * a transaction that was never wrong on Firestore in the first place.
+ *
+ * Distinct from `correctTransactionCategory`, which is Tidy Up fixing a
+ * transaction that is SITTING there with the wrong category. This covers the
+ * other case: someone pastes a bank SMS, the parser guesses "shopping", they
+ * notice and pick "dining" in the form before Save ever runs. The transaction
+ * is created with the right category from the start, so there is nothing on
+ * it to update, but the disagreement is exactly the kind of labelled example
+ * the accuracy study needs and it was previously invisible: only fixes made
+ * after the fact, in Tidy Up, were ever recorded, which biased the corpus
+ * toward errors people noticed later rather than errors people noticed at
+ * all.
+ */
+export async function recordCategoryDisagreement(
+    userId: string,
+    transactionId: string,
+    merchant: string,
+    predictedCategory: string,
+    actualCategory: string,
+): Promise<void> {
+    if (predictedCategory === actualCategory) return;
+    const key = merchant.trim().toLowerCase();
+    if (!key) return;
+
+    try {
+        await setDoc(
+            doc(db, 'users', userId, 'category_corrections', transactionId),
+            {
+                merchant: key,
+                category: actualCategory,
+                predictedCategory,
+                correctedAt: new Date().toISOString(),
+            }
+        );
+    } catch {
+        // Same as correctTransactionCategory: logging is a nice-to-have and
+        // must never block the save that already succeeded.
     }
 }
 

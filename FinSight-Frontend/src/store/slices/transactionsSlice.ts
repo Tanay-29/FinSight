@@ -3,15 +3,17 @@ import {
     FirestoreTransaction,
     addTransactionToFirestore,
     deleteTransaction,
-    getRecentTransactions,
+    getTransactionsSince,
     getBudgets,
     updateBudgetSpend,
     correctTransactionCategory,
+    recordCategoryDisagreement,
     getCategoryCorrections,
 } from '../../services/firestoreService';
 import { RootState } from '../store';
 import { format } from 'date-fns';
 import { friendlyError } from '../../utils/errors';
+import { withTimeout } from '../../utils/withTimeout';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -44,6 +46,17 @@ const initialState: TransactionsState = {
 
 // ─── Async Thunks ────────────────────────────────────────────
 
+/**
+ * How far back the app loads, in days.
+ *
+ * Ninety, because that is the longest window any consumer asks for:
+ * SubscriptionTracker needs ninety to see three occurrences of a monthly
+ * charge, the Feed compares two thirty-day windows, and the vitals maths wants
+ * the calendar month. Every consumer still filters to its own window; this is
+ * only the promise that the rows it needs are present.
+ */
+export const WINDOW_DAYS = 90;
+
 export const fetchTransactions = createAsyncThunk(
     'transactions/fetchRecent',
     async (_, { rejectWithValue, getState }) => {
@@ -53,13 +66,34 @@ export const fetchTransactions = createAsyncThunk(
 
             if (!userId) throw new Error('User not authenticated');
 
-            const transactions = await getRecentTransactions(userId);
+            const since = new Date();
+            since.setDate(since.getDate() - WINDOW_DAYS);
+            const transactions = await getTransactionsSince(userId, since.toISOString());
             return transactions;
         } catch (error: any) {
             return rejectWithValue(friendlyError(error, 'Could not load your transactions.'));
         }
+    },
+    {
+        // Feed and Vitals each fetch on mount, so a launch that lands on Feed
+        // and then opens Vitals used to pay for the same ninety days twice.
+        // A wider window makes that duplication cost real reads rather than a
+        // rounding error, so a fetch already in flight is enough.
+        condition: (_, { getState }) =>
+            !(getState() as RootState).transactions.loading,
     }
 );
+
+/**
+ * Firestore writes, unlike the timeout on `fetchWithTimeout` in config/api.ts.
+ *
+ * That one is 45 seconds because it is waiting out a cold Render instance
+ * waking up. A Firestore write has no such excuse: it is a direct connection
+ * to Google's own servers, and if it has not answered in 15 seconds the
+ * realistic explanation is no connection at all, which no amount of extra
+ * waiting fixes.
+ */
+const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
 
 export const addTransaction = createAsyncThunk(
     'transactions/add',
@@ -71,22 +105,49 @@ export const addTransaction = createAsyncThunk(
             if (!userId) throw new Error('User not authenticated');
 
             // 1. Add Transaction
-            const id = await addTransactionToFirestore(userId, transaction);
+            //
+            // Without the timeout this hangs forever offline: addDoc() has no
+            // local write to resolve against on React Native, so it just
+            // waits for a server it cannot reach, and Save spins with no
+            // error to explain why.
+            const id = await withTimeout(
+                addTransactionToFirestore(userId, transaction),
+                FIRESTORE_WRITE_TIMEOUT_MS,
+            );
 
             // 2. Find and Update Budget - ONLY for debit transactions
             if (transaction.type === 'debit') {
                 const transactionDate = new Date(transaction.date);
                 const month = format(transactionDate, 'yyyy-MM');
 
-                const budgets = await getBudgets(userId, month);
+                const budgets = await withTimeout(
+                    getBudgets(userId, month),
+                    FIRESTORE_WRITE_TIMEOUT_MS,
+                );
                 const budget = budgets.find(
                     (b) => b.category.toLowerCase() === transaction.category.toLowerCase()
                 );
 
                 if (budget && budget.id) {
                     const newSpend = budget.currentSpend + transaction.amount;
-                    await updateBudgetSpend(userId, budget.id, newSpend);
+                    await withTimeout(
+                        updateBudgetSpend(userId, budget.id, newSpend),
+                        FIRESTORE_WRITE_TIMEOUT_MS,
+                    );
                 }
+            }
+
+            // The transaction was created with the right category from the
+            // start, so there is nothing to fix on it, but if the form's
+            // category ended up different from what the parser guessed, that
+            // disagreement is exactly the labelled example the accuracy study
+            // needs and it was previously invisible: only fixes made later,
+            // in Tidy Up, ever reached category_corrections. A failure here
+            // must not fail the save that already succeeded.
+            if (transaction.predictedCategory) {
+                recordCategoryDisagreement(
+                    userId, id, transaction.merchant, transaction.predictedCategory, transaction.category,
+                ).catch(() => {});
             }
 
             return { id, ...transaction };
@@ -108,10 +169,18 @@ export const updateTransactionCategory = createAsyncThunk(
             { transactionId: string; category: string; merchant: string },
         { getState, rejectWithValue }
     ) => {
-        const userId = (getState() as RootState).auth.user?.uid;
+        const state = getState() as RootState;
+        const userId = state.auth.user?.uid;
         if (!userId) return rejectWithValue('Not signed in');
         try {
-            await correctTransactionCategory(userId, transactionId, category, merchant);
+            // The transaction being corrected is still in state at this
+            // point, the reducer below only clears it after this resolves,
+            // so its original predictedCategory is available here to carry
+            // into the correction event.
+            const original = state.transactions.items.find((t) => t.id === transactionId);
+            await correctTransactionCategory(
+                userId, transactionId, category, merchant, original?.predictedCategory,
+            );
             return { transactionId, category };
         } catch (error: any) {
             return rejectWithValue(friendlyError(error, 'Could not update that category.'));

@@ -49,6 +49,12 @@ export default function AddTransactionScreen() {
     const [incomeSource, setIncomeSource] = useState('allowance');
     const [type, setType] = useState<'debit' | 'credit'>('debit');
     const [isParsed, setIsParsed] = useState(false);
+    // What the parser guessed, kept separate from `category` so that if the
+    // user edits the picker afterward, the original guess survives to save
+    // time. Without this there was no way to tell "the parser was right" from
+    // "there was never a guess", which is what the categoriser accuracy study
+    // needs to compute a real number.
+    const [predictedCategory, setPredictedCategory] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
 
     const handleSmartPaste = () => {
@@ -68,7 +74,12 @@ export default function AddTransactionScreen() {
         setAmount(extracted.amount.toString());
         setMerchant(extracted.merchant);
         setType(extracted.type as 'debit' | 'credit');
-        if (extracted.type === 'debit') setCategory(extracted.category);
+        if (extracted.type === 'debit') {
+            setCategory(extracted.category);
+            setPredictedCategory(extracted.category);
+        } else {
+            setPredictedCategory(null);
+        }
         setIsParsed(true);
         haptics.success();
     };
@@ -89,6 +100,7 @@ export default function AddTransactionScreen() {
                 type,
                 date: new Date().toISOString(),
                 source: isParsed ? 'auto' : 'manual',
+                ...(type === 'debit' && predictedCategory ? { predictedCategory } : {}),
             })).unwrap();
 
             haptics.commit();
