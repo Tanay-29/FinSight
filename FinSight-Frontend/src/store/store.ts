@@ -9,6 +9,7 @@ import learningReducer from './slices/learningSlice';
 import goalsReducer from './slices/goalsSlice';
 import iqReducer from './slices/iqSlice';
 import reviewsReducer from './slices/reviewsSlice';
+import lessonsReducer from './slices/lessonsSlice';
 // Phase 1: Execution + Intelligence Layer
 import vitalsIntelReducer from './slices/vitalsIntelSlice';
 
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
     goals: goalsReducer,
     iq: iqReducer,
     reviews: reviewsReducer,
+    lessons: lessonsReducer,
     vitalsIntel: vitalsIntelReducer,
 });
 
@@ -41,7 +43,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: 'finsight-root',
     storage: AsyncStorage,
-    whitelist: ['transactions', 'budgets', 'goals', 'learning'],
+    whitelist: ['transactions', 'budgets', 'goals', 'learning', 'lessons'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

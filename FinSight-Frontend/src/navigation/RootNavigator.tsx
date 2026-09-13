@@ -25,6 +25,10 @@ import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
 import FlashcardScreen from '../screens/FlashcardScreen';
+import LessonTrackScreen from '../screens/LessonTrackScreen';
+import LessonPlayerScreen from '../screens/LessonPlayerScreen';
+import ScenarioPlayerScreen from '../screens/ScenarioPlayerScreen';
+import StatementDecoderScreen from '../screens/StatementDecoderScreen';
 // Phase 1: Execution Layer Screens
 import BurnRateScreen from '../screens/BurnRateScreen';
 // Engagement features
@@ -210,6 +214,20 @@ export const RootNavigator = () => {
                     />
                     <Stack.Screen name="LearnPathDetail" component={LearnPathDetailScreen} />
                     <Stack.Screen name="ModuleReader" component={ModuleReaderScreen} />
+                    <Stack.Screen name="LessonTrack" component={LessonTrackScreen} />
+                    <Stack.Screen name="StatementDecoder" component={StatementDecoderScreen} />
+                    {/* A deck is a focused task: it slides up over the tabs
+                        and the close button is the only way out. */}
+                    <Stack.Screen
+                        name="LessonPlayer"
+                        component={LessonPlayerScreen}
+                        options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+                    />
+                    <Stack.Screen
+                        name="ScenarioPlayer"
+                        component={ScenarioPlayerScreen}
+                        options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+                    />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     {/* Presented as a sheet: it interrupts what the user was
                         doing and should look like it can be dismissed. */}

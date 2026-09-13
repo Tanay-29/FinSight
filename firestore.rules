@@ -8,6 +8,7 @@ rules_version = '2';
 //   users/{uid}/budgets/{id}           private, owner only
 //   users/{uid}/goals/{id}             private, owner only
 //   users/{uid}/learning_progress/{id} private, owner only
+//   users/{uid}/lesson_cards/{key}      private, owner only
 //   leagues/{week}/entries/{uid}       alias and weekly gain, readable by all
 //   squads/{code}                      shared savings goal, members only
 //   squads/{code}/contributions/{uid}  one row per member, members only
@@ -160,6 +161,20 @@ service cloud.firestore {
       match /flashcard_reviews/{cardId} {
         allow read, delete: if isOwner(userId);
         allow create, update: if isOwner(userId) && validReviewCard();
+      }
+
+      // Lesson mistake bank, one document per answered card. Same Leitner
+      // shape as the flashcards, without the question text: the card lives
+      // in the bundle and the key resolves it.
+      match /lesson_cards/{cardKey} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.box is int
+          && request.resource.data.box >= 1
+          && request.resource.data.box <= 5
+          && request.resource.data.dueDate is string
+          && request.resource.data.lessonId is string
+          && request.resource.data.trackId is string;
       }
 
       // Split and Settle ledger. One document, owner only. Friends here are

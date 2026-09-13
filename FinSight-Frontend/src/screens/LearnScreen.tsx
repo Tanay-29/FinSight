@@ -7,7 +7,7 @@
  * - Live progress bars from the Firestore progress subcollection
  * - Searchable glossary
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
@@ -15,19 +15,23 @@ import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Flame, Search, HelpCircle, GraduationCap,
     ChevronRight, Trophy, Target, BrainCircuit, Snowflake,
-    Layers, Hourglass,
+    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
 import { fetchDueCards, selectDueCount, selectMasteredCount, selectTrackedCount } from '../store/slices/reviewsSlice';
 import { GLOSSARY, COURSE_CONTENT } from '../data/courseContent';
+import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
+import { TRACKS } from '../data/lessons';
+import { SCENARIOS } from '../data/scenarios';
+import { buildSession } from '../utils/lessonSession';
 import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
 import { streakAtRisk, MAX_FREEZES } from '../utils/streak';
 import * as haptics from '../utils/haptics';
-import { COLORS, TYPE } from '../theme/tokens';
+import { COLORS, TYPE, FONTS } from '../theme/tokens';
 
 // Map onboarding goal → which pathId to promote first
 const GOAL_PATH_PRIORITY: Record<string, string> = {
@@ -48,6 +52,9 @@ export const LearnScreen: React.FC = () => {
     const dueCount = useAppSelector(selectDueCount);
     const masteredCount = useAppSelector(selectMasteredCount);
     const trackedCount = useAppSelector(selectTrackedCount);
+    const cardResults = useAppSelector(selectCardResults);
+    const sessionDone = useAppSelector(selectSessionDoneToday);
+    const transactions = useAppSelector((s) => s.transactions.items);
 
     const [activeTab, setActiveTab] = useState<'paths' | 'glossary'>('paths');
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,8 +68,16 @@ export const LearnScreen: React.FC = () => {
         if (user?.uid) {
             dispatch(fetchUserProgress(user.uid));
             dispatch(fetchDueCards());
+            dispatch(fetchCardResults());
         }
     }, [dispatch, user?.uid]);
+
+    // What today's session would hold, for the card that offers it.
+    const session = useMemo(() => {
+        const completedByTrack: Record<string, string[]> = {};
+        for (const [pathId, p] of Object.entries(progress)) completedByTrack[pathId] = p.completedModules ?? [];
+        return buildSession(cardResults, completedByTrack, transactions);
+    }, [cardResults, progress, transactions]);
 
     // ── Real stats ───────────────────────────────────────────────
     const totalDone = Object.values(progress).reduce(
@@ -205,6 +220,46 @@ export const LearnScreen: React.FC = () => {
                     )}
                 </View>
 
+                {/* ── Today's session ─────────────────────────
+                    The one thing this tab wants you to do. Three minutes,
+                    mixed: what you got wrong before, what comes next, and
+                    one question about your own money. */}
+                {session.cards.length > 0 ? (
+                    <PressableScale
+                        onPress={() => { haptics.tap(); navigation.navigate('LessonPlayer', { mode: 'session' }); }}
+                        accessibilityRole="button"
+                        accessibilityLabel={sessionDone ? 'Play another session' : "Start today's session"}
+                        style={{
+                            marginHorizontal: 20, marginTop: 16, borderRadius: 18, padding: 18,
+                            backgroundColor: sessionDone ? COLORS.surface.primary : COLORS.brand.primaryDark,
+                            borderWidth: 1, borderColor: sessionDone ? COLORS.border.default : COLORS.brand.primaryDark,
+                        }}
+                    >
+                        <View className="flex-row items-center">
+                            <View style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: sessionDone ? COLORS.semantic.profitBg : 'rgba(255,255,255,0.14)', marginRight: 12 }}>
+                                {sessionDone
+                                    ? <Check size={22} color={COLORS.semantic.profit} strokeWidth={3} />
+                                    : <Zap size={22} color={COLORS.brand.onAccent} fill={COLORS.brand.onAccent} />}
+                            </View>
+                            <View className="flex-1">
+                                <Text style={{ ...TYPE.heading, color: sessionDone ? COLORS.text.primary : COLORS.brand.onAccent }}>
+                                    {sessionDone ? 'Done for today' : "Today's session"}
+                                </Text>
+                                <Text style={{ ...TYPE.caption, fontFamily: FONTS.regular, color: sessionDone ? COLORS.text.secondary : 'rgba(255,255,255,0.78)', marginTop: 2 }}>
+                                    {sessionDone
+                                        ? 'Come back tomorrow, or play another round now'
+                                        : [
+                                            session.reviewCount > 0 ? `${session.reviewCount} to fix` : null,
+                                            session.newCount > 0 ? `${session.newCount} new` : null,
+                                            session.hasYourMoney ? 'one about your money' : null,
+                                        ].filter(Boolean).join(', ') + ', about 3 min'}
+                                </Text>
+                            </View>
+                            <ChevronRight size={20} color={sessionDone ? COLORS.text.tertiary : COLORS.brand.onAccent} />
+                        </View>
+                    </PressableScale>
+                ) : null}
+
                 {/* ── Streak at risk ──────────────────────────── */}
                 {atRisk && currentStreak > 0 ? (
                     <View className={`mx-5 mt-4 rounded-2xl border p-4 flex-row items-center ${freezes > 0 ? 'bg-brand-soft border-brand-edge' : 'bg-alert-bg border-alert-bg'}`}>
@@ -297,6 +352,89 @@ export const LearnScreen: React.FC = () => {
                 {/* ── Courses Tab ─────────────────────────────── */}
                 {activeTab === 'paths' && (
                     <View className="mx-5 mt-4">
+                        {/* Tracks: the card-deck lessons, ordered by life
+                            stage. They sit above the older read-and-quiz
+                            courses because they are what the daily session
+                            draws from. */}
+                        {TRACKS.map((track, i) => {
+                            const done = progress[track.id]?.completedModules?.length ?? 0;
+                            const total = track.lessons.length;
+                            const tPct = Math.round((done / total) * 100);
+                            const tBadge = progress[track.id]?.badgeEarned ?? false;
+                            const Icon = track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : Briefcase;
+                            return (
+                                <Animated.View key={track.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260).delay(i * 60)}>
+                                    <PressableScale
+                                        onPress={() => { haptics.tap(); navigation.navigate('LessonTrack', { trackId: track.id }); }}
+                                        accessibilityRole="button"
+                                        className="mb-4 bg-surface-primary rounded-2xl border border-border overflow-hidden"
+                                    >
+                                        <View style={{ height: 3, backgroundColor: tBadge ? COLORS.semantic.profit : tPct > 0 ? COLORS.brand.primary : COLORS.border.default }} />
+                                        <View className="p-4">
+                                            <View className="flex-row items-start">
+                                                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                                    <Icon size={20} color={COLORS.brand.primary} />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className="text-base font-inter-bold text-text-primary">{track.title}</Text>
+                                                    <Text className="text-xs text-text-secondary mt-0.5 leading-4 font-inter">{track.description}</Text>
+                                                </View>
+                                                {tBadge ? (
+                                                    <View className="bg-profit-bg rounded-full p-1.5">
+                                                        <Trophy size={14} color={COLORS.semantic.profit} />
+                                                    </View>
+                                                ) : null}
+                                            </View>
+                                            <View className="flex-row items-center justify-between mt-3 mb-3">
+                                                <Text className="text-xs text-text-tertiary font-inter">
+                                                    {total} lessons, {track.lessons.reduce((sum, l) => sum + l.minutes, 0)} min, interactive
+                                                </Text>
+                                                <Text className="text-xs font-inter-semibold" style={{ color: tPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary }}>
+                                                    {done}/{total} done
+                                                </Text>
+                                            </View>
+                                            <BarFill percent={tPct} height={6} color={tPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary} trackClassName="bg-surface-tertiary" delay={i * 60} />
+                                        </View>
+                                    </PressableScale>
+                                </Animated.View>
+                            );
+                        })}
+
+                        {/* Life sims: a year of decisions with the arithmetic
+                            shown. Completion is tracked under the 'lifeSims'
+                            path so it counts as a study day like anything else. */}
+                        <Text className="mt-2 mb-3 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
+                            Life sims
+                        </Text>
+                        {SCENARIOS.map((sim) => {
+                            const played = progress.lifeSims?.completedModules?.includes(sim.id) ?? false;
+                            return (
+                                <PressableScale
+                                    key={sim.id}
+                                    onPress={() => { haptics.tap(); navigation.navigate('ScenarioPlayer', { scenarioId: sim.id }); }}
+                                    accessibilityRole="button"
+                                    className="mb-4 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                                >
+                                    <View className="w-11 h-11 rounded-2xl bg-alert-bg items-center justify-center mr-3">
+                                        <Drama size={20} color={COLORS.semantic.alertAmber} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-base font-inter-bold text-text-primary">{sim.title}</Text>
+                                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                                            {sim.summary}, {sim.minutes} min{played ? ', play again' : ''}
+                                        </Text>
+                                    </View>
+                                    {played
+                                        ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} />
+                                        : <ChevronRight size={18} color={COLORS.semantic.alertAmber} />}
+                                </PressableScale>
+                            );
+                        })}
+
+                        <Text className="mt-2 mb-3 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
+                            Courses
+                        </Text>
+
                         {loading ? (
                             <>
                                 <CourseCardSkeleton />
@@ -433,9 +571,26 @@ export const LearnScreen: React.FC = () => {
                 </Text>
 
                 <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
+                    onPress={() => { haptics.tap(); navigation.navigate('StatementDecoder'); }}
                     accessibilityRole="button"
                     className="mx-5 mt-2 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-alert-bg items-center justify-center mr-3">
+                        <ScanLine size={20} color={COLORS.semantic.alertAmber} />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-inter-bold text-text-primary">Decode a statement</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                            Paste a card statement SMS. See which line to pay and what the minimum really costs
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color={COLORS.semantic.alertAmber} />
+                </PressableScale>
+
+                <PressableScale
+                    onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
+                    accessibilityRole="button"
+                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
                 >
                     <View className="w-11 h-11 rounded-2xl bg-loss-bg items-center justify-center mr-3">
                         <Target size={20} color={COLORS.semantic.loss} />

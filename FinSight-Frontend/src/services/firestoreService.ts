@@ -635,7 +635,16 @@ export async function markModuleComplete(
         { merge: true }
     );
 
-    // Update the streak, spending a freeze if one is needed and available.
+    return recordStudyDay(userId);
+}
+
+/**
+ * Count today as a study day on the profile, spending a freeze if one is
+ * needed and available. Called by markModuleComplete, and on its own when a
+ * daily lesson session finishes without closing out a whole lesson, so the
+ * streak counts sessions rather than only module completions.
+ */
+export async function recordStudyDay(userId: string): Promise<StreakUpdate | null> {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) return null;
