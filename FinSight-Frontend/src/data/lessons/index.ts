@@ -10,8 +10,9 @@ import { FIRST_JOB } from './firstJob';
 import { FIRST_CREDIT } from './firstCredit';
 import { PROTECT } from './protect';
 import { GROW } from './grow';
+import { LIVE } from './live';
 
-export const TRACKS: Track[] = validateTracks([STUDENT, FIRST_JOB, FIRST_CREDIT, PROTECT, GROW]);
+export const TRACKS: Track[] = validateTracks([STUDENT, FIRST_JOB, FIRST_CREDIT, PROTECT, GROW, LIVE]);
 
 export function findTrack(trackId: string): Track | undefined {
     return TRACKS.find((t) => t.id === trackId);

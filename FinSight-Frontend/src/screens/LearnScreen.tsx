@@ -15,14 +15,16 @@ import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Flame, Search, HelpCircle, GraduationCap,
     ChevronRight, Trophy, Target, BrainCircuit, Snowflake,
-    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText, CalendarCheck,
+    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText, CalendarCheck, Home, BrainCog,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
 import { fetchDueCards, selectDueCount, selectMasteredCount, selectTrackedCount } from '../store/slices/reviewsSlice';
 import { GLOSSARY, COURSE_CONTENT } from '../data/courseContent';
 import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
-import { TRACKS } from '../data/lessons';
+import { TRACKS, cardKey } from '../data/lessons';
+import { isScorable } from '../data/lessons/schema';
+import { isMastered } from '../services/lessonService';
 import { SCENARIOS } from '../data/scenarios';
 import { buildSession } from '../utils/lessonSession';
 import { buildAutopsy } from '../utils/autopsy';
@@ -87,7 +89,20 @@ export const LearnScreen: React.FC = () => {
     const totalDone = Object.values(progress).reduce(
         (sum, p) => sum + (p.completedModules?.length ?? 0), 0
     );
-    const badgesEarned = Object.values(progress).filter((p) => p.badgeEarned).length;
+    // Concepts known: scorable cards answered right twice and spaced, out
+    // of every scorable card in the tracks. This replaced the badge count,
+    // which measured opening things; this measures knowing them.
+    const concepts = useMemo(() => {
+        let total = 0;
+        let known = 0;
+        for (const t of TRACKS) for (const l of t.lessons) for (const c of l.cards) {
+            if (!isScorable(c)) continue;
+            total += 1;
+            const r = cardResults[cardKey(l.id, c.id)];
+            if (r && isMastered(r)) known += 1;
+        }
+        return { total, known };
+    }, [cardResults]);
     const currentStreak = profile?.streak ?? streak;
     const freezes = profile?.streakFreezes ?? 0;
     const atRisk = streakAtRisk({
@@ -184,17 +199,17 @@ export const LearnScreen: React.FC = () => {
                                 <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Modules done</Text>
                             </View>
 
-                            {/* Badges earned */}
+                            {/* Concepts known */}
                             <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
-                                <View className="w-10 h-10 rounded-full bg-alert-bg items-center justify-center mb-2">
-                                    <Trophy size={18} color={COLORS.semantic.alertAmberFill} />
+                                <View className="w-10 h-10 rounded-full bg-profit-bg items-center justify-center mb-2">
+                                    <BrainCog size={18} color={COLORS.semantic.profit} />
                                 </View>
                                 <AnimatedNumber
-                                    value={badgesEarned}
+                                    value={concepts.known}
                                     format={(v) => String(Math.round(v))}
                                     className="text-2xl font-inter-bold text-text-primary"
                                 />
-                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Badges earned</Text>
+                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">of {concepts.total} concepts known</Text>
                             </View>
 
                             {/* Streak, with banked freezes shown underneath */}
@@ -384,7 +399,7 @@ export const LearnScreen: React.FC = () => {
                             const total = track.lessons.length;
                             const tPct = Math.round((done / total) * 100);
                             const tBadge = progress[track.id]?.badgeEarned ?? false;
-                            const Icon = track.id === 'student' ? BookMarked : track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : Briefcase;
+                            const Icon = track.id === 'student' ? BookMarked : track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : track.id === 'live' ? Home : Briefcase;
                             return (
                                 <Animated.View key={track.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260).delay(i * 60)}>
                                     <PressableScale
