@@ -29,7 +29,7 @@
  *   Labels were 10px, below the 11px micro step, which is the smallest size
  *   the type scale is willing to defend.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
@@ -48,6 +48,8 @@ import { LearnScreen } from '../screens/LearnScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { FONTS, COLORS, TYPE, MOTION, ELEVATION } from '../theme/tokens';
 import * as haptics from '../utils/haptics';
+import { useAppSelector } from '../store/hooks';
+import { checkBudgetAlerts } from '../services/budgetAlertService';
 
 const Tab = createBottomTabNavigator();
 
@@ -241,7 +243,22 @@ const FinSightTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
     );
 };
 
-export const BottomTabs: React.FC = () => (
+/**
+ * Budget alerts fire from here because the tabs are mounted for the whole
+ * signed-in session, and budgets change in Redux after every logged
+ * transaction, so watching them here catches every crossing.
+ */
+const useBudgetAlerts = () => {
+    const budgets = useAppSelector((s) => s.budgets.items);
+    const enabled = useAppSelector((s) => s.auth.profile?.preferences?.notifications ?? true);
+    useEffect(() => {
+        checkBudgetAlerts(budgets, enabled);
+    }, [budgets, enabled]);
+};
+
+export const BottomTabs: React.FC = () => {
+    useBudgetAlerts();
+    return (
     <Tab.Navigator
         screenOptions={{ headerShown: false }}
         tabBar={(props) => <FinSightTabBar {...props} />}
@@ -251,4 +268,5 @@ export const BottomTabs: React.FC = () => (
         <Tab.Screen name="Goals" component={GoalsScreen} />
         <Tab.Screen name="Learn" component={LearnScreen} />
     </Tab.Navigator>
-);
+    );
+};

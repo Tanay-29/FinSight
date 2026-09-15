@@ -3,18 +3,45 @@
  * feedback panel and the check button. Kept in one file so all eight card
  * types read as one deck rather than eight screens.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+    FadeIn, FadeInDown, useReducedMotion, useSharedValue, useAnimatedStyle, withSequence, withSpring, withTiming,
+} from 'react-native-reanimated';
 import { Check, X, ExternalLink } from 'lucide-react-native';
 import { PressableScale } from '../PressableScale';
-import { COLORS, FONTS, TYPE } from '../../theme/tokens';
+import { COLORS, FONTS, TYPE, MOTION } from '../../theme/tokens';
 
 export const Prompt: React.FC<{ children: string; small?: boolean }> = ({ children, small }) => (
     <Text style={{ ...(small ? TYPE.callout : TYPE.heading), color: COLORS.text.primary, marginBottom: 16 }}>
         {children}
     </Text>
 );
+
+/**
+ * The moment an answer lands, the row says so with its body, not only its
+ * colour: a short spring pop when right, a quick sideways shake when wrong.
+ * Both run on the UI thread and both are skipped under reduced motion,
+ * which keeps the colour change as the confirmation.
+ */
+const useVerdictMotion = (state: string) => {
+    const reduced = useReducedMotion();
+    const scale = useSharedValue(1);
+    const shift = useSharedValue(0);
+    useEffect(() => {
+        if (reduced) return;
+        if (state === 'correct') {
+            scale.value = withSequence(withSpring(1.035, { damping: 12, stiffness: 320 }), withSpring(1, MOTION.spring));
+        } else if (state === 'wrong') {
+            shift.value = withSequence(
+                withTiming(-7, { duration: 45 }), withTiming(7, { duration: 45 }),
+                withTiming(-5, { duration: 45 }), withTiming(4, { duration: 45 }),
+                withTiming(0, { duration: 60 }),
+            );
+        }
+    }, [state, reduced, scale, shift]);
+    return useAnimatedStyle(() => ({ transform: [{ scale: scale.value }, { translateX: shift.value }] }));
+};
 
 /** One tappable option. `state` drives colour after the answer lands. */
 export const OptionRow: React.FC<{
@@ -24,6 +51,7 @@ export const OptionRow: React.FC<{
     disabled?: boolean;
     onPress: () => void;
 }> = ({ label, index, state, disabled, onPress }) => {
+    const motion = useVerdictMotion(state);
     const border =
         state === 'correct' ? COLORS.semantic.profit
             : state === 'wrong' ? COLORS.semantic.loss
@@ -36,6 +64,7 @@ export const OptionRow: React.FC<{
                     : COLORS.surface.primary;
     const text = state === 'dim' ? COLORS.text.tertiary : COLORS.text.primary;
     return (
+        <Animated.View style={motion}>
         <PressableScale
             onPress={onPress}
             disabled={disabled}
@@ -68,6 +97,7 @@ export const OptionRow: React.FC<{
             ) : null}
             <Text style={{ ...TYPE.body, fontSize: 15, lineHeight: 21, color: text, flex: 1 }}>{label}</Text>
         </PressableScale>
+        </Animated.View>
     );
 };
 

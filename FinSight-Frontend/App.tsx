@@ -40,17 +40,23 @@ configureNotificationHandling();
 const navigationRef = createNavigationContainerRef<any>();
 
 /**
- * A tapped reminder opens the daily session. Only when the stack actually
- * has the route, which it does not before sign-in; a cold start from a
- * notification on a signed-out phone just opens the app.
+ * A tapped notification opens what it is about: the daily session, or the
+ * Vitals tab for a budget alert. Only when the stack actually has the
+ * route, which it does not before sign-in; a cold start from a notification
+ * on a signed-out phone just opens the app.
  */
 function openSessionFromNotification(response: Notifications.NotificationResponse | null) {
-  if (!response || response.notification.request.content.data?.target !== 'session') return;
+  const target = response?.notification.request.content.data?.target;
+  if (!target) return;
   if (!navigationRef.isReady()) return;
   const routes = navigationRef.getRootState()?.routeNames ?? [];
-  if (!routes.includes('LessonPlayer')) return;
-  navigationRef.navigate('MainTabs', { screen: 'Learn' });
-  navigationRef.navigate('LessonPlayer', { mode: 'session' });
+  if (!routes.includes('MainTabs')) return;
+  if (target === 'session') {
+    navigationRef.navigate('MainTabs', { screen: 'Learn' });
+    navigationRef.navigate('LessonPlayer', { mode: 'session' });
+  } else if (target === 'vitals') {
+    navigationRef.navigate('MainTabs', { screen: 'Vitals' });
+  }
 }
 
 /**

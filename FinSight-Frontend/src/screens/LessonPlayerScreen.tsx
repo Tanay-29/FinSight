@@ -13,11 +13,11 @@
  * records a study day.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import Animated, { FadeIn, FadeInDown, SlideInRight, useReducedMotion } from 'react-native-reanimated';
-import { X, ChevronRight, Flame, BrainCircuit, Sparkles, RotateCcw, Bell, Check } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInDown, SlideInRight, ZoomIn, useReducedMotion } from 'react-native-reanimated';
+import { X, ChevronRight, Flame, BrainCircuit, Sparkles, RotateCcw, Bell, Check, Award } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { answerLessonCard, markSessionDone, selectCardResults } from '../store/slices/lessonsSlice';
 import { completeModule } from '../store/slices/learningSlice';
@@ -26,13 +26,14 @@ import { recordStudyDay } from '../services/firestoreService';
 import { getReminderPreference, enableReminders, formatReminderTime, DEFAULT_REMINDER } from '../services/reminderService';
 import { findLesson, findTrack, cardKey } from '../data/lessons';
 import { isScorable } from '../data/lessons/schema';
+import { isMastered } from '../services/lessonService';
 import { buildSession, SessionCard } from '../utils/lessonSession';
 import { buildAutopsy } from '../utils/autopsy';
 import { CardRenderer } from '../components/learn/CardRenderer';
 import { PressableScale } from '../components/PressableScale';
 import { Confetti } from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER } from '../theme/tokens';
+import { COLORS, FONTS, TYPE, GUTTER, MOTION } from '../theme/tokens';
 
 type Params =
     | { mode: 'lesson'; trackId: string; lessonId: string }
@@ -177,6 +178,14 @@ const LessonPlayerScreen: React.FC = () => {
     const scorable = cards.filter((c) => isScorable(c.card)).length;
     const right = Object.values(answered).filter(Boolean).length;
     const missed = cards.filter((c, i) => answered[i] === false);
+    // Cards that crossed into "known" on this run: right just now, and that
+    // was the second time. The moment is worth marking; it is the only
+    // progress number in the app that measures knowing rather than opening.
+    const newlyKnown = cards.filter((c, i) => {
+        if (!c.key || answered[i] !== true) return false;
+        const r = results[c.key];
+        return Boolean(r && isMastered(r) && r.timesCorrect === 2);
+    });
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
@@ -193,14 +202,16 @@ const LessonPlayerScreen: React.FC = () => {
                 </Pressable>
                 <View style={{ flex: 1, flexDirection: 'row', gap: 4, marginLeft: 14 }}>
                     {cards.map((_, i) => (
-                        <View
+                        <Animated.View
                             key={i}
                             style={{
                                 flex: 1, height: 5, borderRadius: 3,
                                 backgroundColor: phase === 'done' || i < index || (i === index && canContinue)
                                     ? (answered[i] === false ? COLORS.semantic.loss : COLORS.brand.primary)
                                     : COLORS.surface.tertiary,
-                            }}
+                                transitionProperty: ['backgroundColor'],
+                                transitionDuration: MOTION.quick,
+                            } as ViewStyle}
                         />
                     ))}
                 </View>
@@ -261,6 +272,18 @@ const LessonPlayerScreen: React.FC = () => {
                                         {scorable === 0 ? 'Done' : `${right} of ${scorable} right`}
                                     </Text>
                                 </View>
+
+                                {newlyKnown.length > 0 ? (
+                                    <Animated.View
+                                        entering={reduced ? FadeIn.duration(160) : ZoomIn.springify().damping(14).stiffness(220).delay(200)}
+                                        style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: COLORS.semantic.profitBg, marginBottom: 12 }}
+                                    >
+                                        <Award size={20} color={COLORS.semantic.profit} />
+                                        <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.semantic.profit, marginLeft: 10, flex: 1 }}>
+                                            {newlyKnown.length === 1 ? 'One concept is now known' : `${newlyKnown.length} concepts are now known`}
+                                        </Text>
+                                    </Animated.View>
+                                ) : null}
 
                                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
                                     <Stat icon={<Flame size={16} color={COLORS.semantic.alertAmber} />} value={String(cards.length)} label="cards" />

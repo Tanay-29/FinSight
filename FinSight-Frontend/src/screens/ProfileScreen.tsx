@@ -24,7 +24,7 @@ import { fetchGoals } from '../store/slices/goalsSlice';
 import { selectIsPremium, selectEntitlement, cancelPremium } from '../store/slices/premiumSlice';
 import { goalIcon } from '../theme/icons';
 import { exportUserData } from '../services/exportService';
-import { getReminderPreference, enableReminders, disableReminders, formatReminderTime, DEFAULT_REMINDER, ReminderPreference } from '../services/reminderService';
+import { getReminderPreference, enableReminders, disableReminders, formatReminderTime, DEFAULT_REMINDER, ReminderPreference, ensurePermission } from '../services/reminderService';
 import { selectSessionDoneToday } from '../store/slices/lessonsSlice';
 import * as haptics from '../utils/haptics';
 
@@ -409,11 +409,18 @@ export const ProfileScreen: React.FC = () => {
                     <SettingsRow
                         icon={<Bell size={16} color={COLORS.text.secondary} />}
                         label="Budget alerts"
-                        hint="Warn me when a category nears its limit"
+                        hint="A notification at 80% and again at 100% of a category's limit"
                         rightElement={
                             <Switch
                                 value={notificationsEnabled}
-                                onValueChange={(v) => setPreference({ notifications: v })}
+                                onValueChange={async (v) => {
+                                    setPreference({ notifications: v });
+                                    // The switch is on by default for new accounts, but
+                                    // nothing can be delivered until the phone has said yes.
+                                    if (v && !(await ensurePermission())) {
+                                        Alert.alert('Notifications are off', 'Allow notifications for FinSight in your phone settings to get budget alerts.');
+                                    }
+                                }}
                                 trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
                                 thumbColor={notificationsEnabled ? COLORS.brand.primary : COLORS.text.tertiary}
                             />

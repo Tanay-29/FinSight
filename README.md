@@ -578,8 +578,7 @@ npx eas build --profile production --platform android
 Kept narrow, deliberately, in the same direction as the recent cuts: teach and track, never simulate trading or link a real bank account.
 
 - [ ] Server-side rate limiting on the Gemini-backed routes
-- [x] Daily session reminder as a local notification (`expo-notifications`); budget alerts could reuse the same channel
-- [ ] Push notifications for budget alerts
+- [x] Daily session reminder and budget alerts (80% and 100% of a category limit, once each per month) as local notifications via `expo-notifications`; no push service
 - [ ] Vernacular support (Hindi, Marathi, Tamil, Telugu); the app is English-only today
 - [ ] Dark mode
 - [ ] On-device model for zero-latency, private queries, as an alternative to the hosted Gemini calls
