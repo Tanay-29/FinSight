@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Flame, Search, HelpCircle, GraduationCap,
     ChevronRight, Trophy, Target, BrainCircuit, Snowflake,
-    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText,
+    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText, CalendarCheck,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
@@ -25,6 +25,7 @@ import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../
 import { TRACKS } from '../data/lessons';
 import { SCENARIOS } from '../data/scenarios';
 import { buildSession } from '../utils/lessonSession';
+import { buildAutopsy } from '../utils/autopsy';
 import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BarFill } from '../components/BarFill';
@@ -71,6 +72,9 @@ export const LearnScreen: React.FC = () => {
             dispatch(fetchCardResults());
         }
     }, [dispatch, user?.uid]);
+
+    // Last month, explained: only offered when last month has enough logged.
+    const autopsy = useMemo(() => buildAutopsy(transactions, profile?.incomeRange), [transactions, profile?.incomeRange]);
 
     // What today's session would hold, for the card that offers it.
     const session = useMemo(() => {
@@ -257,6 +261,25 @@ export const LearnScreen: React.FC = () => {
                             </View>
                             <ChevronRight size={20} color={sessionDone ? COLORS.text.tertiary : COLORS.brand.onAccent} />
                         </View>
+                    </PressableScale>
+                ) : null}
+
+                {autopsy ? (
+                    <PressableScale
+                        onPress={() => { haptics.tap(); navigation.navigate('LessonPlayer', { mode: 'autopsy' }); }}
+                        accessibilityRole="button"
+                        className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                    >
+                        <View className="w-11 h-11 rounded-2xl bg-profit-bg items-center justify-center mr-3">
+                            <CalendarCheck size={20} color={COLORS.semantic.profit} />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-base font-inter-bold text-text-primary">{autopsy.title}</Text>
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                                {autopsy.cards.length} cards from your own numbers, about 2 min
+                            </Text>
+                        </View>
+                        <ChevronRight size={18} color={COLORS.semantic.profit} />
                     </PressableScale>
                 ) : null}
 

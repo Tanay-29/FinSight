@@ -142,9 +142,13 @@ export function scorecard(state: SimState, tags: Option['tag'][]): Scorecard {
     const netWorth = state.cash + state.invested - state.debt;
     const creditLabel = state.credit >= 75 ? 'Strong start' : state.credit >= 50 ? 'Building' : state.credit >= 30 ? 'Bruised' : 'Damaged';
     const peaceLabel = state.peace >= 75 ? 'Calm' : state.peace >= 50 ? 'Managing' : state.peace >= 30 ? 'Stretched' : 'Burnt out';
+    // The verdict reads the money and the choices together: a year that
+    // ended rich on paper through choices that will not survive an audit is
+    // not a year to copy.
     let verdict: string;
-    if (netWorth >= 100_000 && state.debt === 0) verdict = 'A year most people do not have: money saved, nothing owed, and a credit file that opens doors.';
-    else if (netWorth >= 40_000 && state.debt < 20_000) verdict = 'Ahead of where you started, with a few choices that cost more than they needed to.';
+    if (netWorth >= 100_000 && state.debt === 0 && costly <= 1) verdict = 'A year most people do not have: money saved, nothing owed, and a credit file that opens doors.';
+    else if (netWorth >= 40_000 && state.debt < 20_000 && costly <= 3) verdict = 'Ahead of where you started, with a few choices that cost more than they needed to.';
+    else if (netWorth >= 0 && state.debt === 0 && costly >= 4) verdict = 'Money in the bank, and a year of shortcuts behind it. The costly choices below do not show in the balance; they are the ones that follow you.';
     else if (netWorth >= 0) verdict = 'You got through it, but the year worked for the lenders more than for you.';
     else verdict = 'The year ended with more owed than owned. Every one of the costly choices below is reversible next time.';
     return { netWorth, cash: state.cash, invested: state.invested, debt: state.debt, credit: state.credit, peace: state.peace, wise, ok, costly, verdict, creditLabel, peaceLabel };

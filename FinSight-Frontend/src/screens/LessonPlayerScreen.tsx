@@ -26,6 +26,7 @@ import { recordStudyDay } from '../services/firestoreService';
 import { findLesson, findTrack, cardKey } from '../data/lessons';
 import { isScorable } from '../data/lessons/schema';
 import { buildSession, SessionCard } from '../utils/lessonSession';
+import { buildAutopsy } from '../utils/autopsy';
 import { CardRenderer } from '../components/learn/CardRenderer';
 import { PressableScale } from '../components/PressableScale';
 import { Confetti } from '../components/Confetti';
@@ -34,7 +35,8 @@ import { COLORS, FONTS, TYPE, GUTTER } from '../theme/tokens';
 
 type Params =
     | { mode: 'lesson'; trackId: string; lessonId: string }
-    | { mode: 'session' };
+    | { mode: 'session' }
+    | { mode: 'autopsy' };
 
 const KIND_LABEL: Record<SessionCard['kind'], string> = {
     review: 'Review',
@@ -74,6 +76,14 @@ const LessonPlayerScreen: React.FC = () => {
                 title: lesson.title,
                 lesson: { trackId: track.id, lessonId: lesson.id, total: track.lessons.length, completesLesson: true },
             };
+        }
+        if (params.mode === 'autopsy') {
+            const a = buildAutopsy(transactions, profile?.incomeRange);
+            if (!a) return undefined;
+            const cards: SessionCard[] = a.cards.map((card) => ({
+                kind: 'yourMoney' as const, trackId: 'you', lessonId: 'you', lessonTitle: a.title, card,
+            }));
+            return { cards, title: a.title, lesson: undefined };
         }
         const completedByTrack: Record<string, string[]> = {};
         for (const [pathId, p] of Object.entries(progress)) completedByTrack[pathId] = p.completedModules ?? [];
@@ -141,7 +151,9 @@ const LessonPlayerScreen: React.FC = () => {
     if (!plan) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary, alignItems: 'center', justifyContent: 'center', padding: GUTTER }}>
-                <Text style={{ ...TYPE.heading, color: COLORS.text.primary }}>That lesson is not here</Text>
+                <Text style={{ ...TYPE.heading, color: COLORS.text.primary }}>
+                    {params.mode === 'autopsy' ? 'Not enough logged last month to explain it' : 'That lesson is not here'}
+                </Text>
                 <PressableScale onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
                     <Text style={{ ...TYPE.callout, color: COLORS.brand.link }}>Go back</Text>
                 </PressableScale>
