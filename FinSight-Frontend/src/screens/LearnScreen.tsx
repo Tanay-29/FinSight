@@ -285,6 +285,13 @@ export const LearnScreen: React.FC = () => {
                                             session.hasYourMoney ? 'one about your money' : null,
                                         ].filter(Boolean).join(', ') + ', about 3 min'}
                                 </Text>
+                                {/* A new account gets no card about its own money, which is
+                                    correct and worth one line of explanation. */}
+                                {!session.hasYourMoney && transactions.length < 3 ? (
+                                    <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: sessionDone ? COLORS.text.tertiary : 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+                                        Log a few expenses and the session starts asking about your own spending.
+                                    </Text>
+                                ) : null}
                             </View>
                             <ChevronRight size={20} color={sessionDone ? COLORS.text.tertiary : COLORS.brand.onAccent} />
                         </View>

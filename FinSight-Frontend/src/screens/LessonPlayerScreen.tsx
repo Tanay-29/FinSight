@@ -115,7 +115,10 @@ const LessonPlayerScreen: React.FC = () => {
     const scrollRef = useRef<ScrollView>(null);
     const finishedRef = useRef(false);
 
-    const cards = plan?.cards ?? [];
+    // "Retry the ones I missed" replays a subset of the deck; answers still
+    // go to the mistake bank, and the study day was already recorded.
+    const [retryDeck, setRetryDeck] = useState<SessionCard[] | null>(null);
+    const cards = retryDeck ?? plan?.cards ?? [];
     const current = cards[index];
     const needsAnswer = current ? isScorable(current.card) : false;
     const canContinue = !needsAnswer || answered[index] !== undefined;
@@ -311,6 +314,26 @@ const LessonPlayerScreen: React.FC = () => {
                                 )}
                             </>
                         )}
+
+                        {missed.length > 0 ? (
+                            <PressableScale
+                                onPress={() => {
+                                    haptics.tap();
+                                    setRetryDeck(missed);
+                                    setAnswered({});
+                                    setIndex(0);
+                                    setPhase('deck');
+                                    scrollRef.current?.scrollTo({ y: 0, animated: false });
+                                }}
+                                accessibilityRole="button"
+                                style={{ height: 48, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border.strong, backgroundColor: COLORS.surface.primary, marginBottom: 12 }}
+                            >
+                                <RotateCcw size={16} color={COLORS.text.primary} />
+                                <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 8 }}>
+                                    Retry the {missed.length === 1 ? 'one' : missed.length} I missed
+                                </Text>
+                            </PressableScale>
+                        ) : null}
 
                         {params.mode === 'session' && reminderState === 'off' ? (
                             <PressableScale

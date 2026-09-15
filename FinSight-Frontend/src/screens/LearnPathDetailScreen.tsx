@@ -54,7 +54,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
     const badgeEarned = pathProgress?.badgeEarned ?? false;
 
     const getDifficultyColor = (d: string) => {
-        if (d === 'beginner') return { bg: COLORS.semantic.profitBg, text: '#0B6A4D' };
+        if (d === 'beginner') return { bg: COLORS.semantic.profitBg, text: COLORS.semantic.profit };
         if (d === 'intermediate') return { bg: COLORS.semantic.alertBg, text: COLORS.semantic.alertAmber };
         return { bg: COLORS.semantic.lossBg, text: COLORS.semantic.alertCritical };
     };
@@ -72,7 +72,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                     className="w-9 h-9 items-center justify-center rounded-full bg-surface-tertiary mr-3"
                     activeOpacity={0.7}
                 >
-                    <ArrowLeft color="#423C35" size={18} />
+                    <ArrowLeft color={COLORS.text.primary} size={18} />
                 </TouchableOpacity>
                 <Text numberOfLines={1} className="text-lg font-inter-bold text-text-primary flex-1">
                     {path.title}
@@ -133,7 +133,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                 {/* Module list */}
                 <View className="mx-5 mt-5">
                     <View className="flex-row items-center mb-3">
-                        <Layers size={16} color="#423C35" />
+                        <Layers size={16} color={COLORS.text.primary} />
                         <Text className="text-base font-inter-bold text-text-primary ml-2">
                             Modules ({totalCount})
                         </Text>
@@ -164,7 +164,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                 style={{
                                     borderWidth: isCurrent ? 2 : 1,
                                     borderColor: isCurrent ? COLORS.brand.primary : COLORS.surface.tertiary,
-                                    backgroundColor: isComplete ? COLORS.surface.secondary : '#FFFFFF',
+                                    backgroundColor: isComplete ? COLORS.surface.secondary : COLORS.surface.primary,
                                     opacity: isLocked ? 0.55 : 1,
                                 }}
                                 className="mb-3 rounded-2xl overflow-hidden"

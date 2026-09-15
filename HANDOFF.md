@@ -1,7 +1,7 @@
 # FinSight: session handoff
 
 Read this first. It exists so a new session can pick up without re-deriving
-context. Last updated 6 September 2026.
+context. Last updated 15 September 2026.
 
 ---
 
@@ -981,12 +981,110 @@ the seed before committing anything.
 
 ---
 
+## 5k. The Learn tab rebuild, 13 to 15 September 2026
+
+Eight commits (`45ceb6e` through the one that added this section) replaced
+the Learn tab's read-then-quiz model with a card-deck engine. Nothing in the
+old courses, flashcards or games was removed; the new material sits above
+them. Read this before touching anything under `src/data/lessons`,
+`src/data/scenarios`, `src/components/learn`, or the three player screens.
+
+### The shape
+
+- **A lesson is a deck of cards**, each one interaction: `info`, `choice`,
+  `trueFalse`, `estimate` (slider), `tapSort`, `orderSteps`, `spotTrap`,
+  `explorable`. Schema is Zod in `data/lessons/schema.ts`; every track is
+  parsed at import by `validateTracks`, so a bad card id or answer index
+  throws on app start in development. Six tracks, 24 lessons, 126 cards,
+  100 of them scorable.
+- **Explorables** are slider simulations, seven of them under
+  `components/learn/explorables/`. Every number they show comes from
+  `utils/moneyMath.ts` or `utils/runway.ts` reading `data/taxConstants.ts`,
+  which carries the FY, the source URL and the assumptions. The model never
+  produces a number anywhere in the Learn tab; the same rule as the rest of
+  the app.
+- **Life sims** are twelve-month decision stories with a pure engine in
+  `utils/scenario.ts`. Options carry effects on cash, debt, credit health
+  and peace, can require cash on hand or a flag, and scenes can show or
+  hide on flags. Two sims exist; both were simulated end to end on the wise
+  and costly paths and the numbers are in the commit messages.
+- **The daily session** (`utils/lessonSession.ts`) is the retention loop:
+  up to two due cards from the mistake bank, the next three new cards from
+  the current lesson, one card built from the user's own transactions
+  (`utils/yourMoney.ts`, six generators rotating by day). **Month in
+  review** (`utils/autopsy.ts`) is a deck built from last month once it has
+  five or more debits.
+- **The mistake bank** is `users/{uid}/lesson_cards/{lessonId__cardId}`,
+  scheduled with the flashcards' Leitner boxes (`reviewService.scheduleNext`).
+  The `lessons` slice is in the redux-persist whitelist and updates
+  optimistically, so it works offline and survives a rejected write.
+- **Completion** of a lesson or a sim goes through the existing
+  `completeModule` with the track or `lifeSims` as the path id, so streak,
+  freezes and badges did not change. A session that does not close a
+  lesson calls `recordStudyDay`, which was extracted from
+  `markModuleComplete` without changing it.
+- **Decoders** (`utils/statementParser.ts`, `utils/payslipParser.ts`) parse
+  pasted text on device, same discipline as the SMS categoriser.
+- **Reminders and budget alerts** are local notifications via
+  `expo-notifications`, the only dependency added. No push token, no
+  server. `services/reminderService.ts` schedules the next seven days
+  individually and drops today once the session is done;
+  `services/budgetAlertService.ts` fires at 80 and 100 percent of a
+  category limit, once each per month, from the tab navigator.
+
+### What is not done, and why
+
+- **Nothing here has run on a device.** Every commit typechecks, lints at
+  the pre-existing warning count (60, 0 errors) and exports an Android
+  bundle, and the pure parts (maths, session builder, sims, parsers,
+  generators) were exercised in node. The UI has not been seen. The two
+  native modules mean it needs a fresh EAS build, not an OTA update, and
+  local notifications do not work in Expo Go on Android since SDK 53.
+- **`firestore.rules` has a new `lesson_cards` block; confirm it is
+  deployed.** The first `firebase deploy` returned 403 because the CLI was
+  signed in as `balajireddy567567.br@gmail.com`, and the project belongs to
+  `balajithukuntala@gmail.com` (section 6 already said so; it was missed).
+  `firebase login:use balajithukuntala@gmail.com` then
+  `firebase deploy --only firestore:rules`. Until it lands, the mistake
+  bank is on-device only.
+- **Plus gating was deliberately not applied to any of this.**
+  `config/premium.ts` documents that only per-use-cost features go behind
+  the tier; bundled content does not qualify. Real purchases via Play
+  license testing plus RevenueCat were scoped and parked; the notes are in
+  the session transcript of 15 September.
+- **Tax content has not been read by a CA.** The constants are sourced, the
+  prose is not reviewed. Confirm FY 2025-26 is still the shipping year, or
+  add an entry to `taxConstants.ts` and point `CURRENT_FY` at it; nothing
+  else needs to change.
+- Vernacular, on-device model, categoriser study: still on the README
+  roadmap, untouched.
+
+### Things that will bite
+
+- `Slider.tsx` uses `PanResponder`, not the gesture library, which is not in
+  the project. The React Compiler lint flags `PanResponder.create` inside
+  `useMemo` as a ref access during render; `SwipeCategoriseScreen` carries
+  the identical false positive. Do not "fix" it by adding a dependency.
+- The `yourMoney` and `autopsy` generators read `date.slice(0, 7)` for the
+  month, matching `utils/income.ts`. Dates in Firestore are ISO strings in
+  UTC, so a transaction logged late evening IST can land in the next UTC
+  month. This was already true of the income and burn-rate code; it is
+  noted here rather than changed.
+- `LessonPlayerScreen` builds its deck once in a `useMemo` with an empty
+  dependency list on purpose. The mistake bank changes as the deck is
+  answered and the deck must not re-shuffle under the learner.
+- Content edits ship by OTA; anything under `data/` is plain objects. A new
+  explorable needs three touches: the enum in `lessons/schema.ts`, the
+  component, and the switch in `CardRenderer.tsx`.
+
+---
+
 ## 6. Things that are true and easy to get wrong
 
 - **The Firebase project is `finsight-f423d` and belongs to
   `balajithukuntala@gmail.com`**, not the other Google account. `.firebaserc`
   pins it. Use `firebase login:use` if the CLI picks the wrong one.
-- **Firestore rules are deployed** and match `firestore.rules` on disk.
+- **Firestore rules on disk have a `lesson_cards` block added 13 September 2026**; check the console matches before assuming they are deployed.
 - **Course content is not in Firestore.** `learning_paths` and `glossary` were
   removed and `mockData.ts` is the single source, so content changes need an app
   or OTA update.

@@ -41,7 +41,7 @@ type Props = NativeStackScreenProps<any, 'ModuleReader'>;
 
 const DifficultyBadge: React.FC<{ level: string }> = ({ level }) => {
     const cfg: Record<string, { bg: string; text: string; label: string }> = {
-        beginner: { bg: COLORS.semantic.profitBg, text: '#0B6A4D', label: 'Beginner' },
+        beginner: { bg: COLORS.semantic.profitBg, text: COLORS.semantic.profit, label: 'Beginner' },
         intermediate: { bg: COLORS.semantic.alertBg, text: COLORS.semantic.alertAmber, label: 'Intermediate' },
         advanced: { bg: COLORS.semantic.lossBg, text: COLORS.semantic.alertCritical, label: 'Advanced' },
     };
@@ -148,14 +148,14 @@ const QuizPhase: React.FC<{
 
     const getOptionStyle = (idx: number) => {
         if (!answered) return { borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary };
-        if (idx === q.answerIndex) return { borderColor: COLORS.semantic.profit, backgroundColor: '#F2F8F4' };
-        if (idx === selectedOption) return { borderColor: COLORS.semantic.loss, backgroundColor: '#FDF6F4' };
+        if (idx === q.answerIndex) return { borderColor: COLORS.semantic.profit, backgroundColor: COLORS.semantic.profitBg };
+        if (idx === selectedOption) return { borderColor: COLORS.semantic.loss, backgroundColor: COLORS.semantic.lossBg };
         return { borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary };
     };
 
     const getOptionTextColor = (idx: number) => {
-        if (!answered) return '#423C35';
-        if (idx === q.answerIndex) return '#0B6A4D';
+        if (!answered) return COLORS.text.primary;
+        if (idx === q.answerIndex) return COLORS.semantic.profit;
         if (idx === selectedOption) return COLORS.semantic.alertCritical;
         return COLORS.text.tertiary;
     };
@@ -236,10 +236,10 @@ const QuizPhase: React.FC<{
                     <View className={`mx-5 mt-1 rounded-xl p-4 border ${isCorrect ? 'bg-profit-bg border-profit-bg' : 'bg-loss-bg border-loss-bg'}`}>
                         <View className="flex-row items-center mb-1">
                             {isCorrect
-                                ? <Check size={14} color="#0B6A4D" strokeWidth={3} />
+                                ? <Check size={14} color={COLORS.semantic.profit} strokeWidth={3} />
                                 : <X size={14} color={COLORS.semantic.alertCritical} strokeWidth={3} />
                             }
-                            <Text style={{ color: isCorrect ? '#0B6A4D' : COLORS.semantic.alertCritical }} className="text-xs font-inter-bold ml-1.5">
+                            <Text style={{ color: isCorrect ? COLORS.semantic.profit : COLORS.semantic.alertCritical }} className="text-xs font-inter-bold ml-1.5">
                                 {isCorrect ? 'Correct!' : 'Not quite'}
                             </Text>
                         </View>
@@ -304,7 +304,7 @@ const DonePhase: React.FC<{
                 <View
                     style={{
                         width: 140, height: 140, borderRadius: 70,
-                        backgroundColor: passed ? COLORS.brand.soft : '#FDF6F4',
+                        backgroundColor: passed ? COLORS.brand.soft : COLORS.semantic.lossBg,
                         borderWidth: 4,
                         borderColor: passed ? COLORS.brand.primary : COLORS.semantic.loss,
                         alignItems: 'center', justifyContent: 'center',
@@ -313,7 +313,7 @@ const DonePhase: React.FC<{
                     <Text style={{ color: passed ? COLORS.brand.primary : COLORS.semantic.loss }} className="text-4xl font-inter-bold">
                         {score}/{total}
                     </Text>
-                    <Text style={{ color: passed ? '#818CF8' : '#CF6258' }} className="text-xs font-inter-semibold mt-0.5">
+                    <Text style={{ color: passed ? COLORS.brand.link : COLORS.semantic.loss }} className="text-xs font-inter-semibold mt-0.5">
                         {pct}% correct
                     </Text>
                 </View>
@@ -384,7 +384,7 @@ const DonePhase: React.FC<{
                         </Text>
                         <Text
                             onPress={onRetrySave}
-                            style={{ fontSize: 12, fontFamily: FONTS.bold, color: '#8A5406', marginTop: 6 }}
+                            style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.semantic.alertAmber, marginTop: 6 }}
                         >
                             Try saving again
                         </Text>
@@ -544,7 +544,7 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
                     className="w-9 h-9 items-center justify-center rounded-full bg-surface-tertiary mr-3"
                     activeOpacity={0.7}
                 >
-                    <ArrowLeft size={18} color="#423C35" />
+                    <ArrowLeft size={18} color={COLORS.text.primary} />
                 </TouchableOpacity>
 
                 <View className="flex-1">
