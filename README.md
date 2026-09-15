@@ -295,6 +295,7 @@ FinSight/
 | lucide-react-native | 0.563 | Icon library (no emoji anywhere in the app) |
 | expo-sharing + react-native-view-shot | n/a | Share cards / export |
 | expo-haptics | n/a | Haptic feedback |
+| expo-notifications | ~0.32 | Local daily-session reminder; no push service, no server |
 | expo-build-properties | n/a | Enables cleartext HTTP for LAN/dev backends |
 | Async Storage | 2.x | Local persistence (intro-seen flag, redux-persist) |
 
@@ -577,7 +578,8 @@ npx eas build --profile production --platform android
 Kept narrow, deliberately, in the same direction as the recent cuts: teach and track, never simulate trading or link a real bank account.
 
 - [ ] Server-side rate limiting on the Gemini-backed routes
-- [ ] Push notifications for budget alerts (`expo-notifications` is not yet installed)
+- [x] Daily session reminder as a local notification (`expo-notifications`); budget alerts could reuse the same channel
+- [ ] Push notifications for budget alerts
 - [ ] Vernacular support (Hindi, Marathi, Tamil, Telugu); the app is English-only today
 - [ ] Dark mode
 - [ ] On-device model for zero-latency, private queries, as an alternative to the hosted Gemini calls

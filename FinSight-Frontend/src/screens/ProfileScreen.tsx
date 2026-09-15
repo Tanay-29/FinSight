@@ -5,7 +5,8 @@
  * writes an actual file, and deleting the account really deletes it.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Pressable, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, Switch, Alert, ActivityIndicator, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { BarFill } from '../components/BarFill';
@@ -23,6 +24,8 @@ import { fetchGoals } from '../store/slices/goalsSlice';
 import { selectIsPremium, selectEntitlement, cancelPremium } from '../store/slices/premiumSlice';
 import { goalIcon } from '../theme/icons';
 import { exportUserData } from '../services/exportService';
+import { getReminderPreference, enableReminders, disableReminders, formatReminderTime, DEFAULT_REMINDER, ReminderPreference } from '../services/reminderService';
+import { selectSessionDoneToday } from '../store/slices/lessonsSlice';
 import * as haptics from '../utils/haptics';
 
 const SettingsRow: React.FC<{
@@ -71,6 +74,30 @@ export const ProfileScreen: React.FC = () => {
     const entitlement = useAppSelector(selectEntitlement);
     const [exporting, setExporting] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
+    // Session reminder: a device setting, read from AsyncStorage.
+    const sessionDoneToday = useAppSelector(selectSessionDoneToday);
+    const [reminder, setReminder] = useState<ReminderPreference>(DEFAULT_REMINDER);
+    const [timePickerOpen, setTimePickerOpen] = useState(false);
+    useEffect(() => { getReminderPreference().then(setReminder); }, []);
+
+    const toggleReminder = async (on: boolean) => {
+        if (!on) {
+            await disableReminders();
+            setReminder((r) => ({ ...r, enabled: false }));
+            return;
+        }
+        const ok = await enableReminders(reminder.hour, reminder.minute, sessionDoneToday);
+        setReminder((r) => ({ ...r, enabled: ok }));
+        if (!ok) {
+            Alert.alert('Notifications are off', 'Allow notifications for FinSight in your phone settings to get a daily reminder.');
+        }
+    };
+
+    const changeReminderTime = async (hour: number, minute: number) => {
+        setReminder((r) => ({ ...r, hour, minute }));
+        if (reminder.enabled) await enableReminders(hour, minute, sessionDoneToday);
+    };
 
     const displayName = user?.displayName || profile?.name || 'Finance User';
     const email = user?.email || profile?.email || '';
@@ -346,6 +373,39 @@ export const ProfileScreen: React.FC = () => {
                             </View>
                         }
                     />
+                    <SettingsRow
+                        icon={<Bell size={16} color={COLORS.text.secondary} />}
+                        label="Daily session reminder"
+                        hint={reminder.enabled ? `Every day at ${formatReminderTime(reminder.hour, reminder.minute)}. Tap to change the time` : 'A three-minute nudge, on this phone only'}
+                        onPress={reminder.enabled ? () => setTimePickerOpen(true) : undefined}
+                        rightElement={
+                            <Switch
+                                value={reminder.enabled}
+                                onValueChange={(v) => { haptics.select(); toggleReminder(v); }}
+                                trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
+                                thumbColor={reminder.enabled ? COLORS.brand.primary : COLORS.text.tertiary}
+                            />
+                        }
+                    />
+                    {timePickerOpen ? (
+                        <View className="px-4 py-2 border-b border-border items-center">
+                            <DateTimePicker
+                                value={new Date(2000, 0, 1, reminder.hour, reminder.minute)}
+                                mode="time"
+                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                onChange={(event, picked) => {
+                                    if (Platform.OS === 'android') setTimePickerOpen(false);
+                                    if (event.type === 'dismissed' || !picked) return;
+                                    changeReminderTime(picked.getHours(), picked.getMinutes());
+                                }}
+                            />
+                            {Platform.OS === 'ios' ? (
+                                <Pressable onPress={() => setTimePickerOpen(false)} accessibilityRole="button" className="py-2">
+                                    <Text className="text-sm font-inter-semibold text-brand-link">Done</Text>
+                                </Pressable>
+                            ) : null}
+                        </View>
+                    ) : null}
                     <SettingsRow
                         icon={<Bell size={16} color={COLORS.text.secondary} />}
                         label="Budget alerts"

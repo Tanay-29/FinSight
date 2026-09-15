@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -17,6 +18,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif';
 import * as SplashScreen from 'expo-splash-screen';
+import { configureNotificationHandling } from './src/services/reminderService';
 import './src/global.css';
 
 // NOTE: SMS background listener is disabled (native permissions removed).
@@ -31,6 +33,26 @@ import './src/global.css';
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 300, fade: true });
 
+// How a session reminder shows if it lands while the app is open.
+configureNotificationHandling();
+
+// Untyped on purpose: the app's stacks are declared without a param list.
+const navigationRef = createNavigationContainerRef<any>();
+
+/**
+ * A tapped reminder opens the daily session. Only when the stack actually
+ * has the route, which it does not before sign-in; a cold start from a
+ * notification on a signed-out phone just opens the app.
+ */
+function openSessionFromNotification(response: Notifications.NotificationResponse | null) {
+  if (!response || response.notification.request.content.data?.target !== 'session') return;
+  if (!navigationRef.isReady()) return;
+  const routes = navigationRef.getRootState()?.routeNames ?? [];
+  if (!routes.includes('LessonPlayer')) return;
+  navigationRef.navigate('MainTabs', { screen: 'Learn' });
+  navigationRef.navigate('LessonPlayer', { mode: 'session' });
+}
+
 /**
  * Sits inside ThemeProvider so it can see the resolved scheme.
  *
@@ -44,8 +66,21 @@ SplashScreen.setOptions({ duration: 300, fade: true });
  */
 const Root: React.FC = () => {
   const { scheme } = useScheme();
+
+  useEffect(() => {
+    // A tap while the app is running, and the tap that launched it.
+    const sub = Notifications.addNotificationResponseReceivedListener(openSessionFromNotification);
+    Notifications.getLastNotificationResponseAsync()
+      .then((r) => {
+        // The navigator may still be mounting on a cold start; give it a beat.
+        if (r) setTimeout(() => openSessionFromNotification(r), 800);
+      })
+      .catch(() => { });
+    return () => sub.remove();
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <StatusBar
         style={scheme === 'dark' ? 'light' : 'dark'}
         backgroundColor={COLORS.surface.secondary}

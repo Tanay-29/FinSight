@@ -8,7 +8,7 @@
  * - Searchable glossary
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
@@ -28,6 +28,7 @@ import { isMastered } from '../services/lessonService';
 import { SCENARIOS } from '../data/scenarios';
 import { buildSession } from '../utils/lessonSession';
 import { buildAutopsy } from '../utils/autopsy';
+import { syncReminders } from '../services/reminderService';
 import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BarFill } from '../components/BarFill';
@@ -74,6 +75,17 @@ export const LearnScreen: React.FC = () => {
             dispatch(fetchCardResults());
         }
     }, [dispatch, user?.uid]);
+
+    // Keep the reminder schedule honest: rebuild it when the session gets
+    // done (so today's slot is dropped) and whenever the app comes back to
+    // the foreground (so the seven-day window rolls forward).
+    useEffect(() => {
+        syncReminders(sessionDone);
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state === 'active') syncReminders(sessionDone);
+        });
+        return () => sub.remove();
+    }, [sessionDone]);
 
     // Last month, explained: only offered when last month has enough logged.
     const autopsy = useMemo(() => buildAutopsy(transactions, profile?.incomeRange), [transactions, profile?.incomeRange]);

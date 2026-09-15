@@ -12,17 +12,18 @@
  * freezes and badge; finishing a session that did not close a lesson still
  * records a study day.
  */
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, SlideInRight, useReducedMotion } from 'react-native-reanimated';
-import { X, ChevronRight, Flame, BrainCircuit, Sparkles, RotateCcw } from 'lucide-react-native';
+import { X, ChevronRight, Flame, BrainCircuit, Sparkles, RotateCcw, Bell, Check } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { answerLessonCard, markSessionDone, selectCardResults } from '../store/slices/lessonsSlice';
 import { completeModule } from '../store/slices/learningSlice';
 import { fetchUserProfile } from '../store/slices/authSlice';
 import { recordStudyDay } from '../services/firestoreService';
+import { getReminderPreference, enableReminders, formatReminderTime, DEFAULT_REMINDER } from '../services/reminderService';
 import { findLesson, findTrack, cardKey } from '../data/lessons';
 import { isScorable } from '../data/lessons/schema';
 import { buildSession, SessionCard } from '../utils/lessonSession';
@@ -98,6 +99,18 @@ const LessonPlayerScreen: React.FC = () => {
     // nothing to play and opens straight on the results view, which says so.
     const [phase, setPhase] = useState<'deck' | 'done'>(plan && plan.cards.length === 0 ? 'done' : 'deck');
     const [celebrating, setCelebrating] = useState(false);
+
+    // Offer the daily reminder once, at the end of a session, when it is
+    // not already on. Read on mount so the results screen knows the answer.
+    const [reminderState, setReminderState] = useState<'unknown' | 'off' | 'on' | 'declined'>('unknown');
+    useEffect(() => {
+        getReminderPreference().then((p) => setReminderState(p.enabled ? 'on' : 'off')).catch(() => setReminderState('off'));
+    }, []);
+    const offerReminder = async () => {
+        haptics.tap();
+        const ok = await enableReminders(DEFAULT_REMINDER.hour, DEFAULT_REMINDER.minute, true);
+        setReminderState(ok ? 'on' : 'declined');
+    };
     const scrollRef = useRef<ScrollView>(null);
     const finishedRef = useRef(false);
 
@@ -275,6 +288,34 @@ const LessonPlayerScreen: React.FC = () => {
                                 )}
                             </>
                         )}
+
+                        {params.mode === 'session' && reminderState === 'off' ? (
+                            <PressableScale
+                                onPress={offerReminder}
+                                accessibilityRole="button"
+                                style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: COLORS.brand.edge, backgroundColor: COLORS.brand.soft, marginBottom: 16 }}
+                            >
+                                <Bell size={18} color={COLORS.brand.primary} />
+                                <View style={{ flex: 1, marginLeft: 12 }}>
+                                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Remind me tomorrow</Text>
+                                    <Text style={{ fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.secondary, marginTop: 2 }}>
+                                        A nudge at {formatReminderTime(DEFAULT_REMINDER.hour, DEFAULT_REMINDER.minute)}. Change the time in Profile, or turn it off there.
+                                    </Text>
+                                </View>
+                                <ChevronRight size={16} color={COLORS.brand.primary} />
+                            </PressableScale>
+                        ) : null}
+                        {params.mode === 'session' && reminderState === 'on' && cards.length > 0 ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                <Check size={14} color={COLORS.semantic.profit} strokeWidth={3} />
+                                <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginLeft: 6 }}>Reminder set for tomorrow.</Text>
+                            </View>
+                        ) : null}
+                        {params.mode === 'session' && reminderState === 'declined' ? (
+                            <Text style={{ ...TYPE.caption, color: COLORS.text.tertiary, marginBottom: 16 }}>
+                                Notifications are off for FinSight in your phone settings. Allow them there to get a reminder.
+                            </Text>
+                        ) : null}
 
                         <PressableScale
                             onPress={() => { haptics.tap(); navigation.goBack(); }}
