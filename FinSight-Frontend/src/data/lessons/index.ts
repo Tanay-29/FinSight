@@ -5,12 +5,13 @@
  * an offer letter comes before the thing you need when a card arrives.
  */
 import { validateTracks, Track, Lesson, Card } from './schema';
+import { STUDENT } from './student';
 import { FIRST_JOB } from './firstJob';
 import { FIRST_CREDIT } from './firstCredit';
 import { PROTECT } from './protect';
 import { GROW } from './grow';
 
-export const TRACKS: Track[] = validateTracks([FIRST_JOB, FIRST_CREDIT, PROTECT, GROW]);
+export const TRACKS: Track[] = validateTracks([STUDENT, FIRST_JOB, FIRST_CREDIT, PROTECT, GROW]);
 
 export function findTrack(trackId: string): Track | undefined {
     return TRACKS.find((t) => t.id === trackId);

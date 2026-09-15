@@ -29,6 +29,7 @@ import LessonTrackScreen from '../screens/LessonTrackScreen';
 import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 import ScenarioPlayerScreen from '../screens/ScenarioPlayerScreen';
 import StatementDecoderScreen from '../screens/StatementDecoderScreen';
+import PayslipDecoderScreen from '../screens/PayslipDecoderScreen';
 // Phase 1: Execution Layer Screens
 import BurnRateScreen from '../screens/BurnRateScreen';
 // Engagement features
@@ -216,6 +217,7 @@ export const RootNavigator = () => {
                     <Stack.Screen name="ModuleReader" component={ModuleReaderScreen} />
                     <Stack.Screen name="LessonTrack" component={LessonTrackScreen} />
                     <Stack.Screen name="StatementDecoder" component={StatementDecoderScreen} />
+                    <Stack.Screen name="PayslipDecoder" component={PayslipDecoderScreen} />
                     {/* A deck is a focused task: it slides up over the tabs
                         and the close button is the only way out. */}
                     <Stack.Screen

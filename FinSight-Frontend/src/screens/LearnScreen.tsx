@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Flame, Search, HelpCircle, GraduationCap,
     ChevronRight, Trophy, Target, BrainCircuit, Snowflake,
-    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine,
+    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
@@ -76,8 +76,8 @@ export const LearnScreen: React.FC = () => {
     const session = useMemo(() => {
         const completedByTrack: Record<string, string[]> = {};
         for (const [pathId, p] of Object.entries(progress)) completedByTrack[pathId] = p.completedModules ?? [];
-        return buildSession(cardResults, completedByTrack, transactions);
-    }, [cardResults, progress, transactions]);
+        return buildSession(cardResults, completedByTrack, transactions, undefined, profile?.incomeRange);
+    }, [cardResults, progress, transactions, profile?.incomeRange]);
 
     // ── Real stats ───────────────────────────────────────────────
     const totalDone = Object.values(progress).reduce(
@@ -361,7 +361,7 @@ export const LearnScreen: React.FC = () => {
                             const total = track.lessons.length;
                             const tPct = Math.round((done / total) * 100);
                             const tBadge = progress[track.id]?.badgeEarned ?? false;
-                            const Icon = track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : Briefcase;
+                            const Icon = track.id === 'student' ? BookMarked : track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : Briefcase;
                             return (
                                 <Animated.View key={track.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260).delay(i * 60)}>
                                     <PressableScale
@@ -585,6 +585,23 @@ export const LearnScreen: React.FC = () => {
                         </Text>
                     </View>
                     <ChevronRight size={18} color={COLORS.semantic.alertAmber} />
+                </PressableScale>
+
+                <PressableScale
+                    onPress={() => { haptics.tap(); navigation.navigate('PayslipDecoder'); }}
+                    accessibilityRole="button"
+                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                >
+                    <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
+                        <FileText size={20} color={COLORS.brand.primary} />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-base font-inter-bold text-text-primary">Decode a payslip</Text>
+                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
+                            Paste the lines. Every one explained, and anything odd flagged
+                        </Text>
+                    </View>
+                    <ChevronRight size={18} color={COLORS.brand.primary} />
                 </PressableScale>
 
                 <PressableScale

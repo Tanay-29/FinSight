@@ -7,19 +7,19 @@
  *
  *   1. up to two cards from the mistake bank that are due today, worst first
  *   2. the next three unseen cards from the lesson you are on
- *   3. one card built from your own transactions, if there are enough
+ *   3. one card built from your own transactions (utils/yourMoney.ts),
+ *      rotating through six kinds by day, if the data supports one
  *
  * Everything here is pure: given the content, the mistake bank, the
  * completed lessons and the transactions, it returns the same deck. The
  * player does not know or care which rule produced a card.
  */
 import { TRACKS, cardKey, locateCard } from '../data/lessons';
-import type { Card, ChoiceCard } from '../data/lessons/schema';
+import type { Card } from '../data/lessons/schema';
 import { isScorable } from '../data/lessons/schema';
 import type { CardResult } from '../services/lessonService';
 import { isDueForReview } from '../services/lessonService';
-import { categoryTotals } from './spendQuiz';
-import { inr } from './moneyMath';
+import { buildYourMoneyCard } from './yourMoney';
 
 export type SessionKind = 'review' | 'new' | 'yourMoney';
 
@@ -58,31 +58,12 @@ export function nextLesson(completedByTrack: Record<string, string[]>) {
     return undefined;
 }
 
-/** A "which was more" card from the user's own last 30 days. */
-export function buildYourMoneyCard(transactions: Txn[]): Card | undefined {
-    const totals = categoryTotals(transactions, 30);
-    if (totals.length < 2) return undefined;
-    // Pick two categories that are close enough to be a real question.
-    const a = totals[0];
-    const b = totals.find((t) => t !== a && t.amount >= a.amount * 0.35) ?? totals[1];
-    const options = [a, b].sort(() => (a.label < b.label ? -1 : 1));
-    const answer = options.indexOf(a);
-    const card: ChoiceCard = {
-        id: `ym_${a.key}_${b.key}`,
-        type: 'choice',
-        prompt: `In your last 30 days, which cost you more: ${options[0].label} or ${options[1].label}?`,
-        options: options.map((o) => o.label),
-        answer,
-        explain: `${a.label}: ${inr(a.amount)} across ${a.count} purchase${a.count === 1 ? '' : 's'}. ${b.label}: ${inr(b.amount)} across ${b.count}. Small frequent spends are the ones people underestimate; count is the tell.`,
-    };
-    return card;
-}
-
 export function buildSession(
     results: Record<string, CardResult>,
     completedByTrack: Record<string, string[]>,
     transactions: Txn[],
     today?: string,
+    incomeRange?: string,
 ): SessionPlan {
     const cards: SessionCard[] = [];
 
@@ -132,7 +113,7 @@ export function buildSession(
     }
 
     // 3. One card from their own money.
-    const ym = buildYourMoneyCard(transactions);
+    const ym = buildYourMoneyCard(transactions, incomeRange);
     if (ym) {
         cards.push({ kind: 'yourMoney', trackId: 'you', lessonId: 'you', lessonTitle: 'Your money', card: ym });
     }

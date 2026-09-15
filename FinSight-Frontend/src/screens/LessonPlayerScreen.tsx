@@ -49,6 +49,7 @@ const LessonPlayerScreen: React.FC = () => {
     const reduced = useReducedMotion();
 
     const user = useAppSelector((s) => s.auth.user);
+    const profile = useAppSelector((s) => s.auth.profile);
     const results = useAppSelector(selectCardResults);
     const progress = useAppSelector((s) => s.learning.progress);
     const transactions = useAppSelector((s) => s.transactions.items);
@@ -76,7 +77,7 @@ const LessonPlayerScreen: React.FC = () => {
         }
         const completedByTrack: Record<string, string[]> = {};
         for (const [pathId, p] of Object.entries(progress)) completedByTrack[pathId] = p.completedModules ?? [];
-        const s = buildSession(results, completedByTrack, transactions);
+        const s = buildSession(results, completedByTrack, transactions, undefined, profile?.incomeRange);
         return { cards: s.cards, title: "Today's session", lesson: s.lesson };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
