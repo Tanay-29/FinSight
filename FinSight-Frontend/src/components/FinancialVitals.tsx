@@ -10,55 +10,29 @@
  * the Feed passed a hardcoded zero. It now takes a real comparison, or null
  * when there is no previous month to compare against, and renders nothing in
  * that case rather than inventing a number.
+ *
+ * The chart used to be seven UTC days under a thirty-day heading, drawn
+ * through a viewBox that never matched the card. It is now SpendSparkline:
+ * thirty local days, measured pixels, drawn in on first paint.
  */
 import React from 'react';
 import { View, Text } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
-import { Svg, Polyline } from 'react-native-svg';
+import { SpendSparkline, SparkDay } from './SpendSparkline';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { COLORS } from '../theme/tokens';
 
 interface FinancialVitalsProps {
     totalSpent: number;
-    weeklyTrend: number[];
+    /** Thirty local days of debits, oldest first. */
+    dailyTrend: SparkDay[];
     /** Null when the user has no spending in the previous month. */
     comparison: { type: 'increase' | 'decrease' | 'flat'; percentage: number } | null;
 }
 
-const SpendingTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
-    if (data.length < 2) return null;
-    const min = Math.min(...data) * 0.8;
-    const max = Math.max(...data) * 1.1;
-    const range = max - min || 1;
-    const width = 300;
-    const height = 60;
-    const padding = 4;
-
-    const points = data
-        .map((val, i) => {
-            const x = padding + (i / (data.length - 1)) * (width - 2 * padding);
-            const y = height - padding - ((val - min) / range) * (height - 2 * padding);
-            return `${x},${y}`;
-        })
-        .join(' ');
-
-    return (
-        <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
-            <Polyline
-                points={points}
-                fill="none"
-                stroke={COLORS.brand.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </Svg>
-    );
-};
-
 export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
     totalSpent,
-    weeklyTrend,
+    dailyTrend,
     comparison,
 }) => {
     const reduced = useReducedMotion();
@@ -88,10 +62,8 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
                 ₹{totalSpent.toLocaleString('en-IN')}
             </Text>
 
-            <Text className="text-xs text-text-tertiary mt-3 mb-1 font-inter">Last 7 days</Text>
-            <View className="h-14 w-full opacity-70">
-                <SpendingTrendChart data={weeklyTrend} />
-            </View>
+            <Text className="text-xs text-text-tertiary mt-3 font-inter">Day by day</Text>
+            <SpendSparkline days={dailyTrend} />
 
             {comparison && (
                 <View className="mt-3 pt-3 border-t border-border flex-row items-center">

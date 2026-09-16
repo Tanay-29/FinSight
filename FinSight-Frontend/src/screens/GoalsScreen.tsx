@@ -13,7 +13,7 @@ import {
     Platform,
     KeyboardAvoidingView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2, PiggyBank, TrendingUp, CheckCircle, CalendarDays, Star, Zap, CloudOff } from 'lucide-react-native';
 import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
@@ -213,6 +213,7 @@ const DepositModal: React.FC<{
     onClose: () => void;
     onConfirm: (amount: number) => void;
 }> = ({ visible, goal, error, onClose, onConfirm }) => {
+    const insets = useSafeAreaInsets();
     const [amount, setAmount] = useState('');
     const quickAmounts = [500, 1000, 2000, 5000];
 
@@ -226,7 +227,11 @@ const DepositModal: React.FC<{
                 className="flex-1 justify-end bg-black/40"
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View className="bg-surface-primary rounded-t-3xl p-6">
+                {/* The sheet's own bottom padding clears the system bar: the
+                    three-button navigation bar on Android sat over the
+                    action row until this. Gesture phones get the same
+                    padding, smaller. */}
+                <View className="bg-surface-primary rounded-t-3xl p-6" style={{ paddingBottom: 24 + insets.bottom }}>
                     <View className="flex-row items-center mb-1">
                         {React.createElement(goalIcon(goal?.icon), { size: 20, color: goal?.color ?? COLORS.brand.primary })}
                         <Text className="text-xl font-inter-bold text-text-primary ml-2">
@@ -335,6 +340,7 @@ const AddGoalModal: React.FC<{
     onClose: () => void;
     onSave: (goal: Omit<FirestoreGoal, 'id'>) => void;
 }> = ({ visible, error, onClose, onSave }) => {
+    const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('');
     const [target, setTarget] = useState('');
     // Defaults to three months out: far enough to be a goal, near enough to
@@ -377,7 +383,11 @@ const AddGoalModal: React.FC<{
                 className="flex-1 justify-end bg-black/40"
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View className="bg-surface-primary rounded-t-3xl p-6">
+                {/* Tall sheet: it scrolls inside a capped height so the action
+                    row is always reachable, and its bottom padding clears the
+                    system navigation bar on button phones. */}
+                <View className="bg-surface-primary rounded-t-3xl" style={{ maxHeight: '88%', paddingBottom: 24 + insets.bottom }}>
+                <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 0 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                     <Text className="text-xl font-inter-bold text-text-primary mb-5">
                         New Savings Goal
                     </Text>
@@ -514,6 +524,7 @@ const AddGoalModal: React.FC<{
                             <Text className="text-white font-inter-bold">Create goal</Text>
                         </PressableScale>
                     </View>
+                </ScrollView>
                 </View>
             </KeyboardAvoidingView>
         </Modal>
@@ -542,8 +553,8 @@ const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
                     </Text>
                 </View>
                 <View className="items-center">
-                    <View className="w-14 h-14 rounded-full border-4 border-white/30 items-center justify-center">
-                        <Text className="text-white font-inter-bold text-lg">{overallPct}%</Text>
+                    <View className="w-16 h-16 rounded-full border-4 border-white/30 items-center justify-center">
+                        <Text numberOfLines={1} className="text-white font-inter-bold text-base" style={{ fontVariant: ['tabular-nums'] }}>{overallPct}%</Text>
                     </View>
                     {completed > 0 && (
                         <View className="flex-row items-center mt-1">
@@ -627,7 +638,7 @@ export const GoalsScreen: React.FC = () => {
             <ScrollView
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: 140 }}
             >
                 {/* Header */}
                 <View className="px-5 pt-4 pb-2 flex-row justify-between items-center">

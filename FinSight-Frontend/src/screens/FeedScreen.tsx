@@ -41,6 +41,7 @@ import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { fetchBudgets } from '../store/slices/budgetsSlice';
 import { fetchGoals } from '../store/slices/goalsSlice';
 import { FinancialVitals } from '../components/FinancialVitals';
+import { toDayKey } from '../utils/noSpendDays';
 import { TransactionRow } from '../components/TransactionRow';
 import { EmptyState } from '../components/EmptyState';
 import { PressableScale } from '../components/PressableScale';
@@ -181,17 +182,23 @@ export const FeedScreen: React.FC = () => {
         };
     }, [spendInWindow, totalSpent]);
 
-    const weeklyTrend = useMemo(() => {
-        const days = Array.from({ length: 7 }, (_, i) => {
+    // Thirty local days of debits, oldest first, for the sparkline. Local
+    // day keys, not UTC: an evening entry in India belongs to that evening.
+    const dailyTrend = useMemo(() => {
+        const totals = new Map<string, number>();
+        for (const t of transactions) {
+            if (t.type !== 'debit') continue;
+            const at = new Date(t.date);
+            if (!Number.isFinite(at.getTime())) continue;
+            const key = toDayKey(at);
+            totals.set(key, (totals.get(key) ?? 0) + (t.amount || 0));
+        }
+        return Array.from({ length: 30 }, (_, i) => {
             const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return d.toISOString().split('T')[0];
+            d.setDate(d.getDate() - (29 - i));
+            const key = toDayKey(d);
+            return { key, amount: totals.get(key) ?? 0 };
         });
-        return days.map((date) =>
-            transactions
-                .filter((t) => t.type === 'debit' && t.date.startsWith(date))
-                .reduce((acc, t) => acc + t.amount, 0)
-        );
     }, [transactions]);
 
     return (
@@ -288,7 +295,7 @@ export const FeedScreen: React.FC = () => {
                             <View className="mt-4">
                                 <FinancialVitals
                                     totalSpent={totalSpent}
-                                    weeklyTrend={weeklyTrend}
+                                    dailyTrend={dailyTrend}
                                     comparison={comparison}
                                 />
                             </View>
@@ -337,7 +344,7 @@ export const FeedScreen: React.FC = () => {
                             <View className="mb-6">
                                 <FinancialVitals
                                     totalSpent={totalSpent}
-                                    weeklyTrend={weeklyTrend}
+                                    dailyTrend={dailyTrend}
                                     comparison={comparison}
                                 />
                             </View>

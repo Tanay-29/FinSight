@@ -185,8 +185,11 @@ const TapSortView: React.FC<CardViewProps<TapSortCard>> = ({ card, onAnswer }) =
                                         activeScale={0.96}
                                         accessibilityRole="button"
                                         accessibilityState={{ selected: active }}
+                                        // flex has to go on the Pressable itself, not the inner
+                                        // view, or the two buckets collapse to their labels.
+                                        containerStyle={{ flex: 1 }}
                                         style={{
-                                            flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+                                            paddingVertical: 10, borderRadius: 8, alignItems: 'center',
                                             backgroundColor: active ? COLORS.brand.primaryDark : COLORS.surface.tertiary,
                                         }}
                                     >
@@ -295,8 +298,8 @@ const SpotTrapView: React.FC<CardViewProps<SpotTrapCard>> = ({ card, onAnswer })
                                 backgroundColor: bg,
                             }}
                         >
-                            <Text style={{ ...TYPE.callout, color: done && isTrap ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{l.label}</Text>
-                            {l.value ? <Text style={{ ...TYPE.amountSm, color: done && isTrap ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{l.value}</Text> : null}
+                            <Text style={{ ...TYPE.callout, color: done && isTrap ? COLORS.semantic.alertCritical : COLORS.text.primary, flexShrink: 1, marginRight: 12 }}>{l.label}</Text>
+                            {l.value ? <Text style={{ ...TYPE.amountSm, color: done && isTrap ? COLORS.semantic.alertCritical : COLORS.text.primary, flexShrink: 1, textAlign: 'right' }}>{l.value}</Text> : null}
                         </PressableScale>
                     );
                 })}
