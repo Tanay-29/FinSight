@@ -209,7 +209,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                 </>
             ) : (
                 <ScrollView contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(300)}>
+                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
                         <Scorecard state={state} played={played} />
                         <PressableScale onPress={() => { haptics.tap(); navigation.goBack(); }} accessibilityRole="button"
                             style={{ height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark, marginTop: 20 }}>

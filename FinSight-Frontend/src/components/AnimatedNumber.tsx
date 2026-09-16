@@ -7,6 +7,11 @@
  * Driven by requestAnimationFrame rather than Animated, because the number has
  * to be reformatted as text on every frame and Animated cannot drive text
  * content on the native thread anyway.
+ *
+ * It does not count up from zero on mount. Four screens each mount three or
+ * four of these at once, and every one ran a 900ms JS-thread loop alongside
+ * the entrance animations, which is what made the tabs feel heavy to open.
+ * The first render prints the value; only a later change animates.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Text, TextProps } from 'react-native';
@@ -32,21 +37,23 @@ export const formatIndianCurrency = (value: number): string =>
 
 export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
     value,
-    duration = 900,
+    duration = 600,
     format = (v) => Math.round(v).toLocaleString('en-IN'),
     animate = true,
     ...textProps
 }) => {
     const reduced = useReducedMotion();
     const running = animate && !reduced;
-    const [displayed, setDisplayed] = useState(0);
+    const [displayed, setDisplayed] = useState(value);
     const frameRef = useRef<number | null>(null);
-    const fromRef = useRef(0);
+    const fromRef = useRef(value);
 
     useEffect(() => {
         // Nothing to drive when animation is off: the value is rendered
         // directly below, so no state update is needed here.
         if (!running) return;
+        // First render, or no change: print it, do not animate it.
+        if (fromRef.current === value) return;
 
         // Animate from wherever the counter currently sits, so a value that
         // updates mid-flight continues smoothly instead of restarting at zero.

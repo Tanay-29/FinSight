@@ -215,7 +215,7 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                         onAction={() => navigation.navigate('AddTransaction' as never)}
                     />
                 ) : finished ? (
-                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(300)}>
+                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
                         <View className="bg-surface-primary rounded-3xl border border-border p-6 items-center mb-4">
                             <Text className="text-xs font-inter-bold uppercase tracking-widest text-text-tertiary">
                                 You got
@@ -271,7 +271,7 @@ const GuessSpendScreen: React.FC<Props> = ({ navigation }) => {
                 ) : round && truth ? (
                     <Animated.View
                         key={index}
-                        entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260)}
+                        entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}
                     >
                         <Text className="text-xl font-inter-bold text-text-primary text-center mt-2">
                             Which did you spend more on?

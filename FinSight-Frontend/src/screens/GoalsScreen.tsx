@@ -692,7 +692,7 @@ export const GoalsScreen: React.FC = () => {
                                 entering={
                                     reduced
                                         ? FadeIn.duration(160)
-                                        : FadeInDown.duration(260).delay(i * 55)
+                                        : FadeInDown.duration(200)
                                 }
                             >
                                 <GoalCard

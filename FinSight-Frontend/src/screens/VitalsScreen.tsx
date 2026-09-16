@@ -122,8 +122,7 @@ const SpendingBarChart: React.FC<{
                         <BarFill
                             percent={Math.max((item.amount / maxAmount) * 100, 2)}
                             color={item.color}
-                            delay={i * 55}
-                        />
+                            />
                     </View>
                 );
             })}

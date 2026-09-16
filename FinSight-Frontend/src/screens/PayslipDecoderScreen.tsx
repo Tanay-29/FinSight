@@ -72,7 +72,7 @@ const PayslipDecoderScreen: React.FC = () => {
                     ) : null}
 
                     {parsed && found ? (
-                        <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260)} style={{ marginTop: 20 }}>
+                        <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)} style={{ marginTop: 20 }}>
                             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
                                 <Tile label="Earnings" value={inr(parsed.earnings)} color={COLORS.semantic.profit} />
                                 <Tile label="Deductions" value={inr(parsed.deductions)} color={COLORS.semantic.alertCritical} />

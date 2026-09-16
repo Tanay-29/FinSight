@@ -89,7 +89,7 @@ export const SpendSparkline: React.FC<Props> = ({ days, height = 96 }) => {
     useEffect(() => {
         if (!model || reduced) return;
         progress.value = 0;
-        progress.value = withTiming(1, { duration: 900, easing: Easing.bezier(...MOTION.easing.reveal) });
+        progress.value = withTiming(1, { duration: 600, easing: Easing.bezier(...MOTION.easing.reveal) });
     }, [model, reduced, progress]);
 
     const lineProps = useAnimatedProps(() => ({

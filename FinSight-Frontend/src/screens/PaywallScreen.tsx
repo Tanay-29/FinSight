@@ -82,7 +82,7 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
                 showsVerticalScrollIndicator={false}
             >
-                <Animated.View entering={reduced ? FadeIn.duration(180) : FadeInDown.duration(320)}>
+                <Animated.View entering={reduced ? FadeIn.duration(180) : FadeInDown.duration(200)}>
                     <View className="w-14 h-14 rounded-2xl bg-brand-soft items-center justify-center mb-5">
                         <Sparkles size={26} color={COLORS.brand.primary} />
                     </View>

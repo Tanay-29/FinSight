@@ -420,7 +420,7 @@ export const LearnScreen: React.FC = () => {
                             const tBadge = progress[track.id]?.badgeEarned ?? false;
                             const Icon = track.id === 'student' ? BookMarked : track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : track.id === 'live' ? Home : Briefcase;
                             return (
-                                <Animated.View key={track.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260).delay(i * 60)}>
+                                <Animated.View key={track.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
                                     <PressableScale
                                         onPress={() => { haptics.tap(); navigation.navigate('LessonTrack', { trackId: track.id }); }}
                                         accessibilityRole="button"
@@ -450,7 +450,7 @@ export const LearnScreen: React.FC = () => {
                                                     {done}/{total} done
                                                 </Text>
                                             </View>
-                                            <BarFill percent={tPct} height={6} color={tPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary} trackClassName="bg-surface-tertiary" delay={i * 60} />
+                                            <BarFill percent={tPct} height={6} color={tPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary} trackClassName="bg-surface-tertiary" />
                                         </View>
                                     </PressableScale>
                                 </Animated.View>
@@ -517,7 +517,7 @@ export const LearnScreen: React.FC = () => {
                                         entering={
                                             reduced
                                                 ? FadeIn.duration(160)
-                                                : FadeInDown.duration(260).delay(i * 60)
+                                                : FadeInDown.duration(200)
                                         }
                                     >
                                     <PressableScale
@@ -557,7 +557,6 @@ export const LearnScreen: React.FC = () => {
                                                 height={6}
                                                 color={pPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary}
                                                 trackClassName="bg-surface-tertiary"
-                                                delay={i * 60}
                                                 style={{ marginBottom: 12 }}
                                             />
 

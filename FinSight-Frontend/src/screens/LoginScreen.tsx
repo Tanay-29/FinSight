@@ -129,7 +129,7 @@ const LoginScreen: React.FC = () => {
 
                 {/* The sheet. Rises once, then never moves again. */}
                 <Animated.View
-                    entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(380)}
+                    entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(200)}
                     className="flex-1 bg-surface-primary" style={{ borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, paddingHorizontal: GUTTER, paddingTop: 28, paddingBottom: 40 }}
                 >
                     <View className="flex-row items-baseline justify-between mb-6">
@@ -145,7 +145,7 @@ const LoginScreen: React.FC = () => {
 
                     {isSignUp && (
                         <Animated.View
-                            entering={reduced ? FadeIn.duration(150) : FadeInDown.duration(260)}
+                            entering={reduced ? FadeIn.duration(150) : FadeInDown.duration(200)}
                             className="mb-3"
                         >
                             <TextInput

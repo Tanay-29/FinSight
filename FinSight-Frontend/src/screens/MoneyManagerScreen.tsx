@@ -243,8 +243,7 @@ const BucketCard: React.FC<{
                                         height={4}
                                         color={meta.color + 'A0'}
                                         trackClassName="bg-surface-tertiary"
-                                        delay={i * 40}
-                                    />
+                                        />
                                 </View>
                             </View>
                         );

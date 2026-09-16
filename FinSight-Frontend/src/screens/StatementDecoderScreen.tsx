@@ -97,7 +97,7 @@ const StatementDecoderScreen: React.FC = () => {
                     ) : null}
 
                     {parsed && found ? (
-                        <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(260)} style={{ marginTop: 20 }}>
+                        <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)} style={{ marginTop: 20 }}>
                             <View style={{ borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary, overflow: 'hidden' }}>
                                 {parsed.totalDue !== undefined ? (
                                     <Line icon={<Check size={16} color={COLORS.semantic.profit} strokeWidth={3} />} label="Total amount due" value={inr(parsed.totalDue)} note="Pay this. In full, by the due date, and the card costs nothing." tone="good" />

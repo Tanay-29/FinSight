@@ -85,7 +85,7 @@ const LessonTrackScreen: React.FC<Props> = ({ route, navigation }) => {
                         const seen = concepts.filter((c) => results[cardKey(lesson.id, c.id)]).length;
                         const isNext = i === firstOpen;
                         return (
-                            <Animated.View key={lesson.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(240).delay(i * 50)}>
+                            <Animated.View key={lesson.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
                                 <PressableScale
                                     onPress={() => { haptics.tap(); navigation.navigate('LessonPlayer', { mode: 'lesson', trackId: track.id, lessonId: lesson.id }); }}
                                     accessibilityRole="button"

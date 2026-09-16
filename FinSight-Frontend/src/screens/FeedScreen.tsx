@@ -265,7 +265,7 @@ export const FeedScreen: React.FC = () => {
 
                         {prompt && (
                             <Animated.View
-                                entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(280)}
+                                entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}
                                 className="mt-4 bg-brand-soft border border-brand-edge p-5"
                                 style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}
                             >
@@ -318,7 +318,7 @@ export const FeedScreen: React.FC = () => {
                                         entering={
                                             reduced
                                                 ? FadeIn.duration(160)
-                                                : FadeInDown.duration(240).delay(i * 45)
+                                                : FadeInDown.duration(200)
                                         }
                                     >
                                         <TransactionRow

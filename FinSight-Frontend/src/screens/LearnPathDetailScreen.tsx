@@ -154,7 +154,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                 entering={
                                     reduced
                                         ? FadeIn.duration(160)
-                                        : FadeInDown.duration(240).delay(index * 45)
+                                        : FadeInDown.duration(200)
                                 }
                             >
                             <TouchableOpacity

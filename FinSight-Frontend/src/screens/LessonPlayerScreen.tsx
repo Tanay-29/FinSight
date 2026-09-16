@@ -255,7 +255,7 @@ const LessonPlayerScreen: React.FC = () => {
                 </>
             ) : (
                 <ScrollView contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(300)}>
+                    <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
                         {cards.length === 0 ? (
                             <View style={{ alignItems: 'center', paddingTop: 48 }}>
                                 <BrainCircuit size={36} color={COLORS.border.strong} />
