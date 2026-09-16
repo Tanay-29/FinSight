@@ -1,0 +1,44 @@
+# What the EAS cloud builder must not receive.
+#
+# This sits at the git root because EAS CLI archives from the git root and
+# reads only root-level ignore files; the nested FinSight-Frontend/.gitignore
+# is not consulted. Without this, node_modules/ and the locally generated
+# android/ were uploaded, and their CMake caches point at a Windows-only
+# staging path (C:/cx, see HANDOFF.md 5j) that does not exist on the Linux
+# builder, so every native module's configure step failed.
+#
+# Env vars are not needed in the upload: they are set on EAS
+# (eas env:list --environment preview).
+
+# Not the app
+FinSight-Backend/
+*.md
+!FinSight-Frontend/README.md
+.claude/
+.vscode/
+.idea/
+.firebase/
+*.log
+*.db
+deploy-backend.ps1
+tunnel.ps1
+
+# Local build output and dependencies (the builder installs its own)
+FinSight-Frontend/node_modules/
+FinSight-Frontend/android/
+FinSight-Frontend/ios/
+FinSight-Frontend/.expo/
+FinSight-Frontend/dist/
+FinSight-Frontend/web-build/
+FinSight-Frontend/*.tsbuildinfo
+
+# Secrets and local env
+FinSight-Frontend/.env
+FinSight-Frontend/.env.local
+FinSight-Frontend/.env*.local
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.DS_Store
