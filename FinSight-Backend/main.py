@@ -302,7 +302,10 @@ Rules:{STYLE_RULES}
     except Exception as e:
         # Not cached: the fallback is a placeholder, not real coaching.
         print(f"[ai-advisor] Error: {e}")
+        # `fallback` lets the client keep its own computed read instead of
+        # rendering this as if the coach had spoken.
         return jsonify({
+            "fallback": True,
             "mood": "Your finances are a work in progress - and that is perfectly fine.",
             "explanation": "We could not analyze your data right now. Keep tracking your transactions and check back shortly.",
             "quests": [

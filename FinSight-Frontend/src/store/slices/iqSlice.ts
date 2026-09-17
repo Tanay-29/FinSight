@@ -126,8 +126,8 @@ export const fetchAIAdvice = createAsyncThunk(
             const streak       = (state.auth.profile as any)?.streak ?? 0;
 
             // Calculate the score fresh
-            const completedModules = (state as any).learning?.userProgress
-                ? Object.values((state as any).learning.userProgress).reduce(
+            const completedModules = (state as any).learning?.progress
+                ? Object.values((state as any).learning.progress).reduce(
                     (acc: number, p: any) => acc + (p.completedModules?.length ?? 0), 0
                   )
                 : 0;

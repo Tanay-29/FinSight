@@ -19,10 +19,10 @@ import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw, C
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
+import { buildLocalAdvice, isServerPlaceholder } from '../utils/localCoach';
 import { selectIsPremium } from '../store/slices/premiumSlice';
 import { AnimatedNumber } from './AnimatedNumber';
 import { PressableScale } from './PressableScale';
-import { Skeleton } from './Skeleton';
 import { FONTS, COLORS, TYPE } from '../theme/tokens';
 
 // ─── Gauge config ─────────────────────────────────────────────
@@ -213,7 +213,7 @@ const FinSightIQCard: React.FC = () => {
     const goals         = useAppSelector((s: any) => s.goals?.items ?? []);
     const streak        = useAppSelector((s: any) => s.auth?.profile?.streak ?? 0);
     const completedModules = useAppSelector((s: any) => {
-        const progress = s.learning?.userProgress ?? {};
+        const progress = s.learning?.progress ?? {};
         return Object.values(progress).reduce(
             (acc: number, p: any) => acc + (p.completedModules?.length ?? 0), 0
         );
@@ -221,6 +221,14 @@ const FinSightIQCard: React.FC = () => {
 
     // Live score calculated on frontend
     const liveScore = calculateIQScore(transactions, budgets, goals, completedModules, streak);
+
+    // The coach's read, computed here from the same numbers as the score.
+    // Shown at once, and kept when the server is asleep or answers with its
+    // placeholder. The model's version replaces it when it arrives.
+    const localAdvice = buildLocalAdvice({ score: liveScore, transactions, budgets, goals, completedModules, streak });
+    const serverAdvice = advice && !isServerPlaceholder(advice) ? advice : null;
+    const shown = serverAdvice ?? localAdvice;
+    const fromModel = Boolean(serverAdvice);
 
 
     // Fetch AI advice on mount (once per session)
@@ -288,8 +296,9 @@ const FinSightIQCard: React.FC = () => {
                 <ScoreGauge score={liveScore} />
             </View>
 
-            {/* AI Mood Bubble */}
-            {advice ? (
+            {/* The coach's read: the model's when it has answered, the
+                phone's own otherwise. Never blank, never the placeholder. */}
+            {shown ? (
                 <View style={{
                     marginHorizontal: 16, marginBottom: 12,
                     backgroundColor: COLORS.brand.soft,
@@ -302,26 +311,19 @@ const FinSightIQCard: React.FC = () => {
                         <MessageCircle size={15} color={COLORS.brand.primary} style={{ marginTop: 1 }} />
                         <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.brand.primary, marginBottom: 3 }}>
-                                Sensei says
+                                {fromModel ? 'Sensei says' : adviceLoading ? 'From your numbers, Sensei is reading them' : 'From your numbers'}
                             </Text>
-                            <Text style={{ fontSize: 13, color: '#423C35', lineHeight: 19, fontFamily: FONTS.medium }}>
-                                {advice.mood}
+                            <Text style={{ fontSize: 13, color: COLORS.text.primary, lineHeight: 19, fontFamily: FONTS.medium }}>
+                                {shown.mood}
                             </Text>
                             <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17, marginTop: 4 }}>
-                                {advice.explanation}
+                                {shown.explanation}
                             </Text>
                         </View>
                     </View>
                 </View>
-            ) : adviceLoading ? (
-                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: COLORS.surface.secondary, borderRadius: 16 }}>
-                    <Skeleton width="30%" height={11} />
-                    <View style={{ height: 10 }} />
-                    <Skeleton width="95%" height={12} />
-                    <View style={{ height: 6 }} />
-                    <Skeleton width="70%" height={12} />
-                </View>
-            ) : adviceError ? (
+            ) : null}
+            {!fromModel && !adviceLoading && adviceError ? (
                 // The score above is computed on the phone and is always right.
                 // Only the model's read on it needs the server, so say that
                 // rather than leaving the space blank or spinning for ever.
@@ -329,7 +331,7 @@ const FinSightIQCard: React.FC = () => {
                     <CloudOff size={14} color={COLORS.text.tertiary} style={{ marginTop: 2 }} />
                     <View style={{ flex: 1, marginLeft: 8 }}>
                         <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17 }}>
-                            {adviceError}
+                            {adviceError} The read above is computed on your phone.
                         </Text>
                         <Text
                             onPress={handleRefresh}
@@ -348,7 +350,7 @@ const FinSightIQCard: React.FC = () => {
                 "do these three things". It is a plain list now, always open,
                 because a card on a feed that has to be unfolded before it says
                 anything is a card that says nothing. */}
-            {advice?.quests?.length ? (
+            {shown?.quests?.length ? (
                 <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18 }}>
                     <Text style={{
                         fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary,
@@ -357,7 +359,7 @@ const FinSightIQCard: React.FC = () => {
                         Do next
                     </Text>
 
-                    {advice.quests.slice(0, 3).map((quest, idx) => {
+                    {shown.quests.slice(0, 3).map((quest, idx) => {
                         const { Icon, color } = questStyle(idx);
                         return (
                             <View
