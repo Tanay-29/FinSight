@@ -1,7 +1,7 @@
 # FinSight: session handoff
 
 Read this first. It exists so a new session can pick up without re-deriving
-context. Last updated 15 September 2026.
+context. Last updated 18 September 2026.
 
 ---
 
@@ -1076,6 +1076,113 @@ them. Read this before touching anything under `src/data/lessons`,
 - Content edits ship by OTA; anything under `data/` is plain objects. A new
   explorable needs three touches: the enum in `lessons/schema.ts`, the
   component, and the switch in `CardRenderer.tsx`.
+
+---
+
+## 5l. Device pass, AI research, and the plan that came out of it, 16 to 18 September 2026
+
+Read this before starting anything AI-related. It records a decision and a
+ranked plan so the next session builds instead of re-researching.
+
+### What happened on the first real build of the Learn rebuild
+
+- **EAS cloud builds failed twice with `C:/cx/.../hash_key.txt` errors.**
+  The CLI archives from the git root and reads only root-level ignore
+  files, so it uploaded `FinSight-Frontend/android/` (which carries the
+  Windows-only CMake staging hack from 5j) and `node_modules/*/android/.cxx`
+  caches. Fixed by a root-level `.easignore` (`d6ca8b3`). The frontend
+  `.easignore` I added first was ignored, since it is not at the git root.
+  Env vars are already on EAS (`eas env:list --environment preview`), so
+  `.env` is not needed in the upload.
+- **Fixed from screenshots** (`4c8273f`): the Feed sparkline (was 7 UTC
+  days under a 30-day heading through a mismatched viewBox, drew flat; now
+  `components/SpendSparkline.tsx`, thirty local days, spline, gradient,
+  peak label, draw-in), Goals bottom sheets under the three-button Android
+  nav bar (safe-area inset on both `Modal` sheets), the "20%" ring wrapping,
+  spot-the-trap value collision, tap-to-sort buttons collapsing (flex must
+  go on `PressableScale`'s `containerStyle`, not `style`).
+- **Entrances felt heavy** (`68ef8d6`): `AnimatedNumber` counted up from
+  zero on every mount via a JS-thread rAF loop, three or four per tab, on
+  top of staggered FadeInDown on every list item. It now prints on first
+  render and animates only later changes; list staggers are gone.
+- **IQ card** (`4ede31d`): two defects. The learning term was always zero
+  because the card and the thunk read `learning.userProgress` and the
+  slice field is `progress`. And the backend returned its Gemini-failure
+  placeholder with HTTP 200, which the card rendered as coaching, so a
+  user at 505 saw "we could not analyze your data". `utils/localCoach.ts`
+  now computes mood, explanation and three quests from the same inputs as
+  the score; the card shows that immediately ("From your numbers"), the
+  model's read replaces it when it arrives ("Sensei says"), and the
+  backend flags its placeholder with `fallback: true`.
+- Also since 5k: `expo-notifications` (daily session reminder, budget
+  alerts at 80/100 percent), Reanimated feedback motion on answer rows,
+  the Live track, concepts-known on the Learn header, month-in-review,
+  Side Hustle sim, payslip decoder, six real-data session generators.
+
+### The AI decision, with the evidence
+
+Three research agents ran on 16 and 17 September (runtimes, models and
+privacy, AI in finance apps, AI in learning loops). Full reports live only
+in that session's transcript; the conclusions are here.
+
+**On-device is closed.** Platform AI, the built-in kind: Gemini Nano via
+ML Kit GenAI needs a 12 GB RAM flagship (May 2026 list: Pixel 10, Galaxy
+S26, OnePlus 15, iQOO 15, Vivo X300), no phone under Rs 30,000 qualifies,
+and 2026 budget launches are sliding back to 4 GB under the DRAM squeeze.
+Apple Foundation Models need iPhone 15 Pro or later. Downloaded models
+(Gemma 4 E2B, Qwen3.5-2B, both Apache 2.0, both credible in 2026) were
+ruled out by Balaji: students will not download a 1 to 2.5 GB file. The
+paper's privacy concern is answered instead by redacting merchants to
+placeholders before the Gemini call and substituting names back on the
+phone; DPDP Rules (notified Nov 2025, substantive duties from 13 May
+2027) do not restrict any cross-border transfer today.
+
+**What the evidence says works.** The AI that survives in finance apps
+evaluates or explains the user's own data and never originates a number:
+Copilot's per-user categorisation (classical ML), Rocket Money's
+event-triggered nudges, Origin's Monte Carlo forecast narrated, Fi's Ask
+Fi filtering transactions. Failures are the opposite: models asked to
+know numbers hallucinate in up to 41 percent of finance queries, Quizlet
+killed Q-Chat in June 2025, Duolingo's AI-authored lessons cost it 400k
+followers. The strongest learning mechanic is not an LLM: FSRS needs 20 to
+30 percent fewer reviews than Leitner; the Harvard RCT has Socratic hints
+beating chat 2x; PNAS shows answer-giving AI made students worse once
+removed and hint-only guardrails removed the harm. FinSight's rule,
+numbers in code and prose from the model, is the pattern the evidence
+supports. There is no RCT of an AI-personalised financial-literacy app in
+India; NBER 2024 finds education plus commitment devices produces about
+3.4x the behaviour change of education alone. That is the paper's gap.
+
+### The ranked build plan (agreed 18 September, not started)
+
+| # | Feature | Model? | Effort |
+|---|---|---|---|
+| 1 | Subscription price-rise detection on the leak tracker, one line of prose | No (diff) | Low |
+| 2 | "Can I afford this before payday": project the month forward from recurring income and costs plus a hypothetical purchase, on Burn Rate and the Feed | No | Low-med |
+| 3 | Learned per-user categorisation on paste, from the Tidy Up corrections already collected | No (frequency model) | Med |
+| 4 | Event-triggered nudges on the existing notification channel: burn rate past 80 percent with days left, streak about to break | No; model may word copy | Low |
+| 5 | "Why was I wrong", one tap on any card, grounded in the card's own explanation and the chosen answer, via the existing Gemini route | Yes, small | Low |
+| 6 | Socratic hint before the answer on estimate and choice cards, never the answer | Yes | Med |
+| 7 | Unusual-charge flag (z-score against the category), surfaced as a quest | No | Low |
+| 8 | Natural-language search over transactions where the model picks the filter and code computes the total | Yes, parser | Med |
+| 9 | FSRS-style scheduler replacing Leitner once the mistake bank has data | No (learned) | Med, later |
+| 10 | Coach tone toggle (supportive / blunt) on the mood slot | Yes, prompt param | Low |
+| 11 | Model-narrated prose over the month-in-review figures | Yes, prose | Med |
+| 12 | Voice logging of expenses | STT + light parse | Med |
+| 13 | Voice roleplay (landlord, bank fraud call, HR) | Real-time voice | High, last |
+
+Dropped: a general chat assistant, AI-authored lesson content, on-device
+inference. The next session starts at item 1 and works down; 1, 2, 4 and 7
+need no model and no dependency, 5 reuses `/api/ai-advisor`'s pattern.
+
+### Still true from 5k
+
+The `lesson_cards` rule may still be undeployed (check the console; the
+deploying account must be `balajithukuntala@gmail.com`). Real purchases via
+Play license testing plus RevenueCat are scoped and parked. No CA has read
+the tax content. Build with `npx eas build --profile preview --platform
+android` from `FinSight-Frontend`; the app has been run on a real Android
+phone since `4c8273f` and the screens in 5k have been seen.
 
 ---
 
