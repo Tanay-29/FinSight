@@ -27,6 +27,16 @@ import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
 import { COLORS } from '../theme/tokens';
 
+/**
+ * "1,200", "₹ 1200.50" and "1200" are all the same amount. parseFloat read the
+ * first as 1, and saved "." as NaN, which then turned every total that summed
+ * it into NaN as well. Null when the text is not a positive amount.
+ */
+const toAmount = (raw: string): number | null => {
+    const n = Number(raw.replace(/[₹,\s]/g, ''));
+    return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+};
+
 export default function AddTransactionScreen() {
     const navigation = useNavigation();
     const dispatch = useAppDispatch();
@@ -85,17 +95,22 @@ export default function AddTransactionScreen() {
     };
 
     const handleSave = async () => {
-        if (!amount || !merchant) {
+        const value = toAmount(amount);
+        if (!amount || !merchant.trim()) {
             setNotice(type === 'debit'
                 ? 'An amount and a merchant are both needed to save.'
                 : 'An amount and a source are both needed to save.');
             return;
         }
+        if (value === null) {
+            setNotice('Enter an amount above zero, like 250 or 1,200.');
+            return;
+        }
 
         try {
             await dispatch(addTransaction({
-                amount: parseFloat(amount),
-                merchant,
+                amount: value,
+                merchant: merchant.trim(),
                 category: type === 'debit' ? category : incomeSource,
                 type,
                 date: new Date().toISOString(),
@@ -112,7 +127,10 @@ export default function AddTransactionScreen() {
 
     /** The segmented control marks its selection with colour, not movement. */
     const segmentStyle = (active: boolean): ViewStyle => ({
-        backgroundColor: active ? '#FFFFFF' : 'transparent',
+        paddingVertical: 8,
+        borderRadius: 8,
+        alignItems: 'center',
+        backgroundColor: active ? COLORS.surface.primary : 'transparent',
         transitionProperty: ['backgroundColor'],
         transitionDuration: reduced ? 0 : 150,
         transitionTimingFunction: 'ease-out',
@@ -168,7 +186,7 @@ export default function AddTransactionScreen() {
                         {notice && (
                             <Animated.View
                                 entering={FadeIn.duration(180)}
-                                className="flex-row items-start mb-3"
+                                style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}
                             >
                                 <AlertCircle size={13} color={COLORS.semantic.alertCritical} style={{ marginTop: 2 }} />
                                 <Text className="text-xs text-loss ml-1.5 flex-1 leading-4 font-inter">
@@ -202,10 +220,7 @@ export default function AddTransactionScreen() {
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: type === t }}
                             >
-                                <Animated.View
-                                    className="py-2 rounded-lg items-center"
-                                    style={segmentStyle(type === t)}
-                                >
+                                <Animated.View style={segmentStyle(type === t)}>
                                     <Text
                                         className={`font-inter-semibold ${
                                             type === t
@@ -225,11 +240,11 @@ export default function AddTransactionScreen() {
                             <Text className="text-xs text-text-secondary mb-1 font-inter">Amount (₹)</Text>
                             <TextInput
                                 className="text-xl font-inter-bold text-text-primary p-0"
-                                keyboardType="numeric"
+                                keyboardType="decimal-pad"
                                 placeholder="0"
                                 placeholderTextColor={COLORS.text.tertiary}
                                 value={amount}
-                                onChangeText={setAmount}
+                                onChangeText={(t) => { setAmount(t); setNotice(null); }}
                             />
                         </View>
                         <View className="flex-1 bg-surface-primary border border-border rounded-xl p-3">

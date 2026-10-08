@@ -289,7 +289,7 @@ export const VitalsScreen: React.FC = () => {
     // Days nothing went out. Counted as wins; see utils/noSpendDays.
     const noSpend = React.useMemo(() => summariseNoSpendDays(transactions), [transactions]);
     const { user, profile } = useAppSelector((state) => state.auth);
-    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
+    const userInitial = (user?.displayName || profile?.name)?.charAt(0).toUpperCase() || 'U';
 
     const currentMonthKey = format(new Date(), 'yyyy-MM');
 

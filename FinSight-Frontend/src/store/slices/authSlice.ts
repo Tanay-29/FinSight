@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { signUp, signIn, logOut, deleteAccount } from '../../services/authService';
+import type { User } from 'firebase/auth';
+import { signUp, signIn, signInWithGoogle, logOut, deleteAccount, saveOnboarding } from '../../services/authService';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/firestoreService';
 import { friendlyError } from '../../utils/errors';
 
@@ -7,11 +8,21 @@ type Preferences = UserProfile['preferences'];
 
 // ─── Types ───────────────────────────────────────────────────
 
-interface AuthUser {
+export interface AuthUser {
     uid: string;
     email: string | null;
     displayName: string | null;
+    /** Set for an account that signed in with a phone number. */
+    phoneNumber: string | null;
 }
+
+/** The serialisable slice of a Firebase user that the app keeps in Redux. */
+export const toAuthUser = (user: User): AuthUser => ({
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName,
+    phoneNumber: user.phoneNumber,
+});
 
 interface AuthState {
     user: AuthUser | null;
@@ -29,6 +40,12 @@ interface AuthState {
     /** Set when the profile could not be read, so the app does not assume
      *  a missing profile means the user never onboarded. */
     profileError: string | null;
+    /**
+     * True until Firebase has reported the restored session once. Only the
+     * navigator reads this.
+     */
+    initializing: boolean;
+    /** A sign-in, sign-up or delete is in flight. Only buttons read this. */
     isLoading: boolean;
     error: string | null;
     isAuthenticated: boolean;
@@ -48,7 +65,12 @@ const initialState: AuthState = {
     // every launch flashed a login screen at someone who was already signed
     // in. setUser flips this off, and it is called on both branches of the
     // listener, so nothing can leave the app stuck on the spinner.
-    isLoading: true,
+    initializing: true,
+    // Separate from the above on purpose. Both used to be one flag, so
+    // tapping Sign in swapped the whole navigator for the splash screen; a
+    // failed attempt then remounted the form empty and in sign-in mode, and
+    // a sign-up with a short password lost everything that had been typed.
+    isLoading: false,
     error: null,
     isAuthenticated: false,
 };
@@ -62,12 +84,7 @@ export const signUpUser = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const user = await signUp(email, password, name);
-            return {
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-            } as AuthUser;
+            return toAuthUser(await signUp(email, password, name));
         } catch (error: any) {
             return rejectWithValue(friendlyError(error, 'Could not create your account. Try again.'));
         }
@@ -81,14 +98,22 @@ export const signInUser = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const user = await signIn(email, password);
-            return {
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-            } as AuthUser;
+            return toAuthUser(await signIn(email, password));
         } catch (error: any) {
             return rejectWithValue(friendlyError(error, 'Could not sign you in. Try again.'));
+        }
+    }
+);
+
+/** Google. Fulfils with null when the person backs out of the picker. */
+export const signInWithGoogleUser = createAsyncThunk(
+    'auth/signInWithGoogle',
+    async (_, { rejectWithValue }) => {
+        try {
+            const user = await signInWithGoogle();
+            return user ? toAuthUser(user) : null;
+        } catch (error: any) {
+            return rejectWithValue(friendlyError(error, 'Could not sign you in with Google. Try again.'));
         }
     }
 );
@@ -121,11 +146,11 @@ export const completeOnboarding = createAsyncThunk(
     'auth/completeOnboarding',
     async (
         { uid, data }: { uid: string; data: Partial<UserProfile> },
-        { rejectWithValue }
+        { getState, rejectWithValue }
     ) => {
         try {
-            await updateUserProfile(uid, { ...data, onboardingComplete: true });
-            return { ...data, onboardingComplete: true } as Partial<UserProfile>;
+            const hasProfile = Boolean((getState() as { auth: AuthState }).auth.profile);
+            return await saveOnboarding(uid, data, hasProfile);
         } catch (error: any) {
             return rejectWithValue(friendlyError(error, 'Could not save your answers. Try again.'));
         }
@@ -204,6 +229,7 @@ const authSlice = createSlice({
         setUser(state, action: PayloadAction<AuthUser | null>) {
             state.user = action.payload;
             state.isAuthenticated = action.payload !== null;
+            state.initializing = false;
             state.isLoading = false;
             state.error = null;
             // Reset profile when user logs out
@@ -247,6 +273,24 @@ const authSlice = createSlice({
                 state.isAuthenticated = true;
             })
             .addCase(signInUser.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            });
+
+        // Google
+        builder
+            .addCase(signInWithGoogleUser.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(signInWithGoogleUser.fulfilled, (state, action) => {
+                state.isLoading = false;
+                if (action.payload) {
+                    state.user = action.payload;
+                    state.isAuthenticated = true;
+                }
+            })
+            .addCase(signInWithGoogleUser.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
@@ -313,6 +357,7 @@ const authSlice = createSlice({
                 } else {
                     state.profile = action.payload as UserProfile;
                 }
+                if (state.user && action.payload.name) state.user.displayName = action.payload.name;
             });
 
         // Profile patches from the engagement features

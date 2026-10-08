@@ -230,8 +230,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onDone }) => {
 
             <Animated.View
                 entering={reduced ? FadeIn.duration(160) : FadeIn.duration(260)}
-                className="pb-2"
-                style={{ paddingHorizontal: GUTTER }}
+                style={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
             >
                 <PressableScale
                     onPress={advance}

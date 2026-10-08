@@ -122,7 +122,7 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                                 style={{
                                     borderWidth: active ? 2 : 1,
                                     borderColor: active ? COLORS.brand.primary : COLORS.border.default,
-                                    backgroundColor: active ? COLORS.brand.soft : '#FFFFFF',
+                                    backgroundColor: active ? COLORS.brand.soft : COLORS.surface.primary,
                                 }}
                             >
                                 <View
@@ -167,7 +167,7 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                     })}
 
                     {error && (
-                        <Animated.View entering={FadeIn.duration(180)} className="mt-1 mb-1">
+                        <Animated.View entering={FadeIn.duration(180)} style={{ marginVertical: 4 }}>
                             <Text className="text-loss text-sm leading-5 font-inter">{error}</Text>
                         </Animated.View>
                     )}

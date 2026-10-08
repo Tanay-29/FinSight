@@ -147,7 +147,10 @@ export const FeedScreen: React.FC = () => {
                 ? 'Good afternoon'
                 : 'Good evening';
 
-    const displayName = user?.displayName?.split(' ')[0] || 'there';
+    // Profile name as the fallback: a phone account has no Firebase display
+    // name until onboarding sets one, and the first session after it would
+    // otherwise greet them as "there".
+    const displayName = (user?.displayName || profile?.name || '').trim().split(/\s+/)[0] || 'there';
 
     const recentTransactions = useMemo(
         () => [...transactions]
@@ -241,7 +244,12 @@ export const FeedScreen: React.FC = () => {
                 {syncFailed && (
                     <Animated.View
                         entering={FadeIn.duration(200)}
-                        className="mt-2 flex-row items-center bg-alert-bg border border-border rounded-control px-3.5 py-3" style={{ marginHorizontal: GUTTER }}
+                        // Style, not className: classes do not reach a Reanimated view.
+                        style={{
+                            marginHorizontal: GUTTER, marginTop: 8, paddingHorizontal: 14, paddingVertical: 12,
+                            flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: RADIUS.control,
+                            backgroundColor: COLORS.semantic.alertBg, borderColor: COLORS.border.default,
+                        }}
                     >
                         <CloudOff size={15} color={COLORS.semantic.alertAmber} strokeWidth={1.8} />
                         <Text style={TYPE.caption} className="text-text-secondary ml-2.5 flex-1">
@@ -266,8 +274,10 @@ export const FeedScreen: React.FC = () => {
                         {prompt && (
                             <Animated.View
                                 entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}
-                                className="mt-4 bg-brand-soft border border-brand-edge p-5"
-                                style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}
+                                style={{
+                                    marginHorizontal: GUTTER, marginTop: 16, padding: 20, borderWidth: 1, borderRadius: RADIUS.card,
+                                    backgroundColor: COLORS.brand.soft, borderColor: COLORS.brand.edge,
+                                }}
                             >
                                 <Text style={TYPE.micro} className="text-brand-link">
                                     From your answers
@@ -353,8 +363,12 @@ export const FeedScreen: React.FC = () => {
                 )}
             </ScrollView>
 
+            {/* Position goes on the Pressable itself. On the inner view it left
+                the touchable wrapper at zero height with the button drawn
+                outside it, which Android does not reliably deliver taps to. */}
             <PressableScale
-                className="absolute bottom-6 right-6 bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center"
+                containerStyle={{ position: 'absolute', bottom: 24, right: 24 }}
+                className="bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center"
                 style={ELEVATION.lifted}
                 onPress={() => navigation.navigate('AddTransaction' as never)}
                 activeScale={0.92}

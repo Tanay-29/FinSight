@@ -1,7 +1,7 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import authReducer from './slices/authSlice';
+import authReducer, { logOutUser, deleteUserAccount, setUser } from './slices/authSlice';
 import premiumReducer from './slices/premiumSlice';
 import transactionsReducer from './slices/transactionsSlice';
 import budgetsReducer from './slices/budgetsSlice';
@@ -13,7 +13,7 @@ import lessonsReducer from './slices/lessonsSlice';
 // Phase 1: Execution + Intelligence Layer
 import vitalsIntelReducer from './slices/vitalsIntelSlice';
 
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
     auth: authReducer,
     premium: premiumReducer,
     transactions: transactionsReducer,
@@ -25,6 +25,28 @@ const rootReducer = combineReducers({
     lessons: lessonsReducer,
     vitalsIntel: vitalsIntelReducer,
 });
+
+type AppState = ReturnType<typeof appReducer>;
+
+/**
+ * Everything but auth goes back to its initial state when nobody is signed in.
+ *
+ * Five of these slices are persisted to the phone, and nothing used to clear
+ * them, so after one person signed out the next account to sign in on the same
+ * phone was shown the first one's transactions, budgets and goals until a
+ * fetch replaced them, and for good if that fetch failed offline. Auth is left
+ * alone because its own reducer already handles these actions.
+ */
+const rootReducer = (state: AppState | undefined, action: Parameters<typeof appReducer>[1]): AppState => {
+    const signedOut =
+        logOutUser.fulfilled.match(action) ||
+        deleteUserAccount.fulfilled.match(action) ||
+        (setUser.match(action) && action.payload === null);
+    if (signedOut && state) {
+        return appReducer({ auth: state.auth } as AppState, action);
+    }
+    return appReducer(state, action);
+};
 
 /**
  * `redux-persist` was a dependency doing nothing: listed in package.json,

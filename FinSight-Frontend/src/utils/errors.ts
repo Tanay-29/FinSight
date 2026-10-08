@@ -30,8 +30,23 @@ const MESSAGES: Record<string, string> = {
     'auth/network-request-failed': 'You appear to be offline. Check your connection and try again.',
     'auth/user-disabled': 'That account has been disabled.',
     'auth/requires-recent-login': 'For security, sign out and sign in again before doing that.',
-    'auth/operation-not-allowed': 'Email sign-in is not enabled for this app.',
+    'auth/operation-not-allowed': 'That way of signing in is not switched on for this app yet. Try another one.',
     'auth/internal-error': 'Something went wrong at our end. Try again in a moment.',
+    'auth/account-exists-with-different-credential': 'That email already has an account with a different sign-in. Use that one, or reset its password.',
+    'auth/credential-already-in-use': 'That account is already linked to another FinSight login.',
+
+    // Phone and one-time codes.
+    'auth/invalid-phone-number': 'That number does not look right. Check the digits and try again.',
+    'auth/missing-phone-number': 'Enter your phone number.',
+    'auth/invalid-verification-code': 'That code is not right. Check the SMS and try again.',
+    'auth/missing-verification-code': 'Enter the six-digit code from the SMS.',
+    'auth/code-expired': 'That code has expired. Send a new one.',
+    'auth/session-expired': 'That code has expired. Send a new one.',
+    'auth/quota-exceeded': 'Too many codes have been sent. Wait a while, or sign in another way.',
+    'auth/captcha-check-failed': 'The security check did not go through. Try again.',
+    'auth/invalid-app-credential': 'The security check did not go through. Try again.',
+    'auth/billing-not-enabled': 'Phone sign-in is not available yet. Use Google or email for now.',
+    'app/recaptcha-cancelled': 'The security check was closed before it finished. Try again.',
 
     // ── Firestore ────────────────────────────────────────────────────────
     'permission-denied': 'You do not have access to that.',

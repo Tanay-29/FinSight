@@ -74,10 +74,15 @@ export const BarFill: React.FC<BarFillProps> = ({
             className={`rounded-full overflow-hidden ${trackClassName}`}
             style={[{ height }, style]}
         >
-            <Animated.View
-                className={`h-full rounded-full ${fillClassName ?? ''}`}
-                style={[color ? { backgroundColor: color } : null, animatedStyle]}
-            />
+            {/* NativeWind classes do not reach a Reanimated view, so the
+                animated node carries only the width and the fill colour sits
+                on a plain View inside it. */}
+            <Animated.View style={[{ height: '100%', borderRadius: 9999, overflow: 'hidden' }, animatedStyle]}>
+                <View
+                    className={`flex-1 rounded-full ${fillClassName ?? ''}`}
+                    style={color ? { backgroundColor: color } : undefined}
+                />
+            </Animated.View>
         </View>
     );
 };

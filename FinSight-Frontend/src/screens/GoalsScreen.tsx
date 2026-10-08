@@ -579,8 +579,8 @@ export const GoalsScreen: React.FC = () => {
     const navigation = useNavigation();
     const reduced = useReducedMotion();
     const { items: goals, loading, error } = useAppSelector((state) => state.goals);
-    const { user } = useAppSelector((state) => state.auth);
-    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
+    const { user, profile } = useAppSelector((state) => state.auth);
+    const userInitial = (user?.displayName || profile?.name)?.charAt(0).toUpperCase() || 'U';
 
     const [addModalVisible, setAddModalVisible] = useState(false);
     const [depositModalVisible, setDepositModalVisible] = useState(false);
@@ -672,7 +672,11 @@ export const GoalsScreen: React.FC = () => {
                 {error && (
                     <Animated.View
                         entering={FadeIn.duration(200)}
-                        className="mx-5 mt-2 flex-row items-center bg-surface-primary border border-border rounded-xl px-3 py-2.5"
+                        style={{
+                            marginHorizontal: 20, marginTop: 8, paddingHorizontal: 12, paddingVertical: 10,
+                            flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12,
+                            backgroundColor: COLORS.surface.primary, borderColor: COLORS.border.default,
+                        }}
                     >
                         <CloudOff size={14} color={COLORS.text.secondary} />
                         <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4 font-inter">

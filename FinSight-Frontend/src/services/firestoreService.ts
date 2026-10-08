@@ -30,7 +30,12 @@ import { applyStudyDay, StreakUpdate } from '../utils/streak';
 
 export interface UserProfile {
     name: string;
+    /** Empty for an account that signed in with a phone number. */
     email: string;
+    /** E.164, set only for phone sign-in. */
+    phoneNumber?: string;
+    /** How the account signs in, so Profile can say which. */
+    authProvider?: 'password' | 'google' | 'phone';
     riskProfile: 'conservative' | 'moderate' | 'aggressive';
     primaryGoal: string;
     preferences: {
@@ -125,6 +130,21 @@ export async function createUserProfile(
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
     const snap = await getDoc(doc(db, 'users', userId));
     return snap.exists() ? (snap.data() as UserProfile) : null;
+}
+
+/**
+ * Write profile fields whether or not the document exists yet.
+ *
+ * Onboarding uses this rather than updateUserProfile. A Google or phone
+ * account, or an email sign-up whose first write was lost to a weak signal,
+ * can reach onboarding with no profile document at all, and updateDoc on a
+ * missing document fails with not-found at the last step.
+ */
+export async function mergeUserProfile(
+    userId: string,
+    data: Partial<UserProfile>
+): Promise<void> {
+    await setDoc(doc(db, 'users', userId), data, { merge: true });
 }
 
 /** Update user profile fields */
@@ -413,7 +433,7 @@ export async function recordCategoryDisagreement(
 /** Every per-user subcollection. Keep in sync with firestore.rules. */
 const USER_SUBCOLLECTIONS = [
     'transactions', 'budgets', 'goals', 'learning_progress', 'flashcard_reviews',
-    'category_corrections', 'split',
+    'category_corrections', 'split', 'lesson_cards',
 ] as const;
 
 /** Delete the contents of every per-user subcollection, keeping the profile. */
@@ -460,8 +480,15 @@ export async function getCategoryCorrections(
 export async function clearUserData(userId: string): Promise<void> {
     await Promise.all(
         USER_SUBCOLLECTIONS.map(async (name) => {
-            const snap = await getDocs(collection(db, 'users', userId, name));
-            await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+            try {
+                const snap = await getDocs(collection(db, 'users', userId, name));
+                await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+            } catch (error: unknown) {
+                // A collection whose rule has not been deployed refuses the
+                // read, and by the same rule refused every write, so there is
+                // nothing in it to delete. Anything else is a real failure.
+                if ((error as { code?: string })?.code !== 'permission-denied') throw error;
+            }
         })
     );
 }

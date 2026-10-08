@@ -7,7 +7,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { TrendingUp } from 'lucide-react-native';
 import { FONTS, COLORS, TYPE, RADIUS, SPACING } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
-import { setUser, fetchUserProfile } from '../store/slices/authSlice';
+import { setUser, fetchUserProfile, toAuthUser } from '../store/slices/authSlice';
 import { setEntitlement } from '../store/slices/premiumSlice';
 import type { AppDispatch, RootState } from '../store/store';
 
@@ -54,7 +54,7 @@ const INTRO_SEEN_KEY = 'finsight:intro-seen';
 
 export const RootNavigator = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { user, isLoading, profile, profileLoading, profileSettled, profileError } =
+    const { user, initializing, profile, profileLoading, profileSettled, profileError } =
         useSelector((state: RootState) => state.auth);
     const reduced = useReducedMotion();
     const [introSeen, setIntroSeen] = useState<boolean | undefined>(undefined);
@@ -80,11 +80,7 @@ export const RootNavigator = () => {
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
             if (firebaseUser) {
-                dispatch(setUser({
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName,
-                }));
+                dispatch(setUser(toAuthUser(firebaseUser)));
                 // Fetch Firestore profile to check onboardingComplete flag
                 dispatch(fetchUserProfile(firebaseUser.uid));
             } else {
@@ -105,7 +101,7 @@ export const RootNavigator = () => {
 
     // Hold the spinner until the intro flag is known too, or the panels appear
     // for a frame and vanish.
-    if (isLoading || awaitingFirstProfile || introSeen === undefined) {
+    if (initializing || awaitingFirstProfile || introSeen === undefined) {
         // App.tsx deliberately holds the native splash until Inter is in, so
         // that launch has no seam in it. This used to undo that: a bare
         // spinner on a flat white background, which read as a second,
@@ -231,6 +227,8 @@ export const RootNavigator = () => {
                         options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
                     />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    {/* Onboarding again, prefilled, opened from Profile. */}
+                    <Stack.Screen name="EditProfile" component={OnboardingScreen} />
                     {/* Presented as a sheet: it interrupts what the user was
                         doing and should look like it can be dismissed. */}
                     <Stack.Screen

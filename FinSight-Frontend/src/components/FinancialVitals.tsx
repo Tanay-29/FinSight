@@ -48,10 +48,9 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
         // The card fades in once when the Feed first paints. It is the number
         // the screen exists to show, so it is worth arriving rather than
         // appearing.
-        <Animated.View
-            entering={FadeIn.duration(reduced ? 160 : 320)}
-            className="bg-surface-primary border border-border rounded-xl p-4 mx-5"
-        >
+        <Animated.View entering={FadeIn.duration(reduced ? 160 : 320)}>
+            {/* Classes on a plain View: they do not reach a Reanimated one. */}
+            <View className="bg-surface-primary border border-border rounded-xl p-4 mx-5">
             <Text className="text-xs font-inter-bold text-text-secondary mb-1 uppercase tracking-wider">
                 Last 30 days
             </Text>
@@ -75,6 +74,7 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
                     </Text>
                 </View>
             )}
+            </View>
         </Animated.View>
     );
 };

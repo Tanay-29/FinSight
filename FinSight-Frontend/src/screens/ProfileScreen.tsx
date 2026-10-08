@@ -16,7 +16,7 @@ import { useScheme, type ThemePref } from '../theme/theme';
 import Constants from 'expo-constants';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles, Moon,
+    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles, Moon, User,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
@@ -99,8 +99,16 @@ export const ProfileScreen: React.FC = () => {
         if (reminder.enabled) await enableReminders(hour, minute, sessionDoneToday);
     };
 
-    const displayName = user?.displayName || profile?.name || 'Finance User';
-    const email = user?.email || profile?.email || '';
+    const displayName = user?.displayName || profile?.name || 'Your profile';
+    // A phone account has no email, so the line under the name shows whichever
+    // identifier this account actually signs in with.
+    const phone = user?.phoneNumber || profile?.phoneNumber || '';
+    const contact = user?.email || profile?.email || phone;
+    const provider = profile?.authProvider ?? (phone && !user?.email ? 'phone' : null);
+    const signedInWith = provider === 'google' ? 'Signed in with Google'
+        : provider === 'phone' ? 'Signed in with your phone number'
+            : provider === 'password' ? 'Signed in with email and password'
+                : null;
     const initial = displayName.charAt(0).toUpperCase();
     const streak = profile?.streak ?? 0;
 
@@ -177,14 +185,14 @@ export const ProfileScreen: React.FC = () => {
     const handleAbout = () => {
         Alert.alert(
             'About FinSight',
-            `Version ${appVersion}\n\nA financial literacy and personal finance app for Indian students. All investing features are simulated: no real money moves at any point.`
+            `Version ${appVersion}\n\nA financial literacy and personal finance app for Indian students. FinSight is educational: it holds no money, moves no money and connects to no bank.`
         );
     };
 
     const handlePrivacy = () => {
         Alert.alert(
             'Privacy and Data',
-            'Your transactions, budgets and goals are stored in your own Firebase account and are readable only by you.\n\nMarket data and AI coaching are generated on our server, which never stores your data. Use Export Data to take a copy, or Delete Account to remove everything.'
+            'Your transactions, budgets and goals are stored in your own Firebase account and are readable only by you.\n\nTo write your coaching, a summary of your recent spending is sent to our server. It is never saved to a database. Use Export your data to take a copy, or Delete account to remove everything.'
         );
     };
 
@@ -216,7 +224,8 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <View className="flex-1">
                             <Text className="text-xl font-inter-bold text-text-primary">{displayName}</Text>
-                            {email ? <Text className="text-sm text-text-secondary font-inter">{email}</Text> : null}
+                            {contact ? <Text className="text-sm text-text-secondary font-inter">{contact}</Text> : null}
+                            {signedInWith ? <Text className="text-xs text-text-tertiary font-inter mt-0.5">{signedInWith}</Text> : null}
                             <View className="flex-row items-center mt-1.5">
                                 <View className="bg-brand-primary/10 rounded-full px-3 py-1 flex-row items-center">
                                     <Flame size={11} color={COLORS.brand.primary} />
@@ -332,7 +341,13 @@ export const ProfileScreen: React.FC = () => {
                         <Text className="text-lg font-inter-semibold text-text-primary">Settings</Text>
                     </View>
 
-                    {/* Appearance leads the list because it changes the whole
+                    <SettingsRow
+                        icon={<User size={16} color={COLORS.text.secondary} />}
+                        label="Your details"
+                        hint="Name, age, goals and income"
+                        onPress={() => navigation.navigate({ name: 'EditProfile', params: { edit: true } } as never)}
+                    />
+                    {/* Appearance leads the rest because it changes the whole
                         app, where the rows under it each change one feature. */}
                     <SettingsRow
                         icon={<Moon size={16} color={COLORS.text.secondary} />}

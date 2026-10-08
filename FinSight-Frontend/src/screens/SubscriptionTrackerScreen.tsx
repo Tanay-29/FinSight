@@ -340,7 +340,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                         onPress={() => setActiveTab(tab)}
                         style={{
                             flex: 1, paddingVertical: 8, borderRadius: 10,
-                            backgroundColor: activeTab === tab ? '#FFFFFF' : 'transparent',
+                            backgroundColor: activeTab === tab ? COLORS.surface.primary : 'transparent',
                             alignItems: 'center',
                         }}
                     >

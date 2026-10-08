@@ -63,7 +63,7 @@ export const LearnScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'paths' | 'glossary'>('paths');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const userInitial = user?.displayName?.charAt(0).toUpperCase() || 'U';
+    const userInitial = (user?.displayName || profile?.name)?.charAt(0).toUpperCase() || 'U';
 
     // Fetch on mount
     useEffect(() => {
