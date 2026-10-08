@@ -1,7 +1,7 @@
 # FinSight: session handoff
 
 Read this first. It exists so a new session can pick up without re-deriving
-context. Last updated 18 September 2026.
+context. Last updated 8 October 2026.
 
 ---
 
@@ -1183,6 +1183,85 @@ Play license testing plus RevenueCat are scoped and parked. No CA has read
 the tax content. Build with `npx eas build --profile preview --platform
 android` from `FinSight-Frontend`; the app has been run on a real Android
 phone since `4c8273f` and the screens in 5k have been seen.
+
+---
+
+## 5m. Three ways to sign in, a new onboarding, and a sweep, 8 October 2026
+
+### Auth
+
+- **Email, Google and phone.** `LoginScreen` opens on a Sign in / Create
+  account switch (sign-up used to be a corner link nobody found), then
+  Continue with Google, Continue with phone number, and the email form. All
+  three end in the same `users/{uid}` document via `authService.newProfile`.
+- **Google** is `services/googleSignIn.ts` (native SDK picks the account,
+  Firebase signs in with the ID token) and `googleSignIn.web.ts` (popup). The
+  native module is loaded with `import()` on first tap, so a binary without it
+  fails one button rather than crashing at start-up.
+- **Phone** uses the JS SDK's `signInWithPhoneNumber`, which needs a
+  reCAPTCHA v2 token. `components/auth/RecaptchaGate.tsx` loads Firebase's
+  compat SDK into a WebView whose origin is the project's auth domain and
+  hands the token back (invisible mode; if Google wants a puzzle solved it
+  shows in the sheet). The verifier contract (`type`, `verify`, `_reset`) was
+  read from the installed SDK, `@firebase/auth/dist/rn`.
+- **Two real bugs fixed on the way.** `auth.isLoading` drove both the sign-in
+  button and the navigator's splash gate, so tapping Sign in unmounted the
+  whole stack and a failed sign-up came back as an empty sign-in form. It is
+  now `initializing` (navigator) and `isLoading` (buttons). And nothing
+  cleared the five persisted slices on sign-out, so the next account on the
+  phone saw the last one's transactions; `store.ts` now resets every slice
+  but auth on sign-out, delete, or `setUser(null)`.
+- Onboarding saves with `setDoc(..., { merge: true })` (`saveOnboarding`),
+  so it cannot fail on a missing profile document, and it sets the Firebase
+  display name from the name typed there.
+
+**Not done, and needs the console (not touched from here):**
+
+1. Authentication > Sign-in method: enable **Google** and **Phone**.
+2. Register an **Android app** (`com.finsight.app`) with the SHA-1 from
+   `npx eas credentials -p android`, and an **iOS app** (`com.finsight.app`).
+   Only a Web app is registered today, so native Google sign-in reports
+   DEVELOPER_ERROR until this is done.
+3. Put `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and
+   `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` in `.env` and in EAS env vars.
+   `app.config.js` adds the Google plugin's iOS URL scheme only when the iOS
+   ID is set.
+4. **SMS needs the Blaze plan.** On Spark, add test phone numbers under
+   Sign-in method > Phone to develop without sending real texts.
+5. A new EAS build: `@react-native-google-signin/google-signin` and
+   `react-native-webview` are native.
+
+### Onboarding
+
+Four steps (you, experience, goals, income) and a summary. Each answer gets
+a line saying what it changes, and every line was checked against the code
+that reads it: experience is the coach prompt's `experience_line`, goals
+order the Feed and `GOAL_PATH_PRIORITY` in Learn, the income band is the
+fallback in `utils/income.ts`. Age is a slider (15 to 60) with a compounding
+figure that moves with it. Profile's "Your details" opens the same screen
+as `EditProfile` with `{ edit: true }`, so the answers can be changed.
+
+### The trap this session found
+
+**NativeWind classes never reach a Reanimated `Animated.View`.**
+`react-native-css-interop` swaps components at JSX creation in app code
+(`wrap-jsx.js`, `interopComponents.get(type)`), and only React Native's own
+components are registered. Reanimated ships precompiled, so `className` on
+its views is passed through and ignored, on device and on web. React
+Native's own `Animated` works, because its source is transformed with the
+app's babel config. Twelve sites relied on it (Feed's summary card and
+answers card, BarFill's fill colour, Add Transaction's toggle, among
+others); they now use `style`, or a plain `View` inside the animated one.
+`PressableScale`'s comment had already met this once. **Do not put
+`className` on anything from `react-native-reanimated`.**
+
+### Also fixed
+
+White literals in dark mode (Add Transaction toggle, Subscription tabs,
+Paywall plans); Add Transaction saving "1,200" as 1 and "." as NaN; Profile
+text about cut features, "Finance User", nothing shown for phone accounts;
+the Feed + button's tap area sitting outside its parent; account deletion
+now includes `lesson_cards`.
 
 ---
 

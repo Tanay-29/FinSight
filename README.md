@@ -128,7 +128,7 @@ FinSight is a monorepo with two directories:
               v                                     v
   +------------------------+          +---------------------------+
   |       Gemini API        |          |     Firebase Services     |
-  |  flashcards, IQ coach   |          |  Auth: email + Google     |
+  |  flashcards, IQ coach   |          |  Auth: email/Google/phone |
   |  prompts; prose only,   |          |  Firestore: per-user      |
   |  no numbers generated   |          |  transactions, budgets,   |
   +------------------------+          |  goals, learning, corrections |
@@ -139,7 +139,7 @@ Course content ships bundled in the app: the original 19 modules and glossary in
 
 ### Data Flow Summary
 
-1. **Auth**: Firebase Auth handles email/password and Google sign-in, with a forgot-password flow that deliberately gives the same response for a registered and unregistered address. `RootNavigator` renders Intro (first run only) &rarr; Login &rarr; Onboarding &rarr; the tab bar, based on auth and onboarding state, and mirrors the stored entitlement into `premiumSlice` on every profile load.
+1. **Auth**: Firebase Auth handles email/password, Google, and phone number with a one-time SMS code (the JS SDK's reCAPTCHA check runs in a WebView, `components/auth/RecaptchaGate.tsx`), with a forgot-password flow that deliberately gives the same response for a registered and unregistered address. `RootNavigator` renders Intro (first run only) &rarr; Login &rarr; Onboarding &rarr; the tab bar, based on auth and onboarding state, and mirrors the stored entitlement into `premiumSlice` on every profile load.
 2. **Personal finance**: transactions, budgets and goals are stored in Firestore under `users/{uid}/...` and synced into Redux via `firestoreService.ts`, with real-time listeners keeping the app current.
 3. **Vitals**: burn rate, the savings-surplus engine and the 50/30/20 split are pure functions in `utils/vitals.ts`, run on-device against the transactions already in Redux. Nothing here calls the backend; this used to be three Flask routes and was moved client-side so the Vitals tab works instantly and offline.
 4. **Learning**: paths, tracks and sims come from the bundled data folders. Per-user progress lives in `users/{uid}/learning_progress` (tracks and sims use the same collection, keyed by track id); answered cards live in `users/{uid}/lesson_cards`. Finishing a module, lesson or session updates the streak and triggers an IQ recalculation. Every number a lesson shows is computed in `utils/moneyMath.ts` or read from `data/taxConstants.ts`; the model never produces one.
@@ -288,7 +288,7 @@ FinSight/
 | React Navigation | 7.x | Screen routing (native stack + bottom tabs) |
 | Redux Toolkit | 2.x | Global state management (10 slices) |
 | redux-persist | 6.x | Persists Redux state across restarts |
-| Firebase | 12.9.x | Auth (email/password + Google) + Firestore |
+| Firebase | 12.9.x | Auth (email/password, Google, phone) + Firestore |
 | react-hook-form + Zod | 7.x / 4.x | Form validation |
 | react-native-reanimated | 4.x | Animations |
 | react-native-svg | 15.x | SVG rendering (Time Machine chart) |
@@ -362,7 +362,7 @@ cd FinSight/FinSight-Frontend
 npm install
 ```
 
-Create a Firebase project, enable **Authentication** (Email/Password and Google) and **Firestore**, then copy `.env.example` to `.env` and fill in your Firebase config plus the backend URL:
+Create a Firebase project, enable **Authentication** (Email/Password, Google and Phone) and **Firestore**, then copy `.env.example` to `.env` and fill in your Firebase config plus the backend URL:
 
 ```env
 EXPO_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
