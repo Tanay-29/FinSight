@@ -1,0 +1,81 @@
+# An unsigned iOS build, for sideloading with a free Apple ID (Sideloadly or
+# AltStore sign it on install). Run it from the Actions tab or with
+# `gh workflow run ios-unsigned.yml`; the .ipa is attached to the run.
+#
+# The EXPO_PUBLIC_* values come from repository secrets, the same names as
+# FinSight-Frontend/.env.example.
+name: iOS unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: FinSight-Frontend
+    env:
+      CI: 1
+      EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      EXPO_PUBLIC_FIREBASE_APP_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_APP_ID }}
+      EXPO_PUBLIC_BACKEND_URL: ${{ secrets.EXPO_PUBLIC_BACKEND_URL }}
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: FinSight-Frontend/package-lock.json
+
+      - name: Check the Firebase config is present
+        run: |
+          if [ -z "$EXPO_PUBLIC_FIREBASE_API_KEY" ]; then
+            echo "::error::Repository secrets are missing. See the header of this file."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Generate the iOS project
+        run: npx expo prebuild --platform ios --clean
+
+      # A free Apple ID cannot sign the push entitlement expo-notifications
+      # asks for. The app only uses local notifications, which do not need it.
+      - name: Drop the push entitlement
+        run: |
+          ENT=$(ls ios/*/*.entitlements 2>/dev/null | head -1)
+          if [ -n "$ENT" ]; then /usr/libexec/PlistBuddy -c "Delete :aps-environment" "$ENT" || true; fi
+
+      - name: Build without signing
+        run: |
+          xcodebuild \
+            -workspace ios/FinSight.xcworkspace \
+            -scheme FinSight \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            | tail -40
+          test -d ios/build/Build/Products/Release-iphoneos/FinSight.app
+
+      - name: Package the IPA
+        run: |
+          mkdir -p Payload
+          cp -R ios/build/Build/Products/Release-iphoneos/FinSight.app Payload/
+          zip -qr FinSight-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FinSight-unsigned-ipa
+          path: FinSight-Frontend/FinSight-unsigned.ipa
+          retention-days: 30
