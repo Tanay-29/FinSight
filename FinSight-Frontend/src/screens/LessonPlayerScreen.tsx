@@ -6,6 +6,12 @@
  * segmented progress bar, Continue once the card is answered, and a results
  * card at the end that says what was learned in concepts, not percentages.
  *
+ * Sikka, the mascot from Today, rides along: an answer bar at the bottom
+ * where Sikka reacts to each answer (a hop and a short line when right, a
+ * kind face and a pointer to the explanation when not, a cheer on a run of
+ * three), and the results screen opens on Sikka rather than an icon. The
+ * reaction is the reward; it is what makes a right answer feel like one.
+ *
  * Every scorable answer is written to the mistake bank the moment it lands,
  * so closing the deck halfway loses nothing. Finishing a lesson goes through
  * completeModule with the track as the path, which is what feeds the streak,
@@ -17,7 +23,7 @@ import { View, Text, ScrollView, Pressable, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, SlideInRight, ZoomIn, useReducedMotion } from 'react-native-reanimated';
-import { X, ChevronRight, Flame, BrainCircuit, Sparkles, RotateCcw, Bell, Check, Award } from 'lucide-react-native';
+import { X, ChevronRight, Flame, BrainCircuit, RotateCcw, Bell, Check, Award } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { answerLessonCard, markSessionDone, selectCardResults } from '../store/slices/lessonsSlice';
 import { completeModule } from '../store/slices/learningSlice';
@@ -32,6 +38,7 @@ import { buildAutopsy } from '../utils/autopsy';
 import { CardRenderer } from '../components/learn/CardRenderer';
 import { PressableScale } from '../components/PressableScale';
 import { Confetti } from '../components/Confetti';
+import { Mascot, MascotMood } from '../components/mascot/Mascot';
 import * as haptics from '../utils/haptics';
 import { COLORS, FONTS, TYPE, GUTTER, MOTION } from '../theme/tokens';
 
@@ -39,6 +46,14 @@ type Params =
     | { mode: 'lesson'; trackId: string; lessonId: string }
     | { mode: 'session' }
     | { mode: 'autopsy' };
+
+/** Short, varied, never sarcastic. Picked by card index so they rotate. */
+const RIGHT_LINES = ['Nice, that is it.', 'Exactly right.', 'You got it.', 'Spot on.', 'That is the one.'];
+const WRONG_LINES = [
+    'Not quite. The card above shows why.',
+    'Close. Worth a second read above.',
+    'Tricky one. It comes back tomorrow so it sticks.',
+];
 
 const KIND_LABEL: Record<SessionCard['kind'], string> = {
     review: 'Review',
@@ -122,6 +137,14 @@ const LessonPlayerScreen: React.FC = () => {
     const current = cards[index];
     const needsAnswer = current ? isScorable(current.card) : false;
     const canContinue = !needsAnswer || answered[index] !== undefined;
+    const verdict = needsAnswer ? answered[index] : undefined;
+
+    // Right answers in a row up to this card, for Sikka's cheer at three.
+    let run = 0;
+    for (let i = index; i >= 0; i--) {
+        if (answered[i] === true) run += 1;
+        else if (answered[i] === false) break;
+    }
 
     const onAnswer = (correct: boolean) => {
         setAnswered((a) => ({ ...a, [index]: correct }));
@@ -236,20 +259,50 @@ const LessonPlayerScreen: React.FC = () => {
                         </Animated.View>
                     </ScrollView>
 
-                    <View style={{ paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 8 }}>
+                    {/* The answer bar: Sikka reacts, then Continue. Tinted by
+                        the verdict, so right and wrong are felt before read. */}
+                    <View
+                        style={{
+                            paddingHorizontal: GUTTER, paddingTop: 10, paddingBottom: 8,
+                            backgroundColor: verdict === true ? COLORS.semantic.profitBg : verdict === false ? COLORS.semantic.alertBg : 'transparent',
+                            borderTopLeftRadius: 22, borderTopRightRadius: 22,
+                        }}
+                    >
+                        {verdict !== undefined && (
+                            <Animated.View
+                                key={`verdict-${index}`}
+                                entering={reduced ? FadeIn.duration(140) : FadeInDown.duration(220)}
+                                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+                            >
+                                <Mascot
+                                    mood={(verdict ? (run >= 3 ? 'celebrate' : 'happy') : 'concerned') as MascotMood}
+                                    size={54}
+                                />
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={{ ...TYPE.heading, color: verdict ? COLORS.semantic.profit : COLORS.semantic.alertAmber }}>
+                                        {verdict ? (run >= 3 ? `${run} in a row!` : 'Correct') : 'Not quite'}
+                                    </Text>
+                                    <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>
+                                        {verdict ? RIGHT_LINES[index % RIGHT_LINES.length] : WRONG_LINES[index % WRONG_LINES.length]}
+                                    </Text>
+                                </View>
+                            </Animated.View>
+                        )}
                         <PressableScale
                             onPress={next}
                             disabled={!canContinue}
                             accessibilityRole="button"
                             style={{
                                 height: 52, borderRadius: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                                backgroundColor: canContinue ? COLORS.brand.primaryDark : COLORS.surface.tertiary,
+                                backgroundColor: !canContinue
+                                    ? COLORS.surface.tertiary
+                                    : verdict === true ? COLORS.semantic.profit : verdict === false ? COLORS.semantic.alertAmber : COLORS.brand.primaryDark,
                             }}
                         >
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: canContinue ? COLORS.brand.onAccent : COLORS.text.tertiary, marginRight: 6 }}>
+                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: canContinue ? (verdict === undefined ? COLORS.brand.onAccent : COLORS.surface.primary) : COLORS.text.tertiary, marginRight: 6 }}>
                                 {index + 1 < cards.length ? 'Continue' : 'Finish'}
                             </Text>
-                            <ChevronRight size={18} color={canContinue ? COLORS.brand.onAccent : COLORS.text.tertiary} />
+                            <ChevronRight size={18} color={canContinue ? (verdict === undefined ? COLORS.brand.onAccent : COLORS.surface.primary) : COLORS.text.tertiary} />
                         </PressableScale>
                     </View>
                 </>
@@ -266,14 +319,22 @@ const LessonPlayerScreen: React.FC = () => {
                             </View>
                         ) : (
                             <>
-                                <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 20 }}>
-                                    <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.semantic.profitBg, alignItems: 'center', justifyContent: 'center' }}>
-                                        <Sparkles size={28} color={COLORS.semantic.profit} />
-                                    </View>
-                                    <Text style={{ ...TYPE.title, color: COLORS.text.primary, marginTop: 16 }}>{plan.title}</Text>
-                                    <Text style={{ ...TYPE.body, color: COLORS.text.secondary, marginTop: 4 }}>
-                                        {scorable === 0 ? 'Done' : `${right} of ${scorable} right`}
+                                <View style={{ alignItems: 'center', paddingTop: 16, paddingBottom: 16 }}>
+                                    <Mascot mood={scorable === 0 || right / scorable >= 0.6 ? 'celebrate' : 'happy'} size={124} />
+                                    <Text style={{ ...TYPE.title, color: COLORS.text.primary, marginTop: 12, textAlign: 'center' }}>
+                                        {scorable === 0 ? 'Done' : right === scorable ? 'Perfect run!' : right / scorable >= 0.6 ? 'Nicely done' : 'Good effort'}
                                     </Text>
+                                    <Text style={{ ...TYPE.body, color: COLORS.text.secondary, marginTop: 4, textAlign: 'center' }}>
+                                        {plan.title}{scorable === 0 ? '' : `, ${right} of ${scorable} right`}
+                                    </Text>
+                                    {(profile?.streak ?? 0) > 0 && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.semantic.alertBg }}>
+                                            <Flame size={15} color={COLORS.semantic.alertAmberFill} fill={COLORS.semantic.alertAmberFill} />
+                                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.semantic.alertAmber, marginLeft: 6 }}>
+                                                {profile?.streak}-day streak
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
 
                                 {newlyKnown.length > 0 ? (
