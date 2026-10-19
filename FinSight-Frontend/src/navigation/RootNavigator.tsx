@@ -33,8 +33,6 @@ import PayslipDecoderScreen from '../screens/PayslipDecoderScreen';
 // Phase 1: Execution Layer Screens
 import BurnRateScreen from '../screens/BurnRateScreen';
 // Engagement features
-import TimeMachineScreen from '../screens/TimeMachineScreen';
-import GuessSpendScreen from '../screens/GuessSpendScreen';
 import SwipeCategoriseScreen from '../screens/SwipeCategoriseScreen';
 // Social and shareable
 
@@ -201,8 +199,6 @@ export const RootNavigator = () => {
                     <Stack.Screen name="Flashcards" component={FlashcardScreen} />
                     {/* Phase 1: Execution + Intelligence Layer */}
                     <Stack.Screen name="BurnRate" component={BurnRateScreen} />
-                    <Stack.Screen name="TimeMachine" component={TimeMachineScreen} />
-                    <Stack.Screen name="GuessSpend" component={GuessSpendScreen} />
                     <Stack.Screen name="SwipeCategorise" component={SwipeCategoriseScreen} />
                     <Stack.Screen
                         name="AddTransaction"

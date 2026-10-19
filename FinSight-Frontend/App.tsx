@@ -41,7 +41,7 @@ const navigationRef = createNavigationContainerRef<any>();
 
 /**
  * A tapped notification opens what it is about: the daily session, or the
- * Vitals tab for a budget alert. Only when the stack actually has the
+ * Money tab for a budget alert. Only when the stack actually has the
  * route, which it does not before sign-in; a cold start from a notification
  * on a signed-out phone just opens the app.
  */
@@ -52,10 +52,10 @@ function openSessionFromNotification(response: Notifications.NotificationRespons
   const routes = navigationRef.getRootState()?.routeNames ?? [];
   if (!routes.includes('MainTabs')) return;
   if (target === 'session') {
-    navigationRef.navigate('MainTabs', { screen: 'Learn' });
+    navigationRef.navigate('MainTabs', { screen: 'Today' });
     navigationRef.navigate('LessonPlayer', { mode: 'session' });
   } else if (target === 'vitals') {
-    navigationRef.navigate('MainTabs', { screen: 'Vitals' });
+    navigationRef.navigate('MainTabs', { screen: 'Money' });
   }
 }
 

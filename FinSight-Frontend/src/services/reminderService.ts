@@ -34,16 +34,24 @@ const DAYS_AHEAD = 7;
 
 export const DEFAULT_REMINDER: ReminderPreference = { enabled: false, hour: 20, minute: 0 };
 
-/** Copy rotates so seven days of the same line do not read as spam. */
+/**
+ * Copy rotates so seven days of the same line do not read as spam, and it is
+ * in Sikka's voice, the mascot on the Today screen, so a reminder sounds like
+ * someone rather than a system. Never guilt: the lowest note is "I kept your
+ * seat", not "you failed".
+ */
 const LINES = [
-    { title: 'Three minutes on your money', body: 'One thing you got wrong, two new, one about your own spending.' },
-    { title: 'Your session is ready', body: 'Short enough for the queue at the chai stall.' },
-    { title: 'Keep the streak', body: 'Today counts once you finish the deck.' },
-    { title: 'A card about your own spending', body: 'Built from your last 30 days. Guess before you look.' },
-    { title: 'Three minutes', body: 'That is the whole session. The rest of the app can wait.' },
-    { title: 'Something you missed is due', body: 'Cards you got wrong come back until they stick.' },
-    { title: 'Session time', body: 'A small habit, kept, beats a big plan, abandoned.' },
+    { title: 'Sikka here', body: 'Three minutes on money today? I kept your seat.' },
+    { title: 'Your lesson is ready', body: 'Short enough for the queue at the chai stall.' },
+    { title: 'Got three minutes?', body: 'One new idea, one quick check, and you are done.' },
+    { title: 'Quick one from Sikka', body: 'Spent anything today? Tell me, then a short lesson.' },
+    { title: 'Something you missed is back', body: 'The cards you got wrong return until they stick.' },
+    { title: 'Small habit, kept', body: 'Beats a big plan, abandoned. Three minutes.' },
+    { title: 'Sikka saved you a card', body: 'It is about your own spending. Guess before you look.' },
 ];
+
+/** The one extra nudge, only when a streak would otherwise end tonight. */
+const SAVE_AT = { hour: 21, minute: 30 };
 
 const supported = Platform.OS === 'ios' || Platform.OS === 'android';
 
@@ -103,9 +111,14 @@ export function configureNotificationHandling(): void {
  * Rebuild the schedule from the preference. Cancels everything this app
  * has scheduled first, so calling it repeatedly never stacks reminders.
  *
- * @param sessionDoneToday skip today's slot when the session is already done
+ * At most two a day: the daily reminder, and on a day the streak is about to
+ * end, one "save your streak" at 9:30 pm. That second one is skipped when the
+ * daily reminder is already set later than it.
+ *
+ * @param sessionDoneToday skip today's slots when the session is already done
+ * @param streak the current streak, for the save nudge; 0 means none is sent
  */
-export async function syncReminders(sessionDoneToday: boolean): Promise<void> {
+export async function syncReminders(sessionDoneToday: boolean, streak = 0): Promise<void> {
     if (!supported) return;
     const pref = await getReminderPreference();
     await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
@@ -129,6 +142,23 @@ export async function syncReminders(sessionDoneToday: boolean): Promise<void> {
             },
         }).catch(() => { });
     }
+
+    const saveAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), SAVE_AT.hour, SAVE_AT.minute, 0, 0);
+    const reminderIsLater = pref.hour * 60 + pref.minute >= SAVE_AT.hour * 60 + SAVE_AT.minute;
+    if (streak > 0 && !sessionDoneToday && !reminderIsLater && saveAt.getTime() > now.getTime()) {
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: `Your ${streak}-day streak`,
+                body: 'It ends at midnight. One short lesson keeps it going.',
+                data: { target: 'session' },
+            },
+            trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: saveAt,
+                channelId: CHANNEL,
+            },
+        }).catch(() => { });
+    }
 }
 
 export async function disableReminders(): Promise<void> {
@@ -141,14 +171,14 @@ export async function disableReminders(): Promise<void> {
  * Turn the reminder on at a time. Asks for permission if needed; returns
  * false, with the preference left off, when the user declined.
  */
-export async function enableReminders(hour: number, minute: number, sessionDoneToday: boolean): Promise<boolean> {
+export async function enableReminders(hour: number, minute: number, sessionDoneToday: boolean, streak = 0): Promise<boolean> {
     const ok = await ensurePermission();
     if (!ok) {
         await setReminderPreference({ enabled: false, hour, minute });
         return false;
     }
     await setReminderPreference({ enabled: true, hour, minute });
-    await syncReminders(sessionDoneToday);
+    await syncReminders(sessionDoneToday, streak);
     return true;
 }
 

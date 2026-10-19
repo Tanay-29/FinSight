@@ -10,7 +10,6 @@ import {
     TrendingUp, Heart, BookOpen, Home, Package,
     ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank,
 } from 'lucide-react-native';
-import { goalIcon } from '../theme/icons';
 import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
@@ -23,6 +22,10 @@ import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory } from '../utils/cate
 import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
 import { PressableScale } from '../components/PressableScale';
 import { resolveMonthlyIncome, savingsRate, savingsRateVerdict } from '../utils/income';
+import { summariseSpending } from '../utils/spendSummary';
+import { FinancialVitals } from '../components/FinancialVitals';
+import { TransactionRow } from '../components/TransactionRow';
+import FinSightIQCard from '../components/FinSightIQCard';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 
 // ─── Icon helpers (Lucide) ───────────────────────────────────────
@@ -284,7 +287,6 @@ export const VitalsScreen: React.FC = () => {
     // Every figure on this screen is derived from logged spending, so with none
     // of it there is nothing here but noughts.
     const hasNothingLogged = transactionsLoaded && !transactionsError && transactions.length === 0;
-    const goals = useAppSelector((state: any) => state.goals?.items || []);
 
     // Days nothing went out. Counted as wins; see utils/noSpendDays.
     const noSpend = React.useMemo(() => summariseNoSpendDays(transactions), [transactions]);
@@ -308,6 +310,16 @@ export const VitalsScreen: React.FC = () => {
         dispatch(fetchTransactions());
     }, [dispatch]);
 
+    // The 30-day summary and the latest entries, which used to be the home
+    // tab. Home is Today now, so everything about money lives here.
+    const spend = React.useMemo(() => summariseSpending(transactions), [transactions]);
+    const latest = React.useMemo(
+        () => [...transactions]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 5),
+        [transactions]
+    );
+
     const recentSpending = React.useMemo(() => {
         let spentToday = 0;
         let spentThisWeek = 0;
@@ -330,12 +342,6 @@ export const VitalsScreen: React.FC = () => {
         .filter((t) => t.type === 'debit' && format(new Date(t.date), 'yyyy-MM') === currentMonthKey)
         .reduce((sum, t) => sum + t.amount, 0);
     const overallPercentage = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
-
-    // Top Goal
-    const topGoal = goals.length > 0 ? goals[0] : null;
-    const safeCurrentAmount = topGoal ? (topGoal.currentAmount || topGoal.savedAmount || 0) : 0;
-    const safeTargetAmount = topGoal ? (topGoal.targetAmount || 1) : 1;
-    const goalProgressPercentage = Math.min((safeCurrentAmount / safeTargetAmount) * 100, 100);
 
     const chartData = React.useMemo(() => {
         const totals: Record<string, number> = {};
@@ -402,7 +408,7 @@ export const VitalsScreen: React.FC = () => {
                 {/* Header */}
                 <View className="pt-4 pb-2 flex-row justify-between items-center" style={{ paddingHorizontal: GUTTER }}>
                     <View>
-                        <Text style={TYPE.title} className="text-text-primary">Financial vitals</Text>
+                        <Text style={TYPE.title} className="text-text-primary">Money</Text>
                         <Text style={TYPE.caption} className="text-text-tertiary mt-0.5">{format(new Date(), 'MMMM yyyy')}</Text>
                     </View>
                     <View className="flex-row items-center gap-3">
@@ -439,6 +445,39 @@ export const VitalsScreen: React.FC = () => {
                     />
                 ) : (
                   <>
+                <View className="mt-3">
+                    <FinancialVitals
+                        totalSpent={spend.totalSpent}
+                        dailyTrend={spend.dailyTrend}
+                        comparison={spend.comparison}
+                    />
+                </View>
+
+                {/* The latest five, so what was just logged is visible. */}
+                <View className="mt-3 bg-surface-primary border border-border overflow-hidden" style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}>
+                    <View className="px-4 py-3 border-b border-border flex-row items-center justify-between">
+                        <Text style={TYPE.heading} className="text-text-primary">Latest</Text>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('SwipeCategorise' as never)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            accessibilityRole="button"
+                        >
+                            <Text className="text-brand-link font-inter-semibold text-sm">Fix categories</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {latest.map((txn) => (
+                        <TransactionRow
+                            key={txn.id}
+                            category={txn.category}
+                            merchant={txn.merchant}
+                            amount={txn.amount}
+                            type={txn.type}
+                            date={txn.date}
+                            source={txn.source as 'auto' | 'manual'}
+                        />
+                    ))}
+                </View>
+
                 {/* No-spend days. Deliberately the first thing on the screen:
                     it is the one panel that has something good to say on a day
                     with no money in it. */}
@@ -655,48 +694,8 @@ export const VitalsScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* The top goal, and nothing at all when there is not one. A
-                    card whose entire content is a link to another tab is an
-                    advert, not a panel. */}
-                {topGoal && (
-                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4">
-                    <View className="flex-row justify-between items-center mb-4">
-                        <Text style={TYPE.heading} className="text-text-primary">Your top goal</Text>
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('Goals' as never)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                            <Text className="text-brand-primary font-inter-bold text-sm">All goals</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                            <View className="flex-row items-center mb-3">
-                                <View className="w-12 h-12 bg-brand-soft rounded-full items-center justify-center mr-3">
-                                    {React.createElement(goalIcon(topGoal.icon), { size: 22, color: COLORS.brand.primary })}
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-base font-inter-bold text-text-primary">{topGoal.name || topGoal.title}</Text>
-                                    <Text className="text-xs text-text-secondary mt-1 font-inter">
-                                        ₹{safeCurrentAmount.toLocaleString('en-IN')} / ₹{safeTargetAmount.toLocaleString('en-IN')}
-                                    </Text>
-                                </View>
-                                <Text className="text-lg font-inter-bold text-brand-primary">
-                                    {Math.round(goalProgressPercentage)}%
-                                </Text>
-                            </View>
-
-                            <BarFill percent={goalProgressPercentage} height={10} fillClassName="bg-brand-primary" />
-
-                            {topGoal.deadline && (
-                                <Text className="text-xs text-text-tertiary mt-2 text-right font-inter">
-                                    Target {format(parseISO(topGoal.deadline), 'MMM yyyy')}
-                                </Text>
-                            )}
-                </View>
-                )}
-
                 {/* Budget Breakdown */}
-                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4 mb-8">
+                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4 mb-5">
                     <View className="flex-row justify-between items-center mb-3">
                         <Text style={TYPE.heading} className="text-text-primary">Budgets</Text>
                         <TouchableOpacity onPress={() => setCreateModalVisible(true)}>
@@ -738,12 +737,20 @@ export const VitalsScreen: React.FC = () => {
                     )}
                 </View>
 
+                {/* The coach's read of all of the above, last, once the
+                    numbers it talks about have been seen. */}
+                <View className="mb-8">
+                    <FinSightIQCard />
+                </View>
                   </>
                 )}
             </ScrollView>
 
+            {/* Position on the Pressable itself, not the inner view, so the
+                tap area is where the button is drawn. */}
             <PressableScale
-                className="absolute bottom-6 right-6 bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                containerStyle={{ position: 'absolute', bottom: 24, right: 24 }}
+                className="bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center shadow-lg"
                 onPress={() => navigation.navigate('AddTransaction' as never)}
                 activeScale={0.92}
                 accessibilityRole="button"

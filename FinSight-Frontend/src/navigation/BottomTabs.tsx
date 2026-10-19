@@ -41,8 +41,8 @@ import Animated, {
     useReducedMotion,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, BarChart2, Target, GraduationCap } from 'lucide-react-native';
-import { FeedScreen } from '../screens/FeedScreen';
+import { Sun, Wallet, Target, GraduationCap } from 'lucide-react-native';
+import { TodayScreen } from '../screens/TodayScreen';
 import { VitalsScreen } from '../screens/VitalsScreen';
 import { LearnScreen } from '../screens/LearnScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
@@ -53,11 +53,15 @@ import { checkBudgetAlerts } from '../services/budgetAlertService';
 
 const Tab = createBottomTabNavigator();
 
+/**
+ * Today is the habit (Sikka, the streak, the lesson, the check-in), Learn is
+ * the path, Money is every number, Goals is what the money is for.
+ */
 const ICONS: Record<string, React.ComponentType<{ size: number; color: string; strokeWidth?: number }>> = {
-    Feed: Home,
-    Vitals: BarChart2,
-    Goals: Target,
+    Today: Sun,
     Learn: GraduationCap,
+    Money: Wallet,
+    Goals: Target,
 };
 
 /** The floating capsule itself. */
@@ -126,7 +130,7 @@ const TabItem: React.FC<{
     onLongPress: () => void;
     reduced: boolean;
 }> = ({ label, focused, width, onPress, onLongPress, reduced }) => {
-    const Icon = ICONS[label] ?? Home;
+    const Icon = ICONS[label] ?? Sun;
     const lift = useSharedValue(focused ? 1 : 0);
 
     React.useEffect(() => {
@@ -263,10 +267,10 @@ export const BottomTabs: React.FC = () => {
         screenOptions={{ headerShown: false }}
         tabBar={(props) => <FinSightTabBar {...props} />}
     >
-        <Tab.Screen name="Feed" component={FeedScreen} />
-        <Tab.Screen name="Vitals" component={VitalsScreen} />
-        <Tab.Screen name="Goals" component={GoalsScreen} />
+        <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Learn" component={LearnScreen} />
+        <Tab.Screen name="Money" component={VitalsScreen} />
+        <Tab.Screen name="Goals" component={GoalsScreen} />
     </Tab.Navigator>
     );
 };

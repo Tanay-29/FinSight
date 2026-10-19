@@ -115,14 +115,14 @@ const GOALS: {
         Icon: Wallet,
         title: 'Know where my money goes',
         subtitle: 'Log what you spend and set limits that hold',
-        effect: 'Home leads with where your money went',
+        effect: 'Today points you at your first budget',
     },
     {
         value: 'goals',
         Icon: PiggyBank,
         title: 'Save for something specific',
         subtitle: 'A trip, a phone, or a buffer for bad months',
-        effect: 'Home nudges you to name your first goal',
+        effect: 'Today points you at your first savings goal',
     },
     {
         value: 'investing',
@@ -278,7 +278,7 @@ const StepYou: React.FC<StepProps> = ({ data, onChange, reduced }) => {
             <StepHeader
                 title={first ? `Good ${timeOfDay()}, ${first}` : 'First, what should we call you?'}
                 body={first
-                    ? 'Four quick questions and your home screen is set up around you.'
+                    ? 'Four quick questions and FinSight is set up around you.'
                     : 'This is the name FinSight greets you with. You can change it later in Profile.'}
             />
 
@@ -371,7 +371,7 @@ const StepGoals: React.FC<StepProps> = ({ data, onChange, reduced }) => {
         <View>
             <StepHeader
                 title="What are you here for?"
-                body="Pick as many as you like. Your home screen and Learn tab are ordered around these."
+                body="Pick as many as you like. Your next steps and the Learn tab are ordered around these."
             />
             {GOALS.map((opt) => (
                 <SelectCard
@@ -464,21 +464,18 @@ const StepIncome: React.FC<StepProps> = ({ data, onChange, reduced }) => {
 const Summary: React.FC<{ data: OnboardingData; reduced: boolean; editing: boolean }> = ({ data, reduced, editing }) => {
     const exp = EXPERIENCE.find((e) => e.value === data.experienceLevel);
     const income = incomeFromBand(data.incomeRange ?? undefined);
-    const leadsWithSpending = data.appGoals.includes('budgeting');
     const firstStep = data.appGoals.includes('budgeting')
-        ? 'Log one expense, then set your first budget'
+        ? 'Your first lesson, then your first budget'
         : data.appGoals.includes('goals')
-            ? 'Log one expense, then name your first goal'
-            : 'Log one expense, then open your first lesson';
+            ? 'Your first lesson, then your first savings goal'
+            : 'Your first three-minute lesson';
 
     const rows = [
         { Icon: MessageCircle, title: 'Your coach', body: `Tuned for age ${data.age}, and ${exp?.summary ?? 'keeps it plain'}.` },
         {
             Icon: LayoutList,
-            title: 'Your home screen',
-            body: leadsWithSpending
-                ? 'Leads with where your money went over the last 30 days.'
-                : 'Leads with your recent spending, with the summary below it.',
+            title: 'Your daily habit',
+            body: 'Sikka, a three-minute lesson and a ten-second money check-in, every day on Today.',
         },
         {
             Icon: Calculator,
@@ -487,7 +484,7 @@ const Summary: React.FC<{ data: OnboardingData; reduced: boolean; editing: boole
                 ? `Start from about ₹${inr(income)} a month until you log real income.`
                 : 'Wait for your first logged income, so nothing is guessed.',
         },
-        { Icon: Footprints, title: 'Your first step', body: `${firstStep}. It takes about a minute.` },
+        { Icon: Footprints, title: 'Your first step', body: `${firstStep}.` },
     ];
 
     return (

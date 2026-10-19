@@ -10,6 +10,7 @@ import goalsReducer from './slices/goalsSlice';
 import iqReducer from './slices/iqSlice';
 import reviewsReducer from './slices/reviewsSlice';
 import lessonsReducer from './slices/lessonsSlice';
+import checkInsReducer from './slices/checkInsSlice';
 // Phase 1: Execution + Intelligence Layer
 import vitalsIntelReducer from './slices/vitalsIntelSlice';
 
@@ -23,6 +24,7 @@ const appReducer = combineReducers({
     iq: iqReducer,
     reviews: reviewsReducer,
     lessons: lessonsReducer,
+    checkIns: checkInsReducer,
     vitalsIntel: vitalsIntelReducer,
 });
 
@@ -65,7 +67,7 @@ const rootReducer = (state: AppState | undefined, action: Parameters<typeof appR
 const persistConfig = {
     key: 'finsight-root',
     storage: AsyncStorage,
-    whitelist: ['transactions', 'budgets', 'goals', 'learning', 'lessons'],
+    whitelist: ['transactions', 'budgets', 'goals', 'learning', 'lessons', 'checkIns'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

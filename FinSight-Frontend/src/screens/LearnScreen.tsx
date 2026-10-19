@@ -8,34 +8,31 @@
  * - Searchable glossary
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, AppState } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import {
     BookOpen, Flame, Search, HelpCircle, GraduationCap,
-    ChevronRight, Trophy, Target, BrainCircuit, Snowflake,
-    Layers, Hourglass, Check, Zap, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText, CalendarCheck, Home, BrainCog,
+    ChevronRight, Trophy, BrainCircuit, Snowflake,
+    Check, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText, Home, BrainCog,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
 import { fetchDueCards, selectDueCount, selectMasteredCount, selectTrackedCount } from '../store/slices/reviewsSlice';
 import { GLOSSARY, COURSE_CONTENT } from '../data/courseContent';
-import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
+import { fetchCardResults, selectCardResults } from '../store/slices/lessonsSlice';
 import { TRACKS, cardKey } from '../data/lessons';
 import { isScorable } from '../data/lessons/schema';
 import { isMastered } from '../services/lessonService';
 import { SCENARIOS } from '../data/scenarios';
-import { buildSession } from '../utils/lessonSession';
-import { buildAutopsy } from '../utils/autopsy';
-import { syncReminders } from '../services/reminderService';
 import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
-import { streakAtRisk, MAX_FREEZES } from '../utils/streak';
+import { MAX_FREEZES } from '../utils/streak';
 import * as haptics from '../utils/haptics';
-import { COLORS, TYPE, FONTS } from '../theme/tokens';
+import { COLORS, TYPE } from '../theme/tokens';
 
 // Map onboarding goal → which pathId to promote first
 const GOAL_PATH_PRIORITY: Record<string, string> = {
@@ -57,8 +54,6 @@ export const LearnScreen: React.FC = () => {
     const masteredCount = useAppSelector(selectMasteredCount);
     const trackedCount = useAppSelector(selectTrackedCount);
     const cardResults = useAppSelector(selectCardResults);
-    const sessionDone = useAppSelector(selectSessionDoneToday);
-    const transactions = useAppSelector((s) => s.transactions.items);
 
     const [activeTab, setActiveTab] = useState<'paths' | 'glossary'>('paths');
     const [searchQuery, setSearchQuery] = useState('');
@@ -75,27 +70,6 @@ export const LearnScreen: React.FC = () => {
             dispatch(fetchCardResults());
         }
     }, [dispatch, user?.uid]);
-
-    // Keep the reminder schedule honest: rebuild it when the session gets
-    // done (so today's slot is dropped) and whenever the app comes back to
-    // the foreground (so the seven-day window rolls forward).
-    useEffect(() => {
-        syncReminders(sessionDone);
-        const sub = AppState.addEventListener('change', (state) => {
-            if (state === 'active') syncReminders(sessionDone);
-        });
-        return () => sub.remove();
-    }, [sessionDone]);
-
-    // Last month, explained: only offered when last month has enough logged.
-    const autopsy = useMemo(() => buildAutopsy(transactions, profile?.incomeRange), [transactions, profile?.incomeRange]);
-
-    // What today's session would hold, for the card that offers it.
-    const session = useMemo(() => {
-        const completedByTrack: Record<string, string[]> = {};
-        for (const [pathId, p] of Object.entries(progress)) completedByTrack[pathId] = p.completedModules ?? [];
-        return buildSession(cardResults, completedByTrack, transactions, undefined, profile?.incomeRange);
-    }, [cardResults, progress, transactions, profile?.incomeRange]);
 
     // ── Real stats ───────────────────────────────────────────────
     const totalDone = Object.values(progress).reduce(
@@ -117,12 +91,6 @@ export const LearnScreen: React.FC = () => {
     }, [cardResults]);
     const currentStreak = profile?.streak ?? streak;
     const freezes = profile?.streakFreezes ?? 0;
-    const atRisk = streakAtRisk({
-        streak: currentStreak,
-        lastStudiedDate: profile?.lastStudiedDate ?? '',
-        freezes,
-    });
-
     // ── Onboarding-aware path ordering ─────────────────────────
     const displayPaths = (() => {
         const all = paths.length > 0 ? paths : (COURSE_CONTENT as any[]);
@@ -251,94 +219,9 @@ export const LearnScreen: React.FC = () => {
                     )}
                 </View>
 
-                {/* ── Today's session ─────────────────────────
-                    The one thing this tab wants you to do. Three minutes,
-                    mixed: what you got wrong before, what comes next, and
-                    one question about your own money. */}
-                {session.cards.length > 0 ? (
-                    <PressableScale
-                        onPress={() => { haptics.tap(); navigation.navigate('LessonPlayer', { mode: 'session' }); }}
-                        accessibilityRole="button"
-                        accessibilityLabel={sessionDone ? 'Play another session' : "Start today's session"}
-                        style={{
-                            marginHorizontal: 20, marginTop: 16, borderRadius: 18, padding: 18,
-                            backgroundColor: sessionDone ? COLORS.surface.primary : COLORS.brand.primaryDark,
-                            borderWidth: 1, borderColor: sessionDone ? COLORS.border.default : COLORS.brand.primaryDark,
-                        }}
-                    >
-                        <View className="flex-row items-center">
-                            <View style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: sessionDone ? COLORS.semantic.profitBg : 'rgba(255,255,255,0.14)', marginRight: 12 }}>
-                                {sessionDone
-                                    ? <Check size={22} color={COLORS.semantic.profit} strokeWidth={3} />
-                                    : <Zap size={22} color={COLORS.brand.onAccent} fill={COLORS.brand.onAccent} />}
-                            </View>
-                            <View className="flex-1">
-                                <Text style={{ ...TYPE.heading, color: sessionDone ? COLORS.text.primary : COLORS.brand.onAccent }}>
-                                    {sessionDone ? 'Done for today' : "Today's session"}
-                                </Text>
-                                <Text style={{ ...TYPE.caption, fontFamily: FONTS.regular, color: sessionDone ? COLORS.text.secondary : 'rgba(255,255,255,0.78)', marginTop: 2 }}>
-                                    {sessionDone
-                                        ? 'Come back tomorrow, or play another round now'
-                                        : [
-                                            session.reviewCount > 0 ? `${session.reviewCount} to fix` : null,
-                                            session.newCount > 0 ? `${session.newCount} new` : null,
-                                            session.hasYourMoney ? 'one about your money' : null,
-                                        ].filter(Boolean).join(', ') + ', about 3 min'}
-                                </Text>
-                                {/* A new account gets no card about its own money, which is
-                                    correct and worth one line of explanation. */}
-                                {!session.hasYourMoney && transactions.length < 3 ? (
-                                    <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: sessionDone ? COLORS.text.tertiary : 'rgba(255,255,255,0.6)', marginTop: 4 }}>
-                                        Log a few expenses and the session starts asking about your own spending.
-                                    </Text>
-                                ) : null}
-                            </View>
-                            <ChevronRight size={20} color={sessionDone ? COLORS.text.tertiary : COLORS.brand.onAccent} />
-                        </View>
-                    </PressableScale>
-                ) : null}
-
-                {autopsy ? (
-                    <PressableScale
-                        onPress={() => { haptics.tap(); navigation.navigate('LessonPlayer', { mode: 'autopsy' }); }}
-                        accessibilityRole="button"
-                        className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                    >
-                        <View className="w-11 h-11 rounded-2xl bg-profit-bg items-center justify-center mr-3">
-                            <CalendarCheck size={20} color={COLORS.semantic.profit} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-base font-inter-bold text-text-primary">{autopsy.title}</Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                {autopsy.cards.length} cards from your own numbers, about 2 min
-                            </Text>
-                        </View>
-                        <ChevronRight size={18} color={COLORS.semantic.profit} />
-                    </PressableScale>
-                ) : null}
-
-                {/* ── Streak at risk ──────────────────────────── */}
-                {atRisk && currentStreak > 0 ? (
-                    <View className={`mx-5 mt-4 rounded-2xl border p-4 flex-row items-center ${freezes > 0 ? 'bg-brand-soft border-brand-edge' : 'bg-alert-bg border-alert-bg'}`}>
-                        <View className="w-11 h-11 rounded-2xl bg-surface-primary items-center justify-center mr-3">
-                            {freezes > 0
-                                ? <Snowflake size={20} color="#0E7490" />
-                                : <Flame size={20} color="#C2410C" />}
-                        </View>
-                        <View className="flex-1">
-                            <Text className={`text-base font-inter-bold ${freezes > 0 ? 'text-brand-link' : 'text-alert-amber'}`}>
-                                {freezes > 0
-                                    ? `${currentStreak}-day streak protected`
-                                    : `${currentStreak}-day streak at risk`}
-                            </Text>
-                            <Text className={`text-xs mt-0.5 ${freezes > 0 ? 'text-brand-link' : 'text-alert-amber'}`}>
-                                {freezes > 0
-                                    ? `A freeze will cover the day you missed. ${freezes} left.`
-                                    : 'Finish any module today to keep it alive.'}
-                            </Text>
-                        </View>
-                    </View>
-                ) : null}
+                {/* Today's session, the month-in-review deck and the
+                    streak warning moved to the Today tab, which is where the
+                    daily habit lives now. This tab is the path. */}
 
                 {/* ── Cards due for review ────────────────────── */}
                 {dueCount > 0 ? (
@@ -619,7 +502,7 @@ export const LearnScreen: React.FC = () => {
                     that feeds the streak and badges shown at the top of this
                     same screen, was the last thing you reached. */}
                 {/* ── Practise ────────────────────────────────────
-                    Three tools that teach by doing. They used to sit in a grid
+                    Tools that teach by doing. They used to sit in a grid
                     of tiles on the Vitals screen, which is where you go to see
                     how the month is going, not to learn something. */}
                 <Text className="mx-5 mt-6 mb-1 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
@@ -660,56 +543,8 @@ export const LearnScreen: React.FC = () => {
                     <ChevronRight size={18} color={COLORS.brand.primary} />
                 </PressableScale>
 
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('GuessSpend'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-loss-bg items-center justify-center mr-3">
-                        <Target size={20} color={COLORS.semantic.loss} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Which was more?</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            Two of your own categories, head to head. Find your blind spot
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color={COLORS.semantic.loss} />
-                </PressableScale>
 
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('SwipeCategorise'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
-                        <Layers size={20} color="#0E7490" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            Sort miscategorised transactions and teach the app as you go
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color="#0E7490" />
-                </PressableScale>
 
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('TimeMachine'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-profit-bg items-center justify-center mr-3">
-                        <Hourglass size={20} color={COLORS.semantic.profit} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Time Machine</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            What a small regular spend is worth decades from now
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color={COLORS.semantic.profit} />
-                </PressableScale>
 
 
 
