@@ -70,3 +70,103 @@ export function classifyRecurring(
     if (avgIntervalDays <= WEEKLY_MAX_INTERVAL_DAYS) return 'weekly';
     return 'subscription';
 }
+
+// ─── Detection ────────────────────────────────────────────────────
+
+export interface RecurringCharge {
+    merchant: string;
+    normalised: string;
+    category: string;
+    totalCount: number;
+    avgAmount: number;
+    estimatedMonthly: number;
+    avgIntervalDays: number;
+    /** Coefficient of variation of the charged amounts. */
+    variation: number;
+    type: RecurringType;
+    lastDate: string;
+    transactions: { date: string; amount: number }[];
+    /** Set when the latest charge of a subscription is higher than the one before. */
+    priceRise: { from: number; to: number } | null;
+}
+
+interface Txn {
+    type: string;
+    amount: number;
+    date: string;
+    merchant?: string;
+    category?: string;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * A subscription whose newest charge is up on the one before, by at least two
+ * percent and five rupees, so rounding and a paisa of tax never trigger it.
+ * Streaming services and phone plans raise prices quietly, and the only place
+ * that shows is the next charge, which nobody reads.
+ */
+export function priceRise(amounts: number[]): { from: number; to: number } | null {
+    if (amounts.length < 2) return null;
+    const to = amounts[amounts.length - 1];
+    const from = amounts[amounts.length - 2];
+    return to - from >= 5 && to >= from * 1.02 ? { from, to } : null;
+}
+
+/**
+ * Recurring charges in the last 90 days, most expensive per month first.
+ * Moved here from the subscription screen so the Money tab can count them too.
+ */
+export function detectRecurring(
+    transactions: Txn[],
+    keyOf: (text: string) => string,
+    now: Date = new Date(),
+): RecurringCharge[] {
+    const cutoff = now.getTime() - 90 * DAY_MS;
+    const groups: Record<string, { date: string; amount: number; category: string; merchant: string }[]> = {};
+
+    for (const t of transactions) {
+        if (t.type !== 'debit') continue;
+        const at = new Date(t.date).getTime();
+        if (!Number.isFinite(at) || at < cutoff) continue;
+        if (!t.merchant && !t.category) continue;
+        const key = keyOf(t.merchant ?? t.category ?? 'unknown');
+        (groups[key] ??= []).push({
+            date: t.date,
+            amount: t.amount,
+            category: t.category ?? 'other',
+            merchant: t.merchant ?? t.category ?? 'Unknown',
+        });
+    }
+
+    const results: RecurringCharge[] = [];
+    for (const [norm, txs] of Object.entries(groups)) {
+        if (txs.length < 2) continue;
+        const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date));
+        let totalInterval = 0;
+        for (let i = 1; i < sorted.length; i++) {
+            totalInterval += Math.round((new Date(sorted[i].date).getTime() - new Date(sorted[i - 1].date).getTime()) / DAY_MS);
+        }
+        const avgIntervalDays = Math.round(totalInterval / (sorted.length - 1));
+        const avgAmount = txs.reduce((s, t) => s + t.amount, 0) / txs.length;
+        const variation = amountVariation(txs.map((t) => t.amount));
+        const type = classifyRecurring(variation, avgIntervalDays);
+        if (type === null) continue;
+        const last = sorted[sorted.length - 1];
+        results.push({
+            merchant: last.merchant,
+            normalised: norm,
+            category: last.category,
+            totalCount: txs.length,
+            avgAmount: Math.round(avgAmount),
+            estimatedMonthly: Math.round((avgAmount * 30) / avgIntervalDays),
+            avgIntervalDays,
+            variation,
+            type,
+            lastDate: last.date,
+            transactions: sorted.map((t) => ({ date: t.date, amount: t.amount })),
+            priceRise: type === 'subscription' ? priceRise(sorted.map((t) => t.amount)) : null,
+        });
+    }
+    return results.sort((a, b) => b.estimatedMonthly - a.estimatedMonthly);
+}

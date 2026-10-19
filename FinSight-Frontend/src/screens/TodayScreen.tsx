@@ -23,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
-import { Flame, Check, Play, Plus, Bell, ArrowRight, Sparkles, CalendarDays } from 'lucide-react-native';
+import { Flame, Check, Play, Plus, Bell, ArrowRight, Sparkles, CalendarDays, ClipboardCheck } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
 import { fetchUserProgress } from '../store/slices/learningSlice';
@@ -37,6 +37,7 @@ import { buildAutopsy } from '../utils/autopsy';
 import { buildSession } from '../utils/lessonSession';
 import { daysBetween, toDateKey } from '../utils/streak';
 import { inr } from '../utils/moneyMath';
+import { QUIZ_RETAKE_AFTER_DAYS } from '../data/moneyQuiz';
 import {
     syncReminders, getReminderPreference, enableReminders, formatReminderTime, ReminderPreference, DEFAULT_REMINDER,
 } from '../services/reminderService';
@@ -162,6 +163,13 @@ export const TodayScreen: React.FC = () => {
         session.newCount > 0 ? `${session.newCount} new` : null,
         session.hasYourMoney ? 'one about your money' : null,
     ].filter(Boolean).join(', ');
+
+    // The knowledge check: offered once to set a starting score, then again
+    // three weeks after the last time, to show what changed.
+    const quizBase = profile?.quizBaseline;
+    const quizLast = profile?.quizLatest ?? quizBase;
+    const quizDue = !quizBase
+        || (quizLast && daysBetween(toDateKey(new Date(quizLast.date)), today) >= QUIZ_RETAKE_AFTER_DAYS);
 
     const step = nextStep(profile?.appGoals, budgets.length > 0, goals.length > 0);
 
@@ -448,6 +456,30 @@ export const TodayScreen: React.FC = () => {
                         <View className="flex-1">
                             <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Your month, in review</Text>
                             <Text style={TYPE.caption} className="text-text-secondary mt-0.5">A short deck built from last month's spending.</Text>
+                        </View>
+                        <ArrowRight size={18} color={COLORS.text.tertiary} />
+                    </PressableScale>
+                )}
+
+                {quizDue && (
+                    <PressableScale
+                        onPress={() => { haptics.tap(); navigation.navigate('MoneyQuiz'); }}
+                        accessibilityRole="button"
+                        containerStyle={{ marginTop: 14 }}
+                        style={{ ...card, padding: 16, flexDirection: 'row', alignItems: 'center' }}
+                    >
+                        <View className="w-10 h-10 bg-brand-soft items-center justify-center mr-3" style={{ borderRadius: RADIUS.tile }}>
+                            <ClipboardCheck size={19} color={COLORS.brand.link} strokeWidth={1.8} />
+                        </View>
+                        <View className="flex-1">
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">
+                                {quizBase ? 'See how much you have learned' : 'How much do you know about money?'}
+                            </Text>
+                            <Text style={TYPE.caption} className="text-text-secondary mt-0.5">
+                                {quizBase
+                                    ? `You started at ${quizBase.score}/10. Same ten questions, two minutes.`
+                                    : 'Ten questions, two minutes. Take it again in three weeks and see what changed.'}
+                            </Text>
                         </View>
                         <ArrowRight size={18} color={COLORS.text.tertiary} />
                     </PressableScale>

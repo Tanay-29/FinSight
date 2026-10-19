@@ -3,14 +3,14 @@ import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
     Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package,
-    ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank,
+    ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank, Calculator,
 } from 'lucide-react-native';
-import { summariseNoSpendDays, noSpendMessage } from '../utils/noSpendDays';
+import { summariseNoSpendDays } from '../utils/noSpendDays';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchBudgets, createBudget, updateBudgetLimit } from '../store/slices/budgetsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
@@ -23,6 +23,9 @@ import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/t
 import { PressableScale } from '../components/PressableScale';
 import { resolveMonthlyIncome, savingsRate, savingsRateVerdict } from '../utils/income';
 import { summariseSpending } from '../utils/spendSummary';
+import { detectRecurring } from '../utils/recurring';
+import { merchantKey } from '../utils/merchantRules';
+import { affordBeforePayday } from '../utils/afford';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import FinSightIQCard from '../components/FinSightIQCard';
@@ -89,8 +92,8 @@ const SpendingBarChart: React.FC<{
                     Nothing logged in {monthLabel} yet.
                 </Text>
                 <Text className="text-text-tertiary text-xs text-center mt-1 leading-4 font-inter">
-                    This card and the budgets below cover one calendar month, so they
-                    start again on the 1st. Earlier spending is still on the Feed.
+                    This card and the budgets cover one calendar month, so they
+                    start again on the 1st. The 30-day summary at the top still has it.
                 </Text>
             </View>
         );
@@ -130,6 +133,127 @@ const SpendingBarChart: React.FC<{
                 );
             })}
         </View>
+    );
+};
+
+/** One reading in the at-a-glance strip. Tappable when it leads somewhere. */
+const Glance: React.FC<{
+    icon: React.ReactNode;
+    value: string;
+    label: string;
+    valueColor?: string;
+    onPress?: () => void;
+}> = ({ icon, value, label, valueColor, onPress }) => (
+    <TouchableOpacity
+        disabled={!onPress}
+        onPress={onPress}
+        activeOpacity={0.7}
+        accessibilityRole={onPress ? 'button' : undefined}
+        className="flex-1 px-3 py-3.5"
+    >
+        {icon}
+        <Text
+            className="text-xl font-inter-bold mt-1.5"
+            style={{ color: valueColor ?? COLORS.text.primary, fontVariant: ['tabular-nums'] }}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+        >
+            {value}
+        </Text>
+        <Text className="text-xs text-text-secondary mt-0.5 font-inter" numberOfLines={2}>{label}</Text>
+    </TouchableOpacity>
+);
+
+/**
+ * "Can I afford it before payday?" The month is projected forward at the pace
+ * spent so far, the price is taken off what that leaves, and the answer is
+ * one of three words with the arithmetic underneath. Payday is the 1st of
+ * next month, which is when allowance and most salaries land; it says so.
+ */
+const AffordSheet: React.FC<{
+    visible: boolean;
+    onClose: () => void;
+    income: number;
+    incomeSource: 'logged' | 'estimated' | 'unknown';
+    spent: number;
+    onAddIncome: () => void;
+}> = ({ visible, onClose, income, incomeSource, spent, onAddIncome }) => {
+    const insets = useSafeAreaInsets();
+    const [price, setPrice] = React.useState('');
+    const amount = Number(price.replace(/[₹,\s]/g, ''));
+    const result = Number.isFinite(amount) && amount > 0 && income > 0
+        ? affordBeforePayday({ income, spent, price: amount })
+        : null;
+    const tone = result?.verdict === 'yes' ? COLORS.semantic.profit : result?.verdict === 'tight' ? COLORS.semantic.alertAmber : COLORS.semantic.loss;
+    const close = () => { setPrice(''); onClose(); };
+
+    return (
+        <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+                <View style={{ backgroundColor: COLORS.surface.primary, borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, padding: GUTTER, paddingBottom: insets.bottom + 20 }}>
+                    <View className="flex-row items-center justify-between mb-1">
+                        <Text style={TYPE.heading} className="text-text-primary">Can I afford it?</Text>
+                        <TouchableOpacity onPress={close} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button">
+                            <Text className="text-brand-link font-inter-semibold">Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {income <= 0 ? (
+                        <>
+                            <Text style={TYPE.body} className="text-text-secondary mt-2">
+                                This needs to know what came in this month. Log your allowance, stipend or salary as income first.
+                            </Text>
+                            <PressableScale onPress={onAddIncome} accessibilityRole="button" containerStyle={{ marginTop: 16 }} style={{ height: 50, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.primaryDark, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]}>Add income</Text>
+                            </PressableScale>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={TYPE.caption} className="text-text-secondary mb-4">
+                                {incomeSource === 'estimated'
+                                    ? 'Using the income range from your profile until you log real income.'
+                                    : 'Using the income you logged this month.'} Payday is taken as the 1st.
+                            </Text>
+                            <TextInput
+                                className="bg-surface-secondary rounded-control px-4 h-[56px] text-2xl text-text-primary font-inter-bold"
+                                style={{ borderWidth: 1, borderColor: COLORS.border.default }}
+                                placeholder="₹ price"
+                                placeholderTextColor={COLORS.text.tertiary}
+                                keyboardType="decimal-pad"
+                                value={price}
+                                onChangeText={setPrice}
+                                autoFocus
+                            />
+                            {result && (
+                                <View style={{ marginTop: 16 }}>
+                                    <Text style={[TYPE.title, { color: tone }]}>
+                                        {result.verdict === 'yes' ? 'Yes, comfortably' : result.verdict === 'tight' ? 'Yes, but it is tight' : 'Not before payday'}
+                                    </Text>
+                                    {[
+                                        ['Came in this month', income],
+                                        ['Spent so far', -spent],
+                                        [`Likely in the next ${result.daysLeft} days, at your pace`, -result.projectedRest],
+                                        ['This purchase', -amount],
+                                    ].map(([label, value]) => (
+                                        <View key={label as string} className="flex-row justify-between mt-2">
+                                            <Text style={TYPE.caption} className="text-text-secondary flex-1 mr-3">{label}</Text>
+                                            <Text style={[TYPE.amountSm, { color: COLORS.text.primary }]}>
+                                                {(value as number) < 0 ? '-' : ''}₹{Math.round(Math.abs(value as number)).toLocaleString('en-IN')}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                    <View className="flex-row justify-between mt-3 pt-3 border-t border-border">
+                                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Left on the 1st</Text>
+                                        <Text style={[TYPE.amountSm, { color: tone }]}>
+                                            {result.leftAfter < 0 ? '-' : ''}₹{Math.round(Math.abs(result.leftAfter)).toLocaleString('en-IN')}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                        </>
+                    )}
+                </View>
+            </KeyboardAvoidingView>
+        </Modal>
     );
 };
 
@@ -301,6 +425,13 @@ export const VitalsScreen: React.FC = () => {
         () => resolveMonthlyIncome(transactions as any, profile?.incomeRange, currentMonthKey),
         [transactions, profile?.incomeRange, currentMonthKey]
     );
+    const [affordOpen, setAffordOpen] = React.useState(false);
+    // Subscriptions whose latest charge went up, for the line on the
+    // recurring-charges link. Same detection as the tracker screen.
+    const risenCount = React.useMemo(
+        () => detectRecurring(transactions, merchantKey).filter((c) => c.priceRise).length,
+        [transactions]
+    );
     const [selectedBudget, setSelectedBudget] = React.useState<any>(null);
     const [modalVisible, setModalVisible] = React.useState(false);
     const [createModalVisible, setCreateModalVisible] = React.useState(false);
@@ -395,6 +526,14 @@ export const VitalsScreen: React.FC = () => {
                 onClose={() => setCreateModalVisible(false)}
                 onSave={handleCreateBudget}
             />
+            <AffordSheet
+                visible={affordOpen}
+                onClose={() => setAffordOpen(false)}
+                income={income.amount}
+                incomeSource={income.source}
+                spent={totalSpent}
+                onAddIncome={() => { setAffordOpen(false); navigation.navigate('AddTransaction' as never); }}
+            />
             <EditBudgetModal
                 error={modalVisible ? budgetsError : null}
                 visible={modalVisible}
@@ -453,8 +592,151 @@ export const VitalsScreen: React.FC = () => {
                     />
                 </View>
 
+                {/* This month at a glance: three readings that used to be
+                    three cards. Each says one number and what it means. */}
+                <View className="mx-5 mt-3 bg-surface-primary border border-border rounded-2xl flex-row">
+                    <Glance
+                        icon={<Leaf color={COLORS.semantic.profit} size={16} />}
+                        value={String(noSpend.thisMonth)}
+                        label={noSpend.currentRun > 1 ? `clear days, ${noSpend.currentRun} in a row` : 'clear days this month'}
+                    />
+                    <View className="w-px bg-border my-3" />
+                    {(() => {
+                        const rate = savingsRate(income.amount, totalSpent);
+                        if (rate === null) {
+                            return (
+                                <Glance
+                                    icon={<PiggyBank color={COLORS.brand.primary} size={16} />}
+                                    value="Add"
+                                    label="income, to see what you kept"
+                                    onPress={() => navigation.navigate('AddTransaction' as never)}
+                                />
+                            );
+                        }
+                        const tone = savingsRateVerdict(rate).tone;
+                        return (
+                            <Glance
+                                icon={<PiggyBank color={COLORS.brand.primary} size={16} />}
+                                value={`${Math.round(rate)}%`}
+                                valueColor={tone === 'good' ? COLORS.semantic.profit : tone === 'ok' ? COLORS.semantic.alertAmber : COLORS.semantic.loss}
+                                label={income.source === 'estimated' ? 'kept, estimated' : 'kept this month'}
+                            />
+                        );
+                    })()}
+                    <View className="w-px bg-border my-3" />
+                    <Glance
+                        icon={<ChevronRight color={COLORS.text.tertiary} size={16} />}
+                        value={`₹${recentSpending.spentThisWeek.toLocaleString('en-IN')}`}
+                        label="this week, see the pace"
+                        onPress={() => navigation.navigate('BurnRate' as never)}
+                    />
+                </View>
+
+                <PressableScale
+                    onPress={() => setAffordOpen(true)}
+                    accessibilityRole="button"
+                    containerStyle={{ marginHorizontal: GUTTER, marginTop: 10 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.brand.soft, borderWidth: 1, borderColor: COLORS.brand.edge }}
+                >
+                    <Calculator size={18} color={COLORS.brand.link} />
+                    <View className="flex-1 ml-3">
+                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Can I afford it before payday?</Text>
+                        <Text style={TYPE.caption} className="text-text-secondary">Type a price, see what is left on the 1st</Text>
+                    </View>
+                    <ChevronRight size={18} color={COLORS.brand.link} />
+                </PressableScale>
+
+                {/* Budgets: the month's total against the limit, then each
+                    category. These were two cards about the same money. */}
+                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-2xl p-4">
+                    <View className="flex-row justify-between items-center mb-3">
+                        <Text style={TYPE.heading} className="text-text-primary">Budgets</Text>
+                        <TouchableOpacity onPress={() => setCreateModalVisible(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button">
+                            <Text className="text-brand-link font-inter-semibold text-sm">Add budget</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {totalBudget > 0 ? (
+                        <View className="mb-4">
+                            <View className="flex-row items-baseline justify-between mb-2">
+                                <View className="flex-row items-baseline">
+                                    <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>₹{totalSpent.toLocaleString('en-IN')}</Text>
+                                    <Text className="text-sm text-text-tertiary ml-1.5 font-inter">of ₹{totalBudget.toLocaleString('en-IN')}</Text>
+                                </View>
+                                <Text className="text-sm font-inter-semibold text-text-secondary">{overallPercentage}%</Text>
+                            </View>
+                            <BarFill
+                                percent={Math.min(overallPercentage, 100)}
+                                height={10}
+                                fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
+                            />
+                        </View>
+                    ) : (
+                        <Text className="text-sm text-text-secondary font-inter mb-2">
+                            ₹{totalSpent.toLocaleString('en-IN')} spent this month and no budget yet. Set one and it becomes a number you can check against.
+                        </Text>
+                    )}
+
+                    {monthBudgets.map((budget) => {
+                        const dynamicSpend = transactions
+                            .filter((t) =>
+                                t.type === 'debit' &&
+                                t.category.toLowerCase() === budget.category.toLowerCase() &&
+                                format(new Date(t.date), 'yyyy-MM') === budget.month
+                            )
+                            .reduce((sum, t) => sum + t.amount, 0);
+                        const spent = dynamicSpend > 0 ? dynamicSpend : budget.currentSpend;
+                        return (
+                            <TouchableOpacity
+                                key={budget.id ?? budget.category}
+                                onPress={() => { setSelectedBudget(budget); setModalVisible(true); }}
+                            >
+                                <BudgetBar
+                                    category={budget.category}
+                                    icon={getCategoryIconNode(budget.category)}
+                                    spent={spent}
+                                    limit={budget.monthlyLimit}
+                                />
+                            </TouchableOpacity>
+                        );
+                    })}
+
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between pt-3 border-t border-border"
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('MoneyManager' as never)}
+                        accessibilityRole="button"
+                    >
+                        <Text className="text-sm font-inter-semibold text-text-primary">Needs, wants and savings (50/30/20)</Text>
+                        <ChevronRight size={16} color={COLORS.text.tertiary} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Category Spending, and the recurring charges hiding inside
+                    those categories. */}
+                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-2xl p-4">
+                    <Text className="text-lg font-inter-semibold text-text-primary mb-3">Where it went</Text>
+                    <SpendingBarChart data={chartData} monthLabel={format(new Date(), 'MMMM')} />
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('SubscriptionTracker' as never)}
+                        accessibilityRole="button"
+                    >
+                        <View className="flex-1 mr-3">
+                            <Text className="text-sm font-inter-semibold text-text-primary">Find recurring charges</Text>
+                            <Text className={`text-xs mt-0.5 font-inter ${risenCount > 0 ? 'text-alert-amber' : 'text-text-secondary'}`}>
+                                {risenCount > 0
+                                    ? `${risenCount === 1 ? 'One subscription' : `${risenCount} subscriptions`} went up in price`
+                                    : 'Subscriptions and bills hiding in these categories'}
+                            </Text>
+                        </View>
+                        <ChevronRight size={16} color={COLORS.text.tertiary} />
+                    </TouchableOpacity>
+                </View>
+
                 {/* The latest five, so what was just logged is visible. */}
-                <View className="mt-3 bg-surface-primary border border-border overflow-hidden" style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}>
+                <View className="mt-4 mb-5 bg-surface-primary border border-border overflow-hidden" style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card }}>
                     <View className="px-4 py-3 border-b border-border flex-row items-center justify-between">
                         <Text style={TYPE.heading} className="text-text-primary">Latest</Text>
                         <TouchableOpacity
@@ -476,265 +758,6 @@ export const VitalsScreen: React.FC = () => {
                             source={txn.source as 'auto' | 'manual'}
                         />
                     ))}
-                </View>
-
-                {/* No-spend days. Deliberately the first thing on the screen:
-                    it is the one panel that has something good to say on a day
-                    with no money in it. */}
-                <View className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4">
-                    <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-profit-bg items-center justify-center mr-3">
-                            <Leaf color={COLORS.semantic.profit} size={18} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-sm font-inter-bold text-text-primary">
-                                {noSpend.thisMonth} clear day{noSpend.thisMonth === 1 ? '' : 's'} this month
-                            </Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                {noSpendMessage(noSpend)}
-                            </Text>
-                        </View>
-                        {noSpend.currentRun > 0 && (
-                            <View className="bg-profit-bg rounded-full px-3 py-1.5 ml-2">
-                                <Text className="text-xs font-inter-bold text-profit">
-                                    {noSpend.currentRun} in a row
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-
-                {/* Savings rate.
-                    Money left in the account counts as saved. Counting only
-                    investment debits told a student who spent four of their
-                    ten thousand that they had saved nothing. */}
-                <View className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4">
-                    <View className="flex-row items-center mb-2">
-                        <View className="w-10 h-10 rounded-full bg-brand-soft items-center justify-center mr-3">
-                            <PiggyBank color={COLORS.brand.primary} size={18} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-sm font-inter-bold text-text-primary">
-                                Kept this month
-                            </Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                {income.source === 'unknown'
-                                    ? 'Log what came in and this fills itself'
-                                    : income.source === 'estimated'
-                                        ? 'Estimated from your profile until you log income'
-                                        : `of ₹${income.amount.toLocaleString('en-IN')} that came in`}
-                            </Text>
-                        </View>
-                        {(() => {
-                            const rate = savingsRate(income.amount, totalSpent);
-                            if (rate === null) return null;
-                            const verdict = savingsRateVerdict(rate);
-                            return (
-                                <Text
-                                    className={`text-2xl font-inter-bold ${
-                                        verdict.tone === 'good'
-                                            ? 'text-profit'
-                                            : verdict.tone === 'ok'
-                                                ? 'text-alert-amber'
-                                                : 'text-loss'
-                                    }`}
-                                    style={{ fontVariant: ['tabular-nums'] }}
-                                >
-                                    {Math.round(rate)}%
-                                </Text>
-                            );
-                        })()}
-                    </View>
-
-                    {(() => {
-                        const rate = savingsRate(income.amount, totalSpent);
-                        if (rate === null) {
-                            return (
-                                <PressableScale
-                                    onPress={() => navigation.navigate('AddTransaction' as never)}
-                                    accessibilityRole="button"
-                                    className="bg-surface-secondary rounded-xl py-2.5 items-center mt-1"
-                                >
-                                    <Text className="text-sm font-inter-semibold text-brand-primary">
-                                        Add income
-                                    </Text>
-                                </PressableScale>
-                            );
-                        }
-                        const verdict = savingsRateVerdict(rate);
-                        return (
-                            <>
-                                <BarFill
-                                    percent={Math.max(Math.min(rate, 100), 0)}
-                                    height={8}
-                                    fillClassName={
-                                        verdict.tone === 'good'
-                                            ? 'bg-profit'
-                                            : verdict.tone === 'ok'
-                                                ? 'bg-alert-amber'
-                                                : 'bg-alert-critical'
-                                    }
-                                />
-                                <Text className="text-xs text-text-secondary mt-2 font-inter">
-                                    {verdict.label}. Twenty percent is the figure the 50/30/20 rule
-                                    asks for.
-                                </Text>
-                            </>
-                        );
-                    })()}
-                </View>
-
-                {/* Recent spending.
-                    These were two coloured tiles side by side, wrapped in one
-                    button, so they looked like two destinations and were one.
-                    They are two readings of the same thing, so they sit in one
-                    card with a single way through to the pace screen. */}
-                <PressableScale
-                    className="mx-5 mt-3 bg-surface-primary border border-border rounded-2xl p-4"
-                    onPress={() => navigation.navigate('BurnRate' as never)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Recent spending. Open your spending pace."
-                >
-                    <View className="flex-row">
-                        <View className="flex-1">
-                            <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-1">
-                                Today
-                            </Text>
-                            <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
-                                ₹{recentSpending.spentToday.toLocaleString('en-IN')}
-                            </Text>
-                        </View>
-                        <View className="w-px bg-border mx-5" />
-                        <View className="flex-1">
-                            <Text className="text-2xs font-inter-semibold text-text-tertiary uppercase tracking-wider mb-1">
-                                This week
-                            </Text>
-                            <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
-                                ₹{recentSpending.spentThisWeek.toLocaleString('en-IN')}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View className="flex-row items-center justify-end mt-3 pt-3 border-t border-border">
-                        <Text className="text-xs font-inter-semibold text-brand-primary mr-1">
-                            Where the month is heading
-                        </Text>
-                        <ChevronRight size={14} color={COLORS.brand.primary} />
-                    </View>
-                </PressableScale>
-
-                {/* Monthly Budget Summary, and the 50/30/20 view of the same
-                    money. */}
-                <TouchableOpacity
-                    className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4"
-                    activeOpacity={0.85}
-                    onPress={() => navigation.navigate('MoneyManager' as never)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Monthly budget. Open the 50/30/20 breakdown."
-                >
-                    {/* No budget set is a different state from nothing spent,
-                        and the card used to conflate them: it rendered
-                        "0% used" over an empty bar against "/ Rs 0" while the
-                        user had in fact spent real money. That is the state
-                        every new account is in, and it is exactly where the
-                        Feed's "Set your first budget" prompt sends them, so it
-                        was the first thing that prompt delivered. */}
-                    {totalBudget > 0 ? (
-                        <>
-                            <View className="flex-row justify-between items-center mb-2">
-                                <Text className="text-sm text-text-secondary font-inter">Monthly budget</Text>
-                                <Text className="text-sm font-inter-semibold text-text-primary">{overallPercentage}% used</Text>
-                            </View>
-                            <View className="flex-row items-baseline mb-2">
-                                <Text className="text-3xl font-inter-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
-                                <Text className="text-base text-text-tertiary ml-2 font-inter">/ ₹{totalBudget.toLocaleString('en-IN')}</Text>
-                            </View>
-                            <BarFill
-                                percent={Math.min(overallPercentage, 100)}
-                                height={12}
-                                fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
-                            />
-                        </>
-                    ) : (
-                        <>
-                            <Text className="text-sm text-text-secondary font-inter mb-2">Monthly budget</Text>
-                            <View className="flex-row items-baseline mb-2">
-                                <Text className="text-3xl font-inter-bold text-text-primary">₹{totalSpent.toLocaleString('en-IN')}</Text>
-                                <Text className="text-base text-text-tertiary ml-2 font-inter">spent this month</Text>
-                            </View>
-                            <Text className="text-xs text-text-secondary font-inter">
-                                No budget set yet. Set one and this becomes a number you can check against.
-                            </Text>
-                        </>
-                    )}
-                    <View className="flex-row items-center justify-end mt-3">
-                        <Text className="text-xs font-inter-semibold text-brand-primary mr-1">50/30/20 breakdown</Text>
-                        <ChevronRight size={14} color={COLORS.brand.primary} />
-                    </View>
-                </TouchableOpacity>
-
-                {/* Category Spending, and the recurring charges hiding inside
-                    those categories. */}
-                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4">
-                    <Text className="text-lg font-inter-semibold text-text-primary mb-3">Category spending</Text>
-                    <SpendingBarChart data={chartData} monthLabel={format(new Date(), 'MMMM')} />
-                    <TouchableOpacity
-                        className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('SubscriptionTracker' as never)}
-                        accessibilityRole="button"
-                    >
-                        <View className="flex-1 mr-3">
-                            <Text className="text-sm font-inter-semibold text-text-primary">Find recurring charges</Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                Subscriptions and bills hiding in these categories
-                            </Text>
-                        </View>
-                        <ChevronRight size={16} color={COLORS.text.tertiary} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Budget Breakdown */}
-                <View className="mx-5 mt-5 bg-surface-primary border border-border rounded-xl p-4 mb-5">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <Text style={TYPE.heading} className="text-text-primary">Budgets</Text>
-                        <TouchableOpacity onPress={() => setCreateModalVisible(true)}>
-                            <Text className="text-brand-primary font-inter-bold text-sm">Add budget</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {monthBudgets.length > 0 ? (
-                        monthBudgets
-                            .map((budget) => {
-                                const dynamicSpend = transactions
-                                    .filter((t) =>
-                                        t.type === 'debit' &&
-                                        t.category.toLowerCase() === budget.category.toLowerCase() &&
-                                        format(new Date(t.date), 'yyyy-MM') === budget.month
-                                    )
-                                    .reduce((sum, t) => sum + t.amount, 0);
-
-                                const spent = dynamicSpend > 0 ? dynamicSpend : budget.currentSpend;
-
-                                return (
-                                    <TouchableOpacity
-                                        key={budget.id ?? budget.category}
-                                        onPress={() => { setSelectedBudget(budget); setModalVisible(true); }}
-                                    >
-                                        <BudgetBar
-                                            category={budget.category}
-                                            icon={getCategoryIconNode(budget.category)}
-                                            spent={spent}
-                                            limit={budget.monthlyLimit}
-                                        />
-                                    </TouchableOpacity>
-                                );
-                            })
-                    ) : (
-                        <Text className="text-text-secondary text-center py-4">
-                            No budgets set for this month yet.
-                        </Text>
-                    )}
                 </View>
 
                 {/* The coach's read of all of the above, last, once the

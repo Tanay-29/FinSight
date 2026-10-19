@@ -16,7 +16,7 @@ import { useScheme, type ThemePref } from '../theme/theme';
 import Constants from 'expo-constants';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles, Moon, User,
+    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles, Moon, User, ClipboardCheck,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
@@ -346,6 +346,14 @@ export const ProfileScreen: React.FC = () => {
                         label="Your details"
                         hint="Name, age, goals and income"
                         onPress={() => navigation.navigate({ name: 'EditProfile', params: { edit: true } } as never)}
+                    />
+                    <SettingsRow
+                        icon={<ClipboardCheck size={16} color={COLORS.text.secondary} />}
+                        label="Money knowledge check"
+                        hint={profile?.quizBaseline
+                            ? `Started at ${profile.quizBaseline.score}/10${profile.quizLatest ? `, latest ${profile.quizLatest.score}/10` : ''}`
+                            : 'Ten questions, two minutes'}
+                        onPress={() => navigation.navigate('MoneyQuiz' as never)}
                     />
                     {/* Appearance leads the rest because it changes the whole
                         app, where the rows under it each change one feature. */}

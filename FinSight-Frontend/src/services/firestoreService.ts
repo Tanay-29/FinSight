@@ -51,6 +51,9 @@ export interface UserProfile {
     appGoals?: Array<'budgeting' | 'goals' | 'investing' | 'education'>;
     incomeRange?: string;
     onboardingComplete?: boolean;
+    /** The money knowledge check: the first score, and the most recent one. */
+    quizBaseline?: { score: number; date: string };
+    quizLatest?: { score: number; date: string };
     // Learning streak
     streak?: number;
     lastStudiedDate?: string; // ISO date string e.g. '2026-04-20'

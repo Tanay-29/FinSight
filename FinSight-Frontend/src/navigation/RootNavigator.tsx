@@ -29,6 +29,7 @@ import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 import ScenarioPlayerScreen from '../screens/ScenarioPlayerScreen';
 import StatementDecoderScreen from '../screens/StatementDecoderScreen';
 import PayslipDecoderScreen from '../screens/PayslipDecoderScreen';
+import MoneyQuizScreen from '../screens/MoneyQuizScreen';
 // Phase 1: Execution Layer Screens
 import BurnRateScreen from '../screens/BurnRateScreen';
 // Engagement features
@@ -213,6 +214,11 @@ export const RootNavigator = () => {
                     <Stack.Screen
                         name="LessonPlayer"
                         component={LessonPlayerScreen}
+                        options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+                    />
+                    <Stack.Screen
+                        name="MoneyQuiz"
+                        component={MoneyQuizScreen}
                         options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
                     />
                     <Stack.Screen

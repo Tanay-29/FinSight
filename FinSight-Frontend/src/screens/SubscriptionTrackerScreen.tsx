@@ -31,27 +31,10 @@ import { useAppSelector } from '../store/hooks';
 import * as haptics from '../utils/haptics';
 import { futureValueOfSeries, formatCompactINR } from '../utils/projections';
 import { merchantKey } from '../utils/merchantRules';
-import { RecurringType, amountVariation, classifyRecurring } from '../utils/recurring';
-import { format, parseISO, subDays, differenceInDays } from 'date-fns';
+import { RecurringType, RecurringCharge, detectRecurring } from '../utils/recurring';
+import { format, parseISO } from 'date-fns';
 import { FONTS, COLORS, CATEGORY_COLORS, categoryTint } from '../theme/tokens';
 import { normaliseCategory } from '../utils/categories';
-
-// ─── Types ────────────────────────────────────────────────────
-
-interface RecurringCharge {
-    merchant: string;
-    normalised: string;
-    category: string;
-    totalCount: number;
-    avgAmount: number;
-    estimatedMonthly: number;
-    avgIntervalDays: number;
-    /** Coefficient of variation of the charged amounts. */
-    variation: number;
-    type: RecurringType;
-    lastDate: string;
-    transactions: Array<{ date: string; amount: number }>;
-}
 
 const HORIZON_OPTIONS = [5, 10, 20];
 
@@ -107,72 +90,9 @@ const SubscriptionTrackerScreen: React.FC = () => {
     const [keepSet, setKeepSet] = useState<Set<string>>(new Set());
     const [cancelSet, setCancelSet] = useState<Set<string>>(new Set());
 
-    // ── Detection algorithm ──────────────────────────────────
-    const charges = useMemo<RecurringCharge[]>(() => {
-        const cutoff = subDays(new Date(), 90);
-        const groups: Record<string, Array<{ date: string; amount: number; category: string; merchant: string }>> = {};
-
-        transactions.forEach((t) => {
-            if (t.type !== 'debit') return;
-            try {
-                const txDate = parseISO(t.date);
-                if (txDate < cutoff) return;
-            } catch { return; }
-
-            if (!t.merchant && !t.category) return;
-            const key = merchantKey(t.merchant ?? t.category ?? 'unknown');
-            if (!groups[key]) groups[key] = [];
-            groups[key].push({
-                date: t.date,
-                amount: t.amount,
-                category: t.category ?? 'other',
-                merchant: t.merchant ?? t.category ?? 'Unknown',
-            });
-        });
-
-        const results: RecurringCharge[] = [];
-
-        Object.entries(groups).forEach(([norm, txs]) => {
-            if (txs.length < 2) return; // need at least 2 occurrences
-
-            // Sort by date ascending
-            const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date));
-            const dates = sorted.map((t) => parseISO(t.date));
-
-            // Average interval between occurrences
-            let totalInterval = 0;
-            for (let i = 1; i < dates.length; i++) {
-                totalInterval += differenceInDays(dates[i], dates[i - 1]);
-            }
-            const avgIntervalDays = Math.round(totalInterval / (dates.length - 1));
-
-            const avgAmount = txs.reduce((s, t) => s + t.amount, 0) / txs.length;
-            const estimatedMonthly = Math.round((avgAmount * 30) / avgIntervalDays);
-            const variation = amountVariation(txs.map((t) => t.amount));
-
-            const type: RecurringType | null = classifyRecurring(variation, avgIntervalDays);
-            if (type === null) return;
-
-            const lastTx = sorted[sorted.length - 1];
-
-            results.push({
-                merchant: lastTx.merchant,
-                normalised: norm,
-                category: lastTx.category,
-                totalCount: txs.length,
-                avgAmount: Math.round(avgAmount),
-                estimatedMonthly,
-                avgIntervalDays,
-                variation,
-                type,
-                lastDate: lastTx.date,
-                transactions: sorted.map((t) => ({ date: t.date, amount: t.amount })),
-            });
-        });
-
-        // Sort by monthly cost desc
-        return results.sort((a, b) => b.estimatedMonthly - a.estimatedMonthly);
-    }, [transactions]);
+    // ── Detection, in utils/recurring so the Money tab shares it ──
+    const charges = useMemo<RecurringCharge[]>(() => detectRecurring(transactions, merchantKey), [transactions]);
+    const risen = charges.filter((c) => c.priceRise);
 
     // ── Filtered list ────────────────────────────────────────
     const filtered = useMemo(() => {
@@ -333,6 +253,14 @@ const SubscriptionTrackerScreen: React.FC = () => {
             </View>
 
             {/* Tab bar */}
+            {risen.length > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 12, padding: 12, borderRadius: 12, backgroundColor: COLORS.semantic.alertBg }}>
+                    <TrendingUp size={16} color={COLORS.semantic.alertAmber} />
+                    <Text style={{ fontSize: 13, fontFamily: FONTS.semibold, color: COLORS.semantic.alertAmber, marginLeft: 8, flex: 1 }}>
+                        {risen.length === 1 ? `${risen[0].merchant} went up in price.` : `${risen.length} subscriptions went up in price.`} Marked below.
+                    </Text>
+                </View>
+            )}
             <View style={{ flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, backgroundColor: COLORS.surface.tertiary, borderRadius: 12, padding: 4 }}>
                 {(['all', 'subscription', 'recurring'] as const).map((tab) => (
                     <TouchableOpacity
@@ -430,8 +358,19 @@ const SubscriptionTrackerScreen: React.FC = () => {
                                     </View>
                                 </View>
 
+                                {/* A price rise is the one thing on this row worth
+                                    interrupting for, so it gets its own line. */}
+                                {c.priceRise && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: COLORS.semantic.alertBg }}>
+                                        <TrendingUp size={13} color={COLORS.semantic.alertAmber} />
+                                        <Text style={{ fontSize: 12, fontFamily: FONTS.semibold, color: COLORS.semantic.alertAmber, marginLeft: 6, flex: 1 }}>
+                                            Went up from ₹{c.priceRise.from.toLocaleString('en-IN')} to ₹{c.priceRise.to.toLocaleString('en-IN')}. Still worth it?
+                                        </Text>
+                                    </View>
+                                )}
+
                                 {/* Last charged */}
-                                <Text style={{ fontSize: 11, color: COLORS.border.strong, marginTop: 8 }}>
+                                <Text style={{ fontSize: 11, color: COLORS.text.tertiary, marginTop: 8 }}>
                                     Last: {format(parseISO(c.lastDate), 'd MMM yyyy')} · Avg ₹{c.avgAmount.toLocaleString('en-IN')} per charge
                                 </Text>
 
@@ -442,7 +381,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                                         style={{
                                             flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                                             paddingVertical: 8, borderRadius: 12, gap: 6,
-                                            backgroundColor: isKept ? '#EFF7F2' : COLORS.surface.secondary,
+                                            backgroundColor: isKept ? COLORS.semantic.profitBg : COLORS.surface.secondary,
                                             borderWidth: 1.5,
                                             borderColor: isKept ? COLORS.semantic.profit : COLORS.border.default,
                                         }}
