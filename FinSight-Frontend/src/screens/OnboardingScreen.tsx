@@ -129,14 +129,14 @@ const GOALS: {
         Icon: TrendingUp,
         title: 'Understand investing',
         subtitle: 'What stocks, mutual funds and SIPs actually are',
-        effect: 'Learn opens with Investing 101',
+        effect: 'Your Learn path starts with Grow: inflation, FDs and the SIP habit',
     },
     {
         value: 'education',
         Icon: GraduationCap,
         title: 'Get the basics straight',
         subtitle: 'Interest, inflation, taxes, credit scores',
-        effect: 'Learn puts Tax Simplified near the top',
+        effect: 'Your Learn path starts with First Job: payslips and your first tax year',
     },
 ];
 

@@ -1,46 +1,69 @@
 /**
- * LearnScreen - Education Hub
+ * LearnScreen: the path.
  *
- * Features:
- * - Real stats: total modules done, badges earned, day streak (from Redux)
- * - Onboarding-aware path recommendations (appGoals from user profile)
- * - Live progress bars from the Firestore progress subcollection
- * - Searchable glossary
+ * Learn used to be a stack of course cards, stats and a tab switcher, which
+ * asked the learner to choose before they knew enough to choose. It is one
+ * path now, the way Duolingo lays out a course: six units, each a winding
+ * line of lesson circles, done ones gold, the next one pulsing with Sikka
+ * beside it, later ones locked. There is always exactly one obvious thing to
+ * tap.
+ *
+ * Units are the six lesson tracks. Their order is life stage, except that
+ * whatever the learner said they came for in onboarding goes first, which is
+ * what onboarding tells them will happen.
+ *
+ * Below the path is everything else, quietly: the life sims, the two
+ * decoders, the original courses, and a searchable glossary.
  */
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, ScrollView, TextInput, Pressable, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+    FadeIn, FadeInDown, FadeOut, useReducedMotion,
+    useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing, cancelAnimation,
+} from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import {
-    BookOpen, Flame, Search, HelpCircle, GraduationCap,
-    ChevronRight, Trophy, BrainCircuit, Snowflake,
-    Check, Briefcase, CreditCard, ShieldCheck, Drama, Sprout, ScanLine, BookMarked, FileText, Home, BrainCog,
+    Check, Lock, Star, Search, BrainCircuit, ChevronRight, ChevronDown,
+    Drama, ScanLine, FileText, BookOpen, BrainCog,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
 import { fetchDueCards, selectDueCount, selectMasteredCount, selectTrackedCount } from '../store/slices/reviewsSlice';
-import { GLOSSARY, COURSE_CONTENT } from '../data/courseContent';
 import { fetchCardResults, selectCardResults } from '../store/slices/lessonsSlice';
-import { TRACKS, cardKey } from '../data/lessons';
+import { GLOSSARY, COURSE_CONTENT } from '../data/courseContent';
+import { TRACKS, cardKey, Track } from '../data/lessons';
 import { isScorable } from '../data/lessons/schema';
 import { isMastered } from '../services/lessonService';
 import { SCENARIOS } from '../data/scenarios';
-import { CourseCardSkeleton, StatCardSkeleton } from '../components/Skeleton';
-import { AnimatedNumber } from '../components/AnimatedNumber';
-import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
-import { MAX_FREEZES } from '../utils/streak';
+import { Mascot } from '../components/mascot/Mascot';
 import * as haptics from '../utils/haptics';
-import { COLORS, TYPE } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
+import { PALETTE } from '../theme/palette';
 
-// Map onboarding goal → which pathId to promote first
-const GOAL_PATH_PRIORITY: Record<string, string> = {
-    budgeting: 'budgetBasics',
-    investing: 'investing101',
-    education: 'taxSimplified',
-    goals: 'budgetBasics',
+/** What each onboarding goal moves to the front of the path. */
+const GOAL_FIRST_TRACK: Record<string, string> = {
+    budgeting: 'student',
+    goals: 'protect',
+    investing: 'grow',
+    education: 'firstJob',
 };
+
+/**
+ * One colour per unit. The light palette's category hues on purpose, in both
+ * themes: white text sits on these, and the dark theme's lifted hues are too
+ * pale to carry it.
+ */
+const unitColour = (i: number): string =>
+    [PALETTE.category.transport, PALETTE.category.housing, PALETTE.category.shopping,
+        PALETTE.category.healthcare, PALETTE.category.investments, PALETTE.category.dining][i % 6];
+
+/** The winding: each node's sideways offset, repeating every eight. */
+const WIND = [0, 46, 70, 46, 0, -46, -70, -46];
+const NODE = 70;
+
+type NodeState = 'done' | 'current' | 'locked';
 
 export const LearnScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -48,19 +71,17 @@ export const LearnScreen: React.FC = () => {
     const reduced = useReducedMotion();
 
     const { user, profile } = useAppSelector((s) => s.auth);
-    const { paths, glossary, progress, loading, progressLoading, streak } = useAppSelector((s) => s.learning);
-
+    const { paths, glossary, progress } = useAppSelector((s) => s.learning);
     const dueCount = useAppSelector(selectDueCount);
     const masteredCount = useAppSelector(selectMasteredCount);
     const trackedCount = useAppSelector(selectTrackedCount);
     const cardResults = useAppSelector(selectCardResults);
 
-    const [activeTab, setActiveTab] = useState<'paths' | 'glossary'>('paths');
+    const [glossaryOpen, setGlossaryOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [lockedNote, setLockedNote] = useState(false);
+    const lockedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const userInitial = (user?.displayName || profile?.name)?.charAt(0).toUpperCase() || 'U';
-
-    // Fetch on mount
     useEffect(() => {
         dispatch(fetchLearningPaths());
         dispatch(fetchGlossary());
@@ -69,15 +90,35 @@ export const LearnScreen: React.FC = () => {
             dispatch(fetchDueCards());
             dispatch(fetchCardResults());
         }
+        return () => { if (lockedTimer.current) clearTimeout(lockedTimer.current); };
     }, [dispatch, user?.uid]);
 
-    // ── Real stats ───────────────────────────────────────────────
-    const totalDone = Object.values(progress).reduce(
-        (sum, p) => sum + (p.completedModules?.length ?? 0), 0
-    );
-    // Concepts known: scorable cards answered right twice and spaced, out
-    // of every scorable card in the tracks. This replaced the badge count,
-    // which measured opening things; this measures knowing them.
+    // ── The path ─────────────────────────────────────────────────
+    const units: Track[] = useMemo(() => {
+        const first = (profile?.appGoals ?? [])
+            .map((g) => GOAL_FIRST_TRACK[g])
+            .filter((id, i, all): id is string => Boolean(id) && all.indexOf(id) === i);
+        const rank = (t: Track) => {
+            const i = first.indexOf(t.id);
+            return i === -1 ? first.length + TRACKS.indexOf(t) : i;
+        };
+        return [...TRACKS].sort((a, b) => rank(a) - rank(b));
+    }, [profile?.appGoals]);
+
+    const isDone = (trackId: string, lessonId: string) =>
+        progress[trackId]?.completedModules?.includes(lessonId) ?? false;
+
+    /** The first lesson not yet done, in path order. Everything after it is locked. */
+    const current = useMemo(() => {
+        for (const t of units) for (const l of t.lessons) {
+            if (!(progress[t.id]?.completedModules ?? []).includes(l.id)) return `${t.id}/${l.id}`;
+        }
+        return null;
+    }, [units, progress]);
+
+    const stateOf = (trackId: string, lessonId: string): NodeState =>
+        isDone(trackId, lessonId) ? 'done' : `${trackId}/${lessonId}` === current ? 'current' : 'locked';
+
     const concepts = useMemo(() => {
         let total = 0;
         let known = 0;
@@ -89,30 +130,35 @@ export const LearnScreen: React.FC = () => {
         }
         return { total, known };
     }, [cardResults]);
-    const currentStreak = profile?.streak ?? streak;
-    const freezes = profile?.streakFreezes ?? 0;
-    // ── Onboarding-aware path ordering ─────────────────────────
-    const displayPaths = (() => {
-        const all = paths.length > 0 ? paths : (COURSE_CONTENT as any[]);
-        if (!profile?.appGoals || profile.appGoals.length === 0) return all;
 
-        // Build priority list from user's goals
-        const priorityIds = profile.appGoals
-            .map((g) => GOAL_PATH_PRIORITY[g])
-            .filter(Boolean);
+    // Scroll so the current lesson is in view on arrival, once.
+    const scrollRef = useRef<ScrollView>(null);
+    const pathTop = useRef(0);
+    const unitTops = useRef<Record<string, number>>({});
+    const scrolled = useRef(false);
+    const onCurrentLayout = (trackId: string, y: number) => {
+        if (scrolled.current) return;
+        const unitY = unitTops.current[trackId];
+        if (unitY === undefined) return;
+        scrolled.current = true;
+        const target = pathTop.current + unitY + y - 220;
+        if (target > 40) scrollRef.current?.scrollTo({ y: target, animated: !reduced });
+    };
 
-        const sorted = [...all].sort((a, b) => {
-            const aIdx = priorityIds.indexOf(a.id ?? '');
-            const bIdx = priorityIds.indexOf(b.id ?? '');
-            if (aIdx !== -1 && bIdx === -1) return -1;
-            if (bIdx !== -1 && aIdx === -1) return 1;
-            if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-            return 0;
-        });
-        return sorted;
-    })();
+    const openLesson = (trackId: string, lessonId: string, state: NodeState) => {
+        if (state === 'locked') {
+            haptics.warn();
+            setLockedNote(true);
+            if (lockedTimer.current) clearTimeout(lockedTimer.current);
+            lockedTimer.current = setTimeout(() => setLockedNote(false), 2200);
+            return;
+        }
+        haptics.tap();
+        navigation.navigate('LessonPlayer', { mode: 'lesson', trackId, lessonId });
+    };
 
-    // ── Glossary ────────────────────────────────────────────────
+    // ── Everything else ──────────────────────────────────────────
+    const classic = paths.length > 0 ? paths : (COURSE_CONTENT as any[]);
     const displayGlossary = glossary.length > 0 ? glossary : GLOSSARY;
     const filteredGlossary = displayGlossary.filter(
         (t) =>
@@ -120,435 +166,288 @@ export const LearnScreen: React.FC = () => {
             t.definition.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // ── Resolve real progress for a given path ──────────────────
-    const getPathProgress = (pathId: string | undefined) => {
-        if (!pathId) return { completed: 0, total: 0 };
-        const p = progress[pathId];
-        const total = displayPaths.find((dp) => dp.id === pathId)?.modules?.length ?? 0;
-        return { completed: p?.completedModules?.length ?? 0, total };
-    };
+    // Each node's place in the whole path, for the winding offset.
+    const nodeOrder: Record<string, number> = {};
+    units.forEach((t) => t.lessons.forEach((l) => { nodeOrder[`${t.id}/${l.id}`] = Object.keys(nodeOrder).length; }));
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-            <ScrollView
-                className="flex-1"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 32 }}
-            >
-                {/* ── Header ──────────────────────────────────── */}
-                <View className="px-5 pt-4 pb-3 flex-row justify-between items-center bg-surface-primary border-b border-border">
-                    <View>
-                        <Text style={TYPE.title} className="text-text-primary">Learn</Text>
-                        <Text className="text-sm text-text-secondary mt-0.5 font-inter">
-                            {totalDone === 0
-                                ? 'Courses, practice and a glossary'
-                                : `${totalDone} module${totalDone === 1 ? '' : 's'} done so far`}
-                        </Text>
-                    </View>
-                    <PressableScale
-                        onPress={() => { haptics.tap(); navigation.navigate('Profile'); }}
-                        activeScale={0.92}
-                        accessibilityRole="button"
-                        accessibilityLabel="Your profile"
-                        className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
+            <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                {/* Header: one number, the one that measures knowing things. */}
+                <View className="flex-row items-end justify-between pt-3" style={{ paddingHorizontal: GUTTER }}>
+                    <Text style={TYPE.title} className="text-text-primary">Learn</Text>
+                    <View
+                        className="flex-row items-center px-3 h-9"
+                        style={{ borderRadius: RADIUS.pill, backgroundColor: COLORS.semantic.profitBg }}
+                        accessibilityLabel={`${concepts.known} of ${concepts.total} concepts known`}
                     >
-                        <Text className="text-white font-inter-bold text-base">{userInitial}</Text>
-                    </PressableScale>
+                        <BrainCog size={16} color={COLORS.semantic.profit} strokeWidth={2} />
+                        <Text style={[TYPE.amountSm, { marginLeft: 6, color: COLORS.semantic.profit }]}>
+                            {concepts.known}/{concepts.total}
+                        </Text>
+                        <Text style={TYPE.caption} className="text-profit ml-1">known</Text>
+                    </View>
                 </View>
 
-                {/* ── Stats Row ──────────────────────────────── */}
-                <View className="mx-5 mt-4 flex-row gap-3">
-                    {progressLoading ? (
-                        <>
-                            <StatCardSkeleton />
-                            <StatCardSkeleton />
-                            <StatCardSkeleton />
-                        </>
-                    ) : (
-                        <>
-                            {/* Modules done */}
-                            <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
-                                <View className="w-10 h-10 rounded-full bg-brand-soft items-center justify-center mb-2">
-                                    <BookOpen size={18} color={COLORS.brand.primary} />
-                                </View>
-                                <AnimatedNumber
-                                    value={totalDone}
-                                    format={(v) => String(Math.round(v))}
-                                    className="text-2xl font-inter-bold text-text-primary"
-                                />
-                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Modules done</Text>
-                            </View>
+                {dueCount > 0 && (
+                    <PressableScale
+                        onPress={() => { haptics.tap(); navigation.navigate('Flashcards', { mode: 'due', moduleTitle: 'Review session' }); }}
+                        accessibilityRole="button"
+                        containerStyle={{ marginHorizontal: GUTTER, marginTop: 14 }}
+                        style={{ borderRadius: RADIUS.card, padding: 14, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.brand.edge }}
+                    >
+                        <BrainCircuit size={20} color={COLORS.brand.link} />
+                        <View className="flex-1 ml-3">
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">
+                                {dueCount} card{dueCount === 1 ? '' : 's'} to review
+                            </Text>
+                            <Text style={TYPE.caption} className="text-text-secondary">{masteredCount} of {trackedCount} mastered</Text>
+                        </View>
+                        <ChevronRight size={18} color={COLORS.brand.link} />
+                    </PressableScale>
+                )}
 
-                            {/* Concepts known */}
-                            <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
-                                <View className="w-10 h-10 rounded-full bg-profit-bg items-center justify-center mb-2">
-                                    <BrainCog size={18} color={COLORS.semantic.profit} />
+                {/* ── The path ────────────────────────────────── */}
+                <View onLayout={(e: LayoutChangeEvent) => { pathTop.current = e.nativeEvent.layout.y; }}>
+                    {units.map((track, u) => {
+                        const colour = unitColour(TRACKS.indexOf(track));
+                        const doneCount = track.lessons.filter((l) => isDone(track.id, l.id)).length;
+                        return (
+                            <View
+                                key={track.id}
+                                onLayout={(e: LayoutChangeEvent) => { unitTops.current[track.id] = e.nativeEvent.layout.y; }}
+                                style={{ marginTop: u === 0 ? 18 : 28 }}
+                            >
+                                {/* Unit banner */}
+                                <View
+                                    style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card, padding: 16, backgroundColor: colour }}
+                                >
+                                    <Text style={[TYPE.micro, { color: 'rgba(255,255,255,0.85)' }]}>
+                                        Unit {u + 1} · {doneCount}/{track.lessons.length} done
+                                    </Text>
+                                    <Text style={[TYPE.heading, { color: '#FFFFFF', marginTop: 3 }]}>{track.title}</Text>
+                                    <Text style={[TYPE.caption, { color: 'rgba(255,255,255,0.9)', marginTop: 2 }]}>{track.description}</Text>
                                 </View>
-                                <AnimatedNumber
-                                    value={concepts.known}
-                                    format={(v) => String(Math.round(v))}
-                                    className="text-2xl font-inter-bold text-text-primary"
-                                />
-                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">of {concepts.total} concepts known</Text>
-                            </View>
 
-                            {/* Streak, with banked freezes shown underneath */}
-                            <View className="flex-1 bg-surface-primary rounded-2xl p-4 items-center border border-border">
-                                <View className="w-10 h-10 rounded-full bg-alert-bg items-center justify-center mb-2">
-                                    <Flame size={18} color="#C2410C" />
+                                {/* Nodes */}
+                                <View style={{ alignItems: 'center', paddingTop: 22 }}>
+                                    {track.lessons.map((lesson) => {
+                                        const state = stateOf(track.id, lesson.id);
+                                        const x = WIND[nodeOrder[`${track.id}/${lesson.id}`] % WIND.length];
+                                        return (
+                                            <View
+                                                key={lesson.id}
+                                                style={{ alignItems: 'center', marginBottom: 18, transform: [{ translateX: x }] }}
+                                                onLayout={state === 'current'
+                                                    ? (e: LayoutChangeEvent) => onCurrentLayout(track.id, e.nativeEvent.layout.y)
+                                                    : undefined}
+                                            >
+                                                {state === 'current' && (
+                                                    <Animated.View entering={reduced ? undefined : FadeIn.duration(300)} className="mb-2">
+                                                        <View style={{ backgroundColor: COLORS.surface.primary, borderColor: COLORS.border.default, borderWidth: 1, borderRadius: RADIUS.control, paddingHorizontal: 12, paddingVertical: 6 }}>
+                                                            <Text style={[TYPE.micro, { color: COLORS.brand.link }]}>{doneCount === 0 && u === 0 ? 'Start here' : 'Next up'}</Text>
+                                                        </View>
+                                                    </Animated.View>
+                                                )}
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <PathNode
+                                                        state={state}
+                                                        colour={colour}
+                                                        reduced={reduced}
+                                                        label={lesson.title}
+                                                        onPress={() => openLesson(track.id, lesson.id, state)}
+                                                    />
+                                                    {state === 'current' && (
+                                                        <View style={{ position: 'absolute', left: x > 0 ? -92 : NODE + 18 }}>
+                                                            <Mascot mood="happy" size={66} />
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Text
+                                                    style={[TYPE.caption, { marginTop: 6, maxWidth: 150, textAlign: 'center', color: state === 'locked' ? COLORS.text.tertiary : COLORS.text.primary }]}
+                                                    numberOfLines={2}
+                                                >
+                                                    {lesson.title}
+                                                </Text>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
-                                <AnimatedNumber
-                                    value={currentStreak}
-                                    format={(v) => String(Math.round(v))}
-                                    className="text-2xl font-inter-bold text-text-primary"
-                                />
-                                <Text className="text-xs text-text-tertiary text-center mt-0.5 font-inter">Day streak</Text>
-                                {freezes > 0 ? (
-                                    <View className="flex-row items-center mt-1.5">
-                                        {Array.from({ length: MAX_FREEZES }).map((_, i) => (
-                                            <Snowflake
-                                                key={i}
-                                                size={10}
-                                                color={i < freezes ? '#0E7490' : COLORS.border.default}
-                                            />
-                                        ))}
-                                    </View>
-                                ) : null}
                             </View>
-                        </>
+                        );
+                    })}
+
+                    {current === null && (
+                        <View style={{ alignItems: 'center', marginTop: 8, paddingHorizontal: GUTTER }}>
+                            <Mascot mood="celebrate" size={96} />
+                            <Text style={TYPE.heading} className="text-text-primary text-center mt-2">Every unit done</Text>
+                            <Text style={TYPE.caption} className="text-text-secondary text-center mt-1">
+                                The daily lesson on Today keeps the cards you missed coming back.
+                            </Text>
+                        </View>
                     )}
                 </View>
 
-                {/* Today's session, the month-in-review deck and the
-                    streak warning moved to the Today tab, which is where the
-                    daily habit lives now. This tab is the path. */}
-
-                {/* ── Cards due for review ────────────────────── */}
-                {dueCount > 0 ? (
-                    <TouchableOpacity
-                        onPress={() => { haptics.tap(); navigation.navigate('Flashcards', { mode: 'due', moduleTitle: 'Review session' }); }}
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Review ${dueCount} cards due today`}
-                        className="mx-5 mt-4 bg-surface-primary rounded-2xl border border-brand-edge p-4 flex-row items-center"
-                       
-                    >
-                        <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
-                            <BrainCircuit size={20} color={COLORS.brand.primary} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-base font-inter-bold text-text-primary">
-                                {dueCount} card{dueCount === 1 ? '' : 's'} due today
-                            </Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                {masteredCount} of {trackedCount} mastered. Cards you miss come back sooner.
-                            </Text>
-                        </View>
-                        <ChevronRight size={18} color={COLORS.brand.primary} />
-                    </TouchableOpacity>
-                ) : trackedCount > 0 ? (
-                    <View className="mx-5 mt-4 bg-profit-bg rounded-2xl border border-profit-bg p-4 flex-row items-center">
-                        <View className="w-11 h-11 rounded-2xl bg-surface-primary items-center justify-center mr-3">
-                            <Trophy size={20} color={COLORS.semantic.profit} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-base font-inter-bold text-profit">All caught up</Text>
-                            <Text className="text-xs text-profit mt-0.5 font-inter">
-                                {masteredCount} of {trackedCount} cards mastered. Check back tomorrow.
-                            </Text>
-                        </View>
-                    </View>
-                ) : null}
-
-
-
-
-                {/* ── Tab Switcher ────────────────────────────── */}
-                <View className="flex-row mx-5 mt-4 bg-surface-tertiary rounded-xl p-1">
-                    <TouchableOpacity
-                        onPress={() => { haptics.select(); setActiveTab('paths'); }}
-                        activeOpacity={0.8}
-                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'paths' ? 'bg-surface-primary' : ''}`}
-                        style={activeTab === 'paths' ? { shadowColor: '#3A2E22', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
-                    >
-                        <GraduationCap size={14} color={activeTab === 'paths' ? COLORS.brand.primary : COLORS.text.tertiary} />
-                        <Text style={{ color: activeTab === 'paths' ? COLORS.brand.primary : COLORS.text.tertiary }} className="text-sm font-inter-semibold ml-1.5">
-                            Courses
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => { haptics.select(); setActiveTab('glossary'); }}
-                        activeOpacity={0.8}
-                        className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${activeTab === 'glossary' ? 'bg-surface-primary' : ''}`}
-                        style={activeTab === 'glossary' ? { shadowColor: '#3A2E22', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } : {}}
-                    >
-                        <HelpCircle size={14} color={activeTab === 'glossary' ? COLORS.brand.primary : COLORS.text.tertiary} />
-                        <Text style={{ color: activeTab === 'glossary' ? COLORS.brand.primary : COLORS.text.tertiary }} className="text-sm font-inter-semibold ml-1.5">
-                            Glossary
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* ── Courses Tab ─────────────────────────────── */}
-                {activeTab === 'paths' && (
-                    <View className="mx-5 mt-4">
-                        {/* Tracks: the card-deck lessons, ordered by life
-                            stage. They sit above the older read-and-quiz
-                            courses because they are what the daily session
-                            draws from. */}
-                        {TRACKS.map((track, i) => {
-                            const done = progress[track.id]?.completedModules?.length ?? 0;
-                            const total = track.lessons.length;
-                            const tPct = Math.round((done / total) * 100);
-                            const tBadge = progress[track.id]?.badgeEarned ?? false;
-                            const Icon = track.id === 'student' ? BookMarked : track.id === 'firstCredit' ? CreditCard : track.id === 'protect' ? ShieldCheck : track.id === 'grow' ? Sprout : track.id === 'live' ? Home : Briefcase;
-                            return (
-                                <Animated.View key={track.id} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
-                                    <PressableScale
-                                        onPress={() => { haptics.tap(); navigation.navigate('LessonTrack', { trackId: track.id }); }}
-                                        accessibilityRole="button"
-                                        className="mb-4 bg-surface-primary rounded-2xl border border-border overflow-hidden"
-                                    >
-                                        <View style={{ height: 3, backgroundColor: tBadge ? COLORS.semantic.profit : tPct > 0 ? COLORS.brand.primary : COLORS.border.default }} />
-                                        <View className="p-4">
-                                            <View className="flex-row items-start">
-                                                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                                    <Icon size={20} color={COLORS.brand.primary} />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <Text className="text-base font-inter-bold text-text-primary">{track.title}</Text>
-                                                    <Text className="text-xs text-text-secondary mt-0.5 leading-4 font-inter">{track.description}</Text>
-                                                </View>
-                                                {tBadge ? (
-                                                    <View className="bg-profit-bg rounded-full p-1.5">
-                                                        <Trophy size={14} color={COLORS.semantic.profit} />
-                                                    </View>
-                                                ) : null}
-                                            </View>
-                                            <View className="flex-row items-center justify-between mt-3 mb-3">
-                                                <Text className="text-xs text-text-tertiary font-inter">
-                                                    {total} lessons, {track.lessons.reduce((sum, l) => sum + l.minutes, 0)} min, interactive
-                                                </Text>
-                                                <Text className="text-xs font-inter-semibold" style={{ color: tPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary }}>
-                                                    {done}/{total} done
-                                                </Text>
-                                            </View>
-                                            <BarFill percent={tPct} height={6} color={tPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary} trackClassName="bg-surface-tertiary" />
-                                        </View>
-                                    </PressableScale>
-                                </Animated.View>
-                            );
-                        })}
-
-                        {/* Life sims: a year of decisions with the arithmetic
-                            shown. Completion is tracked under the 'lifeSims'
-                            path so it counts as a study day like anything else. */}
-                        <Text className="mt-2 mb-3 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
-                            Life sims
-                        </Text>
-                        {SCENARIOS.map((sim) => {
-                            const played = progress.lifeSims?.completedModules?.includes(sim.id) ?? false;
-                            return (
-                                <PressableScale
-                                    key={sim.id}
-                                    onPress={() => { haptics.tap(); navigation.navigate('ScenarioPlayer', { scenarioId: sim.id }); }}
-                                    accessibilityRole="button"
-                                    className="mb-4 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                                >
-                                    <View className="w-11 h-11 rounded-2xl bg-alert-bg items-center justify-center mr-3">
-                                        <Drama size={20} color={COLORS.semantic.alertAmber} />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-base font-inter-bold text-text-primary">{sim.title}</Text>
-                                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                            {sim.summary}, {sim.minutes} min{played ? ', play again' : ''}
-                                        </Text>
-                                    </View>
-                                    {played
-                                        ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} />
-                                        : <ChevronRight size={18} color={COLORS.semantic.alertAmber} />}
-                                </PressableScale>
-                            );
-                        })}
-
-                        <Text className="mt-2 mb-3 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
-                            Courses
-                        </Text>
-
-                        {loading ? (
-                            <>
-                                <CourseCardSkeleton />
-                                <CourseCardSkeleton />
-                                <CourseCardSkeleton />
-                            </>
-                        ) : displayPaths.length === 0 ? (
-                            <View className="bg-surface-primary border border-border rounded-2xl p-6 items-center">
-                                <BookOpen size={32} color={COLORS.border.strong} />
-                                <Text className="text-text-secondary text-sm mt-3 text-center font-inter">
-                                    No courses found. Check your connection.
-                                </Text>
-                            </View>
-                        ) : (
-                            displayPaths.map((path, i) => {
-                                const { completed, total } = getPathProgress(path.id);
-                                const pBadge = progress[path.id ?? '']?.badgeEarned ?? false;
-                                const pPct = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-                                return (
-                                    <Animated.View
-                                        key={path.id}
-                                        entering={
-                                            reduced
-                                                ? FadeIn.duration(160)
-                                                : FadeInDown.duration(200)
-                                        }
-                                    >
-                                    <PressableScale
-                                        onPress={() => { haptics.tap(); navigation.navigate('LearnPathDetail', { path }); }}
-                                        accessibilityRole="button"
-                                        className="mb-4 bg-surface-primary rounded-2xl border border-border overflow-hidden"
-                                    >
-                                        {/* Top accent bar */}
-                                        <View style={{ height: 3, backgroundColor: pBadge ? COLORS.semantic.profit : pPct > 0 ? COLORS.brand.primary : COLORS.border.default }} />
-
-                                        <View className="p-4">
-                                            <View className="flex-row items-start justify-between mb-2">
-                                                <View className="flex-1 mr-3">
-                                                    <Text className="text-base font-inter-bold text-text-primary">{path.title}</Text>
-                                                    <Text className="text-xs text-text-secondary mt-0.5 leading-4 font-inter">{path.description}</Text>
-                                                </View>
-                                                {pBadge && (
-                                                    <View className="bg-profit-bg rounded-full p-1.5">
-                                                        <Trophy size={14} color={COLORS.semantic.profit} />
-                                                    </View>
-                                                )}
-                                            </View>
-
-                                            {/* Module count + progress */}
-                                            <View className="flex-row items-center justify-between mt-2 mb-3">
-                                                <Text className="text-xs text-text-tertiary font-inter">{total} modules · {path.modules?.reduce((sum: number, m: any) => {
-                                                    const mins = parseInt(m.duration) || 0;
-                                                    return sum + mins;
-                                                }, 0)} min total</Text>
-                                                <Text className="text-xs font-inter-semibold" style={{ color: pPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary }}>
-                                                    {completed}/{total} done
-                                                </Text>
-                                            </View>
-
-                                            <BarFill
-                                                percent={pPct}
-                                                height={6}
-                                                color={pPct === 100 ? COLORS.semantic.profit : COLORS.brand.primary}
-                                                trackClassName="bg-surface-tertiary"
-                                                style={{ marginBottom: 12 }}
-                                            />
-
-                                            {/* The bar and the "3/8 done" line above
-                                                already carry the percentage, so this
-                                                row is only the next action. */}
-                                            <View className="flex-row items-center justify-end">
-                                                <Text className="text-xs font-inter-semibold text-brand-link mr-1">
-                                                    {pPct === 0 ? 'Start' : pPct === 100 ? 'Review' : 'Continue'}
-                                                </Text>
-                                                <ChevronRight size={14} color={COLORS.brand.primary} />
-                                            </View>
-                                        </View>
-                                    </PressableScale>
-                                    </Animated.View>
-                                );
-                            })
-                        )}
-                    </View>
-                )}
-
-                {/* ── Glossary Tab ────────────────────────────── */}
-                {activeTab === 'glossary' && (
-                    <View className="mx-5 mt-4">
-                        {/* Search */}
-                        <View className="flex-row items-center bg-surface-primary border border-border-strong rounded-xl px-3 mb-4">
-                            <Search size={16} color={COLORS.text.tertiary} />
-                            <TextInput
-                                className="flex-1 py-3 pl-2 text-sm text-text-secondary font-inter"
-                                placeholder="Search terms"
-                                placeholderTextColor={COLORS.border.strong}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
-                        </View>
-
-                        {filteredGlossary.length === 0 ? (
-                            <View className="bg-surface-primary border border-border rounded-2xl p-6 items-center">
-                                <HelpCircle size={28} color={COLORS.border.strong} />
-                                <Text className="text-text-tertiary text-sm mt-2 font-inter">No terms match "{searchQuery}"</Text>
-                            </View>
-                        ) : (
-                            filteredGlossary.map((term, idx) => (
-                                <View
-                                    key={term.term + idx}
-                                    className="bg-surface-primary border border-border rounded-2xl px-4 py-3.5 mb-3"
-                                >
-                                    <Text className="text-sm font-inter-bold text-brand-link mb-1">{term.term}</Text>
-                                    <Text className="text-sm text-text-secondary leading-5 font-inter">{term.definition}</Text>
-                                </View>
-                            ))
-                        )}
-                    </View>
-                )}
-                {/* Practise sits BELOW the courses, not above them.
-                    This screen's own subtitle reads "Courses, practice and a
-                    glossary", in that order, and the screen did the reverse:
-                    three practice cards stood between the stats and the course
-                    list, so the thing the tab exists for, and the only thing
-                    that feeds the streak and badges shown at the top of this
-                    same screen, was the last thing you reached. */}
-                {/* ── Practise ────────────────────────────────────
-                    Tools that teach by doing. They used to sit in a grid
-                    of tiles on the Vitals screen, which is where you go to see
-                    how the month is going, not to learn something. */}
-                <Text className="mx-5 mt-6 mb-1 text-2xs font-inter-semibold text-text-tertiary uppercase tracking-widerst">
-                    Practise
+                {/* ── More to explore ─────────────────────────── */}
+                <Text style={[TYPE.micro, { marginTop: 30, marginBottom: 10, marginHorizontal: GUTTER }]} className="text-text-tertiary">
+                    More to explore
                 </Text>
 
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('StatementDecoder'); }}
+                {SCENARIOS.map((sim) => {
+                    const played = progress.lifeSims?.completedModules?.includes(sim.id) ?? false;
+                    return (
+                        <Row
+                            key={sim.id}
+                            icon={<Drama size={19} color={COLORS.semantic.alertAmber} />}
+                            title={`Life sim: ${sim.title}`}
+                            body={`${sim.summary}, ${sim.minutes} min`}
+                            done={played}
+                            onPress={() => navigation.navigate('ScenarioPlayer', { scenarioId: sim.id })}
+                        />
+                    );
+                })}
+                <Row
+                    icon={<ScanLine size={19} color={COLORS.brand.link} />}
+                    title="Decode a card statement"
+                    body="Which line to pay, and what the minimum really costs"
+                    onPress={() => navigation.navigate('StatementDecoder')}
+                />
+                <Row
+                    icon={<FileText size={19} color={COLORS.brand.link} />}
+                    title="Decode a payslip"
+                    body="Every line explained, anything odd flagged"
+                    onPress={() => navigation.navigate('PayslipDecoder')}
+                />
+                {classic.map((path) => {
+                    const done = progress[path.id ?? '']?.completedModules?.length ?? 0;
+                    const total = path.modules?.length ?? 0;
+                    return (
+                        <Row
+                            key={path.id}
+                            icon={<BookOpen size={19} color={COLORS.text.secondary} />}
+                            title={path.title}
+                            body={`Classic course, ${done}/${total} read`}
+                            done={total > 0 && done === total}
+                            onPress={() => navigation.navigate('LearnPathDetail', { path })}
+                        />
+                    );
+                })}
+
+                {/* Glossary, folded away until wanted. */}
+                <Pressable
+                    onPress={() => { haptics.select(); setGlossaryOpen((v) => !v); }}
                     accessibilityRole="button"
-                    className="mx-5 mt-2 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
+                    accessibilityState={{ expanded: glossaryOpen }}
+                    style={{ marginHorizontal: GUTTER, marginTop: 4, paddingVertical: 14, flexDirection: 'row', alignItems: 'center' }}
                 >
-                    <View className="w-11 h-11 rounded-2xl bg-alert-bg items-center justify-center mr-3">
-                        <ScanLine size={20} color={COLORS.semantic.alertAmber} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Decode a statement</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            Paste a card statement SMS. See which line to pay and what the minimum really costs
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color={COLORS.semantic.alertAmber} />
-                </PressableScale>
-
-                <PressableScale
-                    onPress={() => { haptics.tap(); navigation.navigate('PayslipDecoder'); }}
-                    accessibilityRole="button"
-                    className="mx-5 mt-3 bg-surface-primary rounded-2xl border border-border p-4 flex-row items-center"
-                >
-                    <View className="w-11 h-11 rounded-2xl bg-brand-soft items-center justify-center mr-3">
-                        <FileText size={20} color={COLORS.brand.primary} />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary">Decode a payslip</Text>
-                        <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                            Paste the lines. Every one explained, and anything odd flagged
-                        </Text>
-                    </View>
-                    <ChevronRight size={18} color={COLORS.brand.primary} />
-                </PressableScale>
-
-
-
-
-
-
+                    <Search size={18} color={COLORS.text.secondary} />
+                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary ml-3 flex-1">
+                        Glossary, {displayGlossary.length} terms
+                    </Text>
+                    {glossaryOpen ? <ChevronDown size={18} color={COLORS.text.tertiary} /> : <ChevronRight size={18} color={COLORS.text.tertiary} />}
+                </Pressable>
+                {glossaryOpen && (
+                    <Animated.View entering={reduced ? undefined : FadeInDown.duration(200)} exiting={reduced ? undefined : FadeOut.duration(120)} style={{ marginHorizontal: GUTTER }}>
+                        <TextInput
+                            className="bg-surface-primary border border-border rounded-control px-4 h-[46px] text-sm text-text-primary font-inter mb-3"
+                            placeholder="Search a term, like SIP or CIBIL"
+                            placeholderTextColor={COLORS.text.tertiary}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {filteredGlossary.length === 0 ? (
+                            <Text style={TYPE.caption} className="text-text-tertiary text-center py-4">No terms match "{searchQuery}"</Text>
+                        ) : filteredGlossary.map((term, idx) => (
+                            <View key={term.term + idx} className="bg-surface-primary border border-border px-4 py-3 mb-2" style={{ borderRadius: RADIUS.control }}>
+                                <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-brand-link">{term.term}</Text>
+                                <Text style={TYPE.caption} className="text-text-secondary mt-0.5">{term.definition}</Text>
+                            </View>
+                        ))}
+                    </Animated.View>
+                )}
             </ScrollView>
+
+            {lockedNote && (
+                <Animated.View
+                    entering={FadeInDown.duration(180)}
+                    exiting={FadeOut.duration(160)}
+                    pointerEvents="none"
+                    style={{ position: 'absolute', left: GUTTER, right: GUTTER, bottom: 16, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.text.primary }}
+                >
+                    <Text style={[TYPE.callout, { color: COLORS.surface.primary, textAlign: 'center' }]}>
+                        Finish the lesson before this one first.
+                    </Text>
+                </Animated.View>
+            )}
         </SafeAreaView>
     );
 };
+
+/** One circle on the path. The current one breathes, so the eye finds it. */
+const PathNode: React.FC<{
+    state: NodeState;
+    colour: string;
+    reduced: boolean;
+    label: string;
+    onPress: () => void;
+}> = ({ state, colour, reduced, label, onPress }) => {
+    const pulse = useSharedValue(0);
+    useEffect(() => {
+        if (state !== 'current' || reduced) return;
+        pulse.set(withRepeat(withTiming(1, { duration: 1400, easing: Easing.out(Easing.quad) }), -1));
+        return () => cancelAnimation(pulse);
+    }, [state, reduced, pulse]);
+    const ring = useAnimatedStyle(() => ({
+        opacity: 0.45 * (1 - pulse.value),
+        transform: [{ scale: 1 + 0.35 * pulse.value }],
+    }));
+
+    const fill = state === 'done' ? '#F5B82E' : state === 'current' ? colour : COLORS.surface.tertiary;
+    // A darker lip under the circle, so it reads as a button you can press.
+    const lip = state === 'done' ? '#D9960F' : state === 'current' ? 'rgba(0,0,0,0.25)' : COLORS.border.strong;
+
+    return (
+        <View style={{ width: NODE, height: NODE + 6 }}>
+            {state === 'current' && (
+                <Animated.View
+                    pointerEvents="none"
+                    style={[{ position: 'absolute', left: 0, top: 0, width: NODE, height: NODE, borderRadius: NODE / 2, backgroundColor: colour }, ring]}
+                />
+            )}
+            <View style={{ position: 'absolute', left: 0, top: 6, width: NODE, height: NODE, borderRadius: NODE / 2, backgroundColor: lip }} />
+            <PressableScale
+                onPress={onPress}
+                activeScale={0.92}
+                accessibilityRole="button"
+                accessibilityLabel={`${label}, ${state === 'done' ? 'done' : state === 'current' ? 'next lesson' : 'locked'}`}
+                style={{ width: NODE, height: NODE, borderRadius: NODE / 2, backgroundColor: fill, alignItems: 'center', justifyContent: 'center' }}
+            >
+                {state === 'done'
+                    ? <Check size={30} color="#FFFFFF" strokeWidth={3.2} />
+                    : state === 'current'
+                        ? <Star size={28} color="#FFFFFF" fill="#FFFFFF" />
+                        : <Lock size={24} color={COLORS.text.muted} strokeWidth={2.2} />}
+            </PressableScale>
+        </View>
+    );
+};
+
+const Row: React.FC<{ icon: React.ReactNode; title: string; body: string; done?: boolean; onPress: () => void }> = ({ icon, title, body, done, onPress }) => (
+    <PressableScale
+        onPress={() => { haptics.tap(); onPress(); }}
+        accessibilityRole="button"
+        containerStyle={{ marginHorizontal: GUTTER, marginBottom: 10 }}
+        style={{ borderRadius: RADIUS.card, padding: 14, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}
+    >
+        <View className="w-10 h-10 items-center justify-center mr-3" style={{ borderRadius: RADIUS.tile, backgroundColor: COLORS.surface.tertiary }}>
+            {icon}
+        </View>
+        <View className="flex-1">
+            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">{title}</Text>
+            <Text style={TYPE.caption} className="text-text-secondary mt-0.5" numberOfLines={2}>{body}</Text>
+        </View>
+        {done ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} /> : <ChevronRight size={18} color={COLORS.text.tertiary} />}
+    </PressableScale>
+);
+
+export default LearnScreen;

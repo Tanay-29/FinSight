@@ -25,7 +25,6 @@ import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
 import SubscriptionTrackerScreen from '../screens/SubscriptionTrackerScreen';
 import FlashcardScreen from '../screens/FlashcardScreen';
-import LessonTrackScreen from '../screens/LessonTrackScreen';
 import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 import ScenarioPlayerScreen from '../screens/ScenarioPlayerScreen';
 import StatementDecoderScreen from '../screens/StatementDecoderScreen';
@@ -207,7 +206,6 @@ export const RootNavigator = () => {
                     />
                     <Stack.Screen name="LearnPathDetail" component={LearnPathDetailScreen} />
                     <Stack.Screen name="ModuleReader" component={ModuleReaderScreen} />
-                    <Stack.Screen name="LessonTrack" component={LessonTrackScreen} />
                     <Stack.Screen name="StatementDecoder" component={StatementDecoderScreen} />
                     <Stack.Screen name="PayslipDecoder" component={PayslipDecoderScreen} />
                     {/* A deck is a focused task: it slides up over the tabs
