@@ -321,14 +321,14 @@ const DonePhase: React.FC<{
 
             {/* Result text */}
             <Text style={TYPE.title} className="text-text-primary mt-6 text-center px-8">
-                {perfect ? 'Perfect score!' : passed ? 'Well done!' : 'Keep practising!'}
+                {perfect ? 'Full marks' : passed ? 'Passed' : 'Not yet'}
             </Text>
             <Text className="text-sm text-text-secondary mt-2 text-center px-8 leading-5 font-inter">
                 {perfect
-                    ? `You aced "${moduleName}". Your understanding is solid.`
+                    ? `Every answer right on "${moduleName}".`
                     : passed
-                        ? `Good progress on "${moduleName}". Review the explanations to reinforce.`
-                        : `No worries - re-read "${moduleName}" and try the quiz again.`
+                        ? `Most of "${moduleName}" stuck. The explanations cover the rest.`
+                        : `Read "${moduleName}" once more and try the quiz again.`
                 }
             </Text>
 
@@ -337,7 +337,7 @@ const DonePhase: React.FC<{
                 <View className="mt-5 flex-row items-center bg-alert-bg border border-alert-bg rounded-2xl px-5 py-3">
                     <Flame size={20} color="#C2410C" />
                     <Text className="text-sm font-inter-bold text-alert-amber ml-2">
-                        {streak}-day learning streak!
+                        {streak}-day learning streak
                     </Text>
                 </View>
             )}
@@ -411,8 +411,8 @@ const DonePhase: React.FC<{
                         <BrainCircuit size={18} color={COLORS.brand.primary} />
                     </View>
                     <View>
-                        <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Revise with AI Flashcards</Text>
-                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Gemini generates 5 cards from this module</Text>
+                        <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Revise with flashcards</Text>
+                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Five quick cards from this module</Text>
                     </View>
                     <ChevronRight size={16} color={COLORS.text.tertiary} style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>

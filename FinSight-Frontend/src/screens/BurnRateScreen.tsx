@@ -312,7 +312,7 @@ const BurnRateScreen: React.FC = () => {
 
                             {savingsEngine.events.length === 0 ? (
                                 <View style={{ backgroundColor: COLORS.surface.secondary, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 24 }}>
-                                    <Text style={{ color: COLORS.text.tertiary, fontSize: 14 }}>No surpluses detected yet. Keep budgeting!</Text>
+                                    <Text style={{ color: COLORS.text.tertiary, fontSize: 14 }}>Nothing is under budget yet.</Text>
                                 </View>
                             ) : (
                                 savingsEngine.events.map((event, i) => {

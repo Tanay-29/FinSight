@@ -269,7 +269,7 @@ const ResultsScreen: React.FC<{
                 </View>
                 <View style={{ flex: 1, backgroundColor: '#FDF4F2', borderRadius: 16, padding: 16, alignItems: 'center' }}>
                     <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.loss }}>{reviewCount}</Text>
-                    <Text style={{ fontSize: 12, color: COLORS.semantic.alertCritical, fontFamily: FONTS.semibold, marginTop: 2 }}>Review Again</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.semantic.alertCritical, fontFamily: FONTS.semibold, marginTop: 2 }}>To review</Text>
                 </View>
             </View>
 
@@ -277,7 +277,7 @@ const ResultsScreen: React.FC<{
             {reviewCount > 0 && (
                 <View style={{ width: '100%', marginTop: 20 }}>
                     <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 10 }}>
-                        Cards to Focus On:
+                        Go over these again
                     </Text>
                     {cards.map((card, i) =>
                         statuses[i] === 'review' ? (
@@ -502,15 +502,11 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary }} numberOfLines={1}>
-                        AI Flashcards
+                        Flashcards
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.tertiary }} numberOfLines={1}>
                         {moduleTitle}
                     </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.brand.soft, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
-                    <BrainCircuit size={13} color={COLORS.brand.primary} />
-                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.brand.primary }}>AI Generated</Text>
                 </View>
             </View>
 
@@ -522,10 +518,10 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                     </View>
                     <ActivityIndicator size="large" color={COLORS.brand.primary} />
                     <Text style={{ fontSize: 14, color: COLORS.text.secondary, fontFamily: FONTS.medium }}>
-                        Generating your flashcards...
+                        Making your cards
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>
-                        Gemini AI is reading the module
+                        Five cards from this module, in a few seconds
                     </Text>
                 </View>
             ) : error ? (

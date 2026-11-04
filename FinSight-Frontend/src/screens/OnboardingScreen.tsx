@@ -82,7 +82,7 @@ const EXPERIENCE: {
         Icon: Sprout,
         title: "I'm just starting out",
         subtitle: 'New to managing money and investing',
-        effect: 'Your coach will explain every term the first time it uses one, and never assume you have invested before.',
+        effect: 'FinSight explains every term the first time it comes up, and never assumes you have invested before.',
         summary: 'explains every term',
     },
     {
@@ -90,7 +90,7 @@ const EXPERIENCE: {
         Icon: BookOpen,
         title: 'I know the basics',
         subtitle: 'Budgets and saving, maybe not investing yet',
-        effect: 'Your coach will skip the beginner definitions, but still spell out investing words.',
+        effect: 'FinSight skips the beginner definitions, but still spells out investing words.',
         summary: 'skips the basics',
     },
     {
@@ -98,7 +98,7 @@ const EXPERIENCE: {
         Icon: TrendingUp,
         title: "I'm fairly experienced",
         subtitle: 'Comfortable with money and investing',
-        effect: 'Your coach will keep it brief and get straight to what you cannot already see.',
+        effect: 'FinSight keeps it brief and gets straight to what you cannot already see.',
         summary: 'keeps it brief',
     },
 ];
@@ -329,7 +329,7 @@ const StepYou: React.FC<StepProps> = ({ data, onChange, reduced }) => {
                     <Text style={{ fontFamily: FONTS.bold }}>₹{lakhOrCrore(growth.amount)}</Text>.
                 </Text>
                 <Text style={TYPE.caption} className="text-brand-on-dark mt-1.5">
-                    An illustration at 12% a year, not a promise. Your coach also pitches its advice at your age.
+                    An illustration at 12% a year, not a promise. Tips are pitched at your age too.
                 </Text>
             </View>
         </View>
@@ -342,7 +342,7 @@ const StepExperience: React.FC<StepProps> = ({ data, onChange, reduced }) => {
         <View>
             <StepHeader
                 title="How comfortable are you with money?"
-                body="There is no wrong answer. It changes how much your coach explains."
+                body="There is no wrong answer. It changes how much FinSight explains."
             />
             {EXPERIENCE.map((opt) => (
                 <SelectCard
@@ -471,7 +471,7 @@ const Summary: React.FC<{ data: OnboardingData; reduced: boolean; editing: boole
             : 'Your first three-minute lesson';
 
     const rows = [
-        { Icon: MessageCircle, title: 'Your coach', body: `Tuned for age ${data.age}, and ${exp?.summary ?? 'keeps it plain'}.` },
+        { Icon: MessageCircle, title: 'How FinSight talks to you', body: `Tuned for age ${data.age}, and ${exp?.summary ?? 'keeps it plain'}.` },
         {
             Icon: LayoutList,
             title: 'Your daily habit',

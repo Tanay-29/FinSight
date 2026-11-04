@@ -371,8 +371,8 @@ export const COURSE_CONTENT: LearningPath[] = [
     {
         id: 'budgetBasics',
         title: 'Budgeting Basics',
-        description: 'Master the 50-30-20 rule, build an emergency fund, and manage debt',
-        overview: 'Learn to control your money before your money controls you. This 5-module masterclass teaches the proven 50-30-20 budgeting framework, how to build your emergency fund, and strategies to eliminate debt. You\'ll graduate with a budget you can actually stick to.',
+        description: 'The 50-30-20 rule, an emergency fund, and getting out of debt',
+        overview: 'Five modules: the 50-30-20 rule, building an emergency fund, and paying down debt. You finish with a budget you can actually stick to.',
         progress: { completed: 5, total: 5 },
         nextModule: 'Completed!',
         badgeEarned: true,
@@ -380,7 +380,7 @@ export const COURSE_CONTENT: LearningPath[] = [
             {
                 id: 'mod_b1',
                 title: 'Why Budgeting Matters',
-                description: 'The foundation of financial wellness',
+                description: 'Why a plan beats a vague feeling',
                 duration: '7 mins',
                 difficulty: 'beginner',
                 completed: false,
@@ -390,7 +390,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                     'Most people don\'t know where their money goes',
                     'Seeing a number changes decisions that a feeling doesn\'t',
                 ],
-                content: 'A budget is simply a plan for your money. It\'s not restrictive; it\'s empowering. When you know where every rupee goes, you can make conscious choices. "Do I really want to spend ₹5,000/month on food delivery?" When you see the number, decisions change in a way that a vague sense of overspending doesn\'t. You don\'t need a fancy app; pen & paper works.',
+                content: 'A budget is simply a plan for your money. It is not about spending less; it is about choosing. When you know where every rupee goes, you can make conscious choices. "Do I really want to spend ₹5,000/month on food delivery?" When you see the number, decisions change in a way that a vague sense of overspending doesn\'t. You don\'t need a fancy app; pen & paper works.',
                 quiz: [
                     {
                         question: 'What is the primary goal of budgeting?',

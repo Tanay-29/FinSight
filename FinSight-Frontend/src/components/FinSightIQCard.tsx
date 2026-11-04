@@ -311,7 +311,7 @@ const FinSightIQCard: React.FC = () => {
                         <MessageCircle size={15} color={COLORS.brand.primary} style={{ marginTop: 1 }} />
                         <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.brand.primary, marginBottom: 3 }}>
-                                {fromModel ? 'Sensei says' : adviceLoading ? 'From your numbers, Sensei is reading them' : 'From your numbers'}
+                                {fromModel ? 'A closer look' : 'From your numbers'}
                             </Text>
                             <Text style={{ fontSize: 13, color: COLORS.text.primary, lineHeight: 19, fontFamily: FONTS.medium }}>
                                 {shown.mood}

@@ -77,12 +77,12 @@ export type PremiumFeature = 'ai-coach' | 'flashcards';
 
 export const FEATURE_COPY: Record<PremiumFeature, { title: string; body: string }> = {
     'ai-coach': {
-        title: 'Get your coach back',
-        body: 'A fresh read on your score, and the three things worth doing next, written from your own spending.',
+        title: 'Get a fresh look at your score',
+        body: 'What is moving your score, and three things worth doing next, based on your own spending.',
     },
     flashcards: {
         title: 'Turn this module into flashcards',
-        body: 'Cards written from what you just read, scheduled so the ones you miss come back sooner.',
+        body: 'Cards from what you just read. The ones you miss come back sooner.',
     },
 };
 
@@ -108,8 +108,8 @@ export const FREE_ALLOWANCE = {
  * that cost money per use, which is why they are the ones behind the tier.
  */
 export const VALUE_PROPS = [
-    'Your coach, whenever you want a fresh read',
-    'Flashcards from any module, generated on the spot',
-    'The two features that cost us per use, uncapped',
+    'A fresh look at your score, as often as you like',
+    'Flashcards for any module',
+    'No monthly limit on either',
     'Everything you already have, unchanged',
 ];

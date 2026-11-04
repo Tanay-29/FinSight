@@ -39,8 +39,8 @@ type Stage = 'idle' | 'reading' | 'choosing' | 'building' | 'ready';
 
 const STEPS: { stage: Stage; label: string }[] = [
     { stage: 'reading', label: 'Reading your question' },
-    { stage: 'choosing', label: 'Choosing the right tool' },
-    { stage: 'building', label: 'Setting it to your numbers' },
+    { stage: 'choosing', label: 'Finding the right calculator' },
+    { stage: 'building', label: 'Filling in your numbers' },
 ];
 const ORDER: Stage[] = ['idle', 'reading', 'choosing', 'building', 'ready'];
 
@@ -135,7 +135,7 @@ const AskScreen: React.FC = () => {
                     >
                         <ArrowLeft size={18} color={COLORS.text.primary} />
                     </Pressable>
-                    <Text style={{ ...TYPE.heading, color: COLORS.text.primary, marginLeft: 12 }}>Ask anything</Text>
+                    <Text style={{ ...TYPE.heading, color: COLORS.text.primary, marginLeft: 12 }}>Ask</Text>
                 </View>
 
                 <ScrollView ref={scrollRef} contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -183,7 +183,7 @@ const AskScreen: React.FC = () => {
                                 </PressableScale>
                             ))}
                             <Text style={{ ...TYPE.caption, color: COLORS.text.tertiary, marginTop: 6 }}>
-                                You get a tool to play with, not a paragraph. Every number is worked out in the app.
+                                You get a calculator for your question. Drag the sliders and the numbers update.
                             </Text>
                         </Animated.View>
                     ) : null}
@@ -271,12 +271,7 @@ const AskScreen: React.FC = () => {
                                     </View>
                                 ) : null}
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: COLORS.surface.tertiary }}>
-                                        <Sparkles size={12} color={COLORS.text.secondary} />
-                                        <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.secondary, marginLeft: 5 }}>
-                                            {pick?.source === 'model' ? 'Tool picked by Gemini · maths by FinSight' : 'Tool picked on this phone · maths by FinSight'}
-                                        </Text>
-                                    </View>
+                                    <View />
                                     <PressableScale
                                         onPress={() => { haptics.tap(); setStage('idle'); setPick(null); setQuestion(''); scrollRef.current?.scrollTo({ y: 0, animated: !reduced }); }}
                                         accessibilityRole="button"

@@ -192,7 +192,7 @@ export const ProfileScreen: React.FC = () => {
     const handlePrivacy = () => {
         Alert.alert(
             'Privacy and Data',
-            'Your transactions, budgets and goals are stored in your own Firebase account and are readable only by you.\n\nTo write your coaching, a summary of your recent spending is sent to our server. It is never saved to a database. Use Export your data to take a copy, or Delete account to remove everything.'
+            'Your transactions, budgets and goals are stored in your own Firebase account and are readable only by you.\n\nTo write your score summary, a short summary of your recent spending is sent to our server. It is never saved to a database. Use Export your data to take a copy, or Delete account to remove everything.'
         );
     };
 
@@ -279,7 +279,7 @@ export const ProfileScreen: React.FC = () => {
                         <View className="flex-1">
                             <Text className="text-base font-inter-bold text-white">FinSight Plus</Text>
                             <Text className="text-xs text-brand-edge mt-0.5 font-inter">
-                                Your coach and flashcards, whenever you want them
+                                Score summaries and flashcards, as often as you like
                             </Text>
                         </View>
                         <ChevronRight size={18} color="#FFFFFF" />

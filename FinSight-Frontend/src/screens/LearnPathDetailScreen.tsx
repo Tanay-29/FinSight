@@ -108,7 +108,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                         <View className="bg-profit-bg border border-profit-bg rounded-xl px-4 py-3 flex-row items-center">
                             <Trophy size={16} color={COLORS.semantic.profit} />
                             <Text className="text-sm font-inter-semibold text-profit ml-2">
-                                Course badge earned!
+                                Course badge earned
                             </Text>
                         </View>
                     )}

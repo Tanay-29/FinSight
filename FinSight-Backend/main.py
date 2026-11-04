@@ -75,7 +75,10 @@ def cached_json(payload, hit: bool):
 STYLE_RULES = """
 - Write in English only. No Hindi, no Hinglish.
 - Do NOT use emojis or any pictographic characters.
-- Do NOT use em dashes. Use a comma, colon, or semicolon instead."""
+- Do NOT use em dashes. Use a comma, colon, or semicolon instead.
+- Sound like a person, not a chatbot: plain words, short sentences, the way a friend who is good with money would text.
+- No exclamation marks. No praise or pep talk such as "great job", "you've got this", "keep it up".
+- Avoid filler and buzzwords: journey, unlock, empower, elevate, crucial, delve, dive into, leverage, navigate, game-changer, let's."""
 
 
 # --- HEALTH ---
@@ -252,9 +255,9 @@ def get_ai_advisor():
         if hit is not None:
             return cached_json(hit, True)
 
-        prompt = f"""You are 'FinSight Sensei', a sharp, encouraging financial coach for Indian students and young professionals.
+        prompt = f"""You write the short score summary inside FinSight, a money app for Indian students and young professionals.
 You speak ONLY in English. Do not use any Hindi or Hinglish words whatsoever.
-Your tone is direct and encouraging. You talk about what this person actually did with their money, in plain words, the way a sharp friend would.
+Your tone is direct and calm. You talk about what this person actually did with their money, in plain words, the way a friend would.
 
 WHO YOU ARE TALKING TO:
 {reader_summary}
@@ -273,7 +276,7 @@ SAVINGS GOALS:
 
 Respond with ONLY a valid raw JSON object (no markdown, no code blocks) with exactly these keys:
 {{
-  "mood": "<One punchy sentence max 12 words summarising their financial situation right now>",
+  "mood": "<One plain sentence, max 12 words, on where their money stands right now>",
   "explanation": "<2-3 sentences explaining WHY their IQ score is at {score}. Reference specific data points.>",
   "quests": [
     {{"title": "<Short action title>", "description": "<One sentence: exactly what to do and the IQ reward>", "points": <integer 10-100>}},

@@ -364,7 +364,7 @@ const GoalAccelerationScreen: React.FC = () => {
                     </View>
 
                     <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.brand.edge, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-                        Time Saved with Smart Investing
+                        Time saved by investing
                     </Text>
 
                     {/* Hero number */}

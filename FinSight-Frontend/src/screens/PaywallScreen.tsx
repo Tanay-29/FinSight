@@ -88,12 +88,12 @@ const PaywallScreen: React.FC<Props> = ({ navigation, route }) => {
                     </View>
 
                     <Text className="text-[28px] leading-9 font-inter-bold text-text-primary tracking-tight">
-                        {headline ? headline.title : 'Keep the coach.'}
+                        {headline ? headline.title : 'FinSight Plus'}
                     </Text>
                     <Text className="text-[15px] leading-6 text-text-secondary mt-2.5">
                         {headline
                             ? headline.body
-                            : 'Everything you log stays free. FinSight Plus covers the parts a model writes for you, fresh, whenever you ask.'}
+                            : 'Everything you log stays free. Plus adds a fresh look at your score and flashcards for any module, as often as you like.'}
                     </Text>
 
                     <View className="mt-7 mb-7">
