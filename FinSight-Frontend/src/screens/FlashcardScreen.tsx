@@ -33,7 +33,8 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { answerCard, fetchDueCards } from '../store/slices/reviewsSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-import { authedFetch } from '../config/api';
+import { generateFlashcards } from '../services/aiService';
+import { COURSE_CONTENT } from '../data/courseContent';
 import { friendlyError } from '../utils/errors';
 import { FONTS, COLORS } from '../theme/tokens';
 
@@ -44,6 +45,20 @@ const { width: SCREEN_W } = Dimensions.get('window');
 export interface Flashcard {
     question: string;
     answer: string;
+}
+
+/** A module's own quiz, turned into cards: the question, then the right answer and why. */
+function cardsFromModuleQuiz(moduleId?: string): Flashcard[] {
+    if (!moduleId) return [];
+    for (const path of COURSE_CONTENT as any[]) {
+        const mod = (path.modules ?? []).find((m: any) => m.id === moduleId);
+        if (!mod) continue;
+        return (mod.quiz ?? []).map((q: any) => ({
+            question: String(q.question),
+            answer: `${q.options?.[q.answerIndex] ?? ''}. ${q.explanation ?? ''}`.trim(),
+        }));
+    }
+    return [];
 }
 
 /** A flashcard plus the identifiers needed to schedule it for review. */
@@ -388,24 +403,15 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                 return;
             }
 
-            const res = await authedFetch('/api/generate-flashcards', {
-                method: 'POST',
-                body: JSON.stringify({
-                    title: moduleTitle,
-                    content: moduleContent,
-                    keyPoints: keyPoints ?? [],
-                }),
-            });
-            // friendlyError passes short custom messages straight through, so
-            // this has to read as a sentence rather than a status code.
-            if (!res.ok) {
-                throw new Error(
-                    res.status >= 500
-                        ? 'The card generator is not responding. Try again in a moment.'
-                        : 'Could not build cards for this module.'
-                );
+            let data: Flashcard[];
+            try {
+                data = await generateFlashcards(moduleTitle, moduleContent ?? '', keyPoints ?? []);
+            } catch {
+                // No model (offline, or AI Logic not switched on): build the
+                // deck from the module's own quiz, which is written content.
+                data = cardsFromModuleQuiz(moduleId);
+                if (data.length === 0) throw new Error('Could not build cards for this module.');
             }
-            const data: Flashcard[] = await res.json();
             loadDeck(data.map((c) => ({ ...c, moduleId, moduleTitle, pathId })));
         } catch (e: any) {
             setError(friendlyError(e, 'Could not generate flashcards for this module.'));

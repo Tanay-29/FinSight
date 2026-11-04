@@ -1,17 +1,15 @@
 /**
  * Authentication Service
  *
- * Three ways in, one account model. Email and password, Google, and a phone
- * number with a one-time code all end in a Firebase user and the same
- * users/{uid} profile document, so nothing past this file needs to know which
- * one was used.
+ * Two ways in, one account model. Email and password, and Google, both end in
+ * a Firebase user and the same users/{uid} profile document, so nothing past
+ * this file needs to know which one was used. Accounts made earlier with a
+ * phone number still sign in from a phone that remembers them, and still read
+ * correctly in Profile.
  */
 import {
-    ApplicationVerifier,
-    ConfirmationResult,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    signInWithPhoneNumber,
     sendEmailVerification,
     sendPasswordResetEmail,
     signOut,
@@ -118,23 +116,6 @@ export async function signIn(
 export async function signInWithGoogle(): Promise<User | null> {
     const credential = await signInWithGoogleProvider();
     if (!credential) return null;
-    await ensureUserProfile(credential.user);
-    return credential.user;
-}
-
-/**
- * Send a one-time code to a phone number in E.164 form (+919876543210).
- *
- * The verifier is the reCAPTCHA check Firebase requires before it will send
- * an SMS from a JS client; see components/auth/RecaptchaGate.
- */
-export function sendPhoneCode(phoneE164: string, verifier: ApplicationVerifier): Promise<ConfirmationResult> {
-    return signInWithPhoneNumber(auth, phoneE164, verifier);
-}
-
-/** Finish a phone sign-in with the six digits from the SMS. */
-export async function confirmPhoneCode(confirmation: ConfirmationResult, code: string): Promise<User> {
-    const credential = await confirmation.confirm(code);
     await ensureUserProfile(credential.user);
     return credential.user;
 }

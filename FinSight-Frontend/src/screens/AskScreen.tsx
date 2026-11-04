@@ -18,7 +18,7 @@ import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-rea
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, ArrowUp, Check, Sparkles, Info, RotateCcw } from 'lucide-react-native';
 import { pickTool, AskPick } from '../services/askService';
-import { findTool, formatFigure, formatParam, ToolFigure } from '../utils/askTools';
+import { findTool, formatFigure, formatParam, initialValues, ToolFigure } from '../utils/askTools';
 import { Slider } from '../components/learn/Slider';
 import { LinesChart, BarsChart } from '../components/ask/ToolChart';
 import { AnimatedNumber } from '../components/AnimatedNumber';
@@ -80,7 +80,9 @@ const AskScreen: React.FC = () => {
     const [values, setValues] = useState<Record<string, number>>({});
     const runId = useRef(0);
 
-    const ask = async (q: string) => {
+    // `preset` opens a known calculator directly, for screens that already
+    // know what they want, like a savings goal.
+    const ask = async (q: string, preset?: { toolId: string; values: Record<string, number> }) => {
         const text = q.trim();
         if (!text) return;
         haptics.commit();
@@ -89,7 +91,10 @@ const AskScreen: React.FC = () => {
         setPick(null);
         setStage('reading');
         const started = Date.now();
-        const resultP = pickTool(text);
+        const presetTool = preset ? findTool(preset.toolId) : undefined;
+        const resultP: Promise<AskPick> = presetTool
+            ? Promise.resolve({ toolId: presetTool.id, values: initialValues(presetTool, preset!.values), source: 'offline' })
+            : pickTool(text);
         await wait(450);
         if (id !== runId.current) return;
         setStage('choosing');
@@ -113,7 +118,8 @@ const AskScreen: React.FC = () => {
         if (!handed) return;
         // After the screen has painted, so the steps animate in rather than
         // the first one being skipped during the push transition.
-        const t = setTimeout(() => ask(handed), 250);
+        const preset = route.params?.toolId ? { toolId: route.params.toolId as string, values: (route.params.values ?? {}) as Record<string, number> } : undefined;
+        const t = setTimeout(() => ask(handed, preset), 250);
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

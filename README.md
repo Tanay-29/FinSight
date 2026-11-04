@@ -8,9 +8,8 @@ A financial-literacy app for Indian college students and young professionals, bu
 
 [![React Native](https://img.shields.io/badge/React_Native-0.81.5-61DAFB?logo=react)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-SDK_54-000020?logo=expo)](https://expo.dev/)
-[![Flask](https://img.shields.io/badge/Flask-3.1-black?logo=flask)](https://flask.palletsprojects.com/)
 [![Firebase](https://img.shields.io/badge/Firebase-12.x-FFCA28?logo=firebase)](https://firebase.google.com/)
-[![Gemini AI](https://img.shields.io/badge/Gemini-AI_coach_%26_flashcards-4285F4?logo=google)](https://ai.google.dev/)
+[![Gemini](https://img.shields.io/badge/Gemini-Firebase_AI_Logic-4285F4?logo=google)](https://firebase.google.com/docs/ai-logic)
 
 </div>
 
@@ -18,12 +17,12 @@ A financial-literacy app for Indian college students and young professionals, bu
 
 ## Summary
 
-FinSight is a monorepo with two directories:
+FinSight is an Expo app on Firebase. There is no server of its own:
 
 | Layer | Directory | Stack | Description |
 |---|---|---|---|
-| **Backend** | `FinSight-Backend/` | Python &middot; Flask &middot; Gemini AI | A four-route API that exists for one thing a client cannot safely do itself: hold the Gemini API key. It persists nothing; a redeploy costs a cold response cache and nothing else. |
-| **Frontend** | `FinSight-Frontend/` | React Native &middot; Expo SDK 54 &middot; TypeScript &middot; Redux Toolkit &middot; Firebase | 25-screen mobile app, 4-tab navigation, a pre-signup intro, gamified learning, on-device financial analytics, and an AI coach behind a paywall screen. |
+| **Frontend** | `FinSight-Frontend/` | React Native &middot; Expo SDK 54 &middot; TypeScript &middot; Redux Toolkit &middot; Firebase | Mobile app with 4-tab navigation, a pre-signup intro, card-deck learning, on-device financial maths, and Gemini through Firebase AI Logic for the score summary, flashcards and Ask. |
+| **Bubble Room page** | `bubble-web/` | One static HTML file on Firebase Hosting | The browser page players open from the QR code. |
 
 **Key capabilities at a glance:**
 - **FinSight IQ**: a bounded 0&ndash;1000 behavioural score, computed on-device from logged transactions, budgets, goals and streak, with a Gemini coach and three quests on top of it
@@ -31,8 +30,7 @@ FinSight is a monorepo with two directories:
 - **On-device Vitals**: burn-rate prediction, an income-normalised 50/30/20 split, and a savings-surplus engine, all computed client-side with no network round trip
 - **Smart categorisation**: paste a bank SMS or UPI notification and it extracts amount, merchant and category, with word-boundary matching and a shared merchant table
 - **Subscription tracker**: detects recurring charges by how steady the amount is (not just the interval) and projects what cancelling one is worth over 5, 10 and 20 years
-- **Savings goals** with a per-goal contribution simulator, and milestone-based IQ rewards
-- **FinSight Plus**: a real paywall screen (₹499/yr or ₹99/mo) gating the three features that cost real money per use; no payment processor is wired up yet, see [Known Issues](#known-issues)
+- **Savings goals** with a "how fast?" button that opens the goal calculator on Ask, and milestone-based IQ rewards
 
 ---
 
@@ -43,7 +41,6 @@ FinSight is a monorepo with two directories:
 3. [Project Structure](#project-structure)
 4. [Tech Stack](#tech-stack)
 5. [Prerequisites](#prerequisites)
-6. [Setup: Backend](#setup-backend)
 7. [Setup: Frontend](#setup-frontend)
 8. [Environment Variables Reference](#environment-variables-reference)
 9. [API Reference](#api-reference)
@@ -70,7 +67,6 @@ FinSight is a monorepo with two directories:
 | **Burn Rate** | Predictive monthly spend projection from the pace so far, with budget variance alerts | Live |
 | **Money Manager** | The full 50/30/20 needs/wants/savings view, computed on-device | Live |
 | **Savings Goals** | Create and track goals with an emoji, colour and deadline | Live |
-| **Goal Acceleration** | Per-goal compound-interest simulator: adjust the monthly contribution and compare a bank rate against a SIP rate side by side | Live |
 | **Subscription Tracker** | Groups recurring charges by merchant and amount-steadiness, flags likely subscriptions vs. variable bills, and projects the leak forward if cancelled | Live |
 | **Daily session** | Three-minute deck: up to two due cards from the mistake bank, the next three new cards, and one question computed from the user's own transactions (six rotating generators). Finishing records a study day | Live |
 | **Tracks** | Student, First Job, First Credit, Protect, Grow, Live: 24 lessons, 126 cards, eight interaction types (info, choice, true/false, estimate slider, tap-to-sort, order-the-steps, spot-the-trap, explorable). Zod-validated at import | Live |
@@ -81,13 +77,12 @@ FinSight is a monorepo with two directories:
 | **Mistake bank** | Every scorable card answered is scheduled with the same Leitner boxes as the flashcards, at `users/{uid}/lesson_cards`, and comes back in later sessions until known | Live |
 | **Courses** | The original 19 modules across three learning paths, with progress, badges and a streak system | Live |
 | **Module Reader** | Full-screen module content viewer with completion tracking | Live |
-| **AI Flashcards** | Gemini-generated study flashcards per module, with spaced review | Live, gated |
+| **Flashcards** | Five cards per reading module, written by Gemini, with spaced review; built from the module's own quiz when the model is unreachable | Live |
 | **Guess Your Spend** | Head-to-head game: pick which of two categories cost more this month | Live |
 | **Tidy Up** | Swipe through transactions the categoriser was unsure about; every correction retrains the shared merchant table | Live, gated |
 | **Time Machine** | Shows what an actual recurring habit would be worth if invested instead, with figures stated as nominal, before inflation and tax | Live |
-| **FinSight IQ** | Bounded 0&ndash;1000 behavioural score with an AI coach, mood summary and three quests | Live, gated |
+| **FinSight IQ** | Bounded 0&ndash;1000 behavioural score with a short written summary and three quests; shown once five transactions are logged | Live |
 | **Profile** | Settings, risk profile, onboarding data and data management | Live |
-| **FinSight Plus** | Paywall screen for the three metered features; annual or monthly plan, 7-day trial, no real payment processor connected | Live (UI only) |
 
 **Removed, and why:** an earlier version of this app also shipped a mock brokerage, round-up investing, a portfolio tracker, live market-index tracking, and social features (Squad Goals, League, Split, Wrapped, Money Personality). All of it is gone. The brokerage's synthetic price process taught the opposite of the intended lesson (portfolios lost value on a coin flip regardless of what the learner did, analysed in the accompanying research paper); simulated trading on real-time-like security prices is also the exact mechanic Indian regulators have taken enforcement action against elsewhere, "educational" framing included; and the social features never finished the plumbing between them. What is left is deliberately narrower: log an expense, see where it went, find the leak, learn, and save toward a goal.
 
@@ -99,55 +94,35 @@ FinSight is a monorepo with two directories:
 +---------------------------------------------------------------------+
 |                    React Native App (Expo SDK 54)                   |
 |                                                                       |
-|     Feed        Vitals        Goals        Learn        (4 tabs)    |
-|       \            \            |            /                     |
-|        \____________\___________|___________/                      |
-|                          |                                          |
-|              Redux Toolkit, 10 slices:                              |
-|      auth, premium, transactions, budgets, goals,                   |
-|      learning, lessons, iq, reviews, vitalsIntel                    |
-|                          |                                          |
-|   on-device: vitals, projections, categoriser, recurring            |
-|   services:  firestoreService, authService, exportService,          |
-|              reviewService, vitalsIntelService                      |
+|     Today        Learn        Money        Goals        (4 tabs)    |
 |                                                                       |
-+---------------------------------------------------------------------+
-                             |
-             HTTPS, Firebase ID token, only for
-             generate-flashcards and ai-advisor
-                             v
-+---------------------------------------------------------------------+
-|                      Flask Backend (Python)                         |
+|   Redux Toolkit slices: auth, transactions, budgets, goals,         |
+|   learning, lessons, iq, reviews, checkIns, vitalsIntel             |
 |                                                                       |
-|   GET  /health                   (unauthenticated liveness check)   |
-|   POST /api/generate-flashcards  (auth required)                    |
-|   POST /api/ai-advisor           (auth required)                    |
-|   GET  /api/cache-stats          (auth required)                    |
-|                                                                       |
-|   in-process TTL cache, no database, single gunicorn worker         |
+|   on-device: vitals, projections, categoriser, recurring,           |
+|              Ask calculators (utils/askTools), Bubble Room market   |
 +---------------------------------------------------------------------+
-              |                                     |
-              v                                     v
-  +------------------------+          +---------------------------+
-  |       Gemini API        |          |     Firebase Services     |
-  |  flashcards, IQ coach   |          |  Auth: email/Google/phone |
-  |  prompts; prose only,   |          |  Firestore: per-user      |
-  |  no numbers generated   |          |  transactions, budgets,   |
-  +------------------------+          |  goals, learning, corrections |
-                                       +---------------------------+
+          |                                       |
+          v                                       v
++----------------------------+     +-------------------------------+
+|  Firebase AI Logic (Gemini) |     |       Firebase Services        |
+|  Ask: which calculator      |     |  Auth: email, Google           |
+|  score summary, flashcards  |     |  Firestore: per-user data,     |
+|  prose only, no numbers     |     |  Bubble Room rooms             |
++----------------------------+     |  Hosting: bubble-web/          |
+                                    +-------------------------------+
 ```
 
 Course content ships bundled in the app: the original 19 modules and glossary in `data/courseContent.ts`, the card-deck tracks in `data/lessons/`, the life sims in `data/scenarios/`, and every tax and credit constant in `data/taxConstants.ts` with its financial year and source. None of it is read from Firestore.
 
 ### Data Flow Summary
 
-1. **Auth**: Firebase Auth handles email/password, Google, and phone number with a one-time SMS code (the JS SDK's reCAPTCHA check runs in a WebView, `components/auth/RecaptchaGate.tsx`), with a forgot-password flow that deliberately gives the same response for a registered and unregistered address. `RootNavigator` renders Intro (first run only) &rarr; Login &rarr; Onboarding &rarr; the tab bar, based on auth and onboarding state, and mirrors the stored entitlement into `premiumSlice` on every profile load.
+1. **Auth**: Firebase Auth handles email/password and Google, with a forgot-password flow that deliberately gives the same response for a registered and unregistered address. `RootNavigator` renders Intro (first run only) &rarr; Login &rarr; Onboarding &rarr; the tab bar, based on auth and onboarding state.
 2. **Personal finance**: transactions, budgets and goals are stored in Firestore under `users/{uid}/...` and synced into Redux via `firestoreService.ts`, with real-time listeners keeping the app current.
-3. **Vitals**: burn rate, the savings-surplus engine and the 50/30/20 split are pure functions in `utils/vitals.ts`, run on-device against the transactions already in Redux. Nothing here calls the backend; this used to be three Flask routes and was moved client-side so the Vitals tab works instantly and offline.
+3. **Vitals**: burn rate, the savings-surplus engine and the 50/30/20 split are pure functions in `utils/vitals.ts`, run on-device against the transactions already in Redux. Nothing here needs the network, so the Money tab works instantly and offline.
 4. **Learning**: paths, tracks and sims come from the bundled data folders. Per-user progress lives in `users/{uid}/learning_progress` (tracks and sims use the same collection, keyed by track id); answered cards live in `users/{uid}/lesson_cards`. Finishing a module, lesson or session updates the streak and triggers an IQ recalculation. Every number a lesson shows is computed in `utils/moneyMath.ts` or read from `data/taxConstants.ts`; the model never produces one.
-5. **FinSight IQ**: the score is computed on-device from transactions, budgets, goals and streak data (see [FinSight IQ Algorithm](#finsight-iq-algorithm)). The score and a window of recent activity are sent to `/api/ai-advisor`, which returns a mood summary, an explanation and three quests, all as prose; no financial figure in the response is treated as fact by the client.
+5. **FinSight IQ**: the score is computed on-device from transactions, budgets, goals and streak data (see [FinSight IQ Algorithm](#finsight-iq-algorithm)). The score and a window of recent activity go to Gemini through Firebase AI Logic (`services/aiService.ts`), which returns a mood line, an explanation and three quests, all as prose; no financial figure in the response is treated as fact. With no model, the summary computed on the phone (`utils/localCoach.ts`) stays.
 6. **Categorisation**: pasted SMS/UPI text is parsed by `utils/smartCategorizer.ts` against a single shared merchant table (`utils/merchantRules.ts`) with word-boundary matching and longest-match-first ordering. Corrections made in Tidy Up are written to `users/{uid}/category_corrections` and merged back into future matches.
-7. **FinSight Plus**: `premiumSlice` and `config/premium.ts` gate three metered features (AI coach refresh, flashcard generation, unlimited spend-game rounds) behind a monthly free allowance. The paywall's `startPurchase` action is a stand-in: it writes an entitlement flag to the user's Firestore profile and takes no payment.
 
 ---
 
@@ -156,16 +131,6 @@ Course content ships bundled in the app: the original 19 modules and glossary in
 ```
 FinSight/
 ├── README.md                      # This file
-│
-├── FinSight-Backend/               # Flask API server
-│   ├── main.py                     # health, generate-flashcards, ai-advisor, cache-stats
-│   ├── auth.py                     # Firebase ID token verification (require_auth decorator)
-│   ├── cache.py                    # In-process TTL cache shared by both Gemini routes
-│   ├── requirements.txt
-│   ├── Procfile                    # Heroku-compatible process definition
-│   ├── render.yaml                 # Render.com deployment config
-│   ├── .env                        # Secret keys (not committed)
-│   └── .gitignore
 │
 └── FinSight-Frontend/               # Expo React Native app
     ├── App.tsx                      # Root component (fonts, Redux Provider, NavigationContainer)
@@ -177,7 +142,7 @@ FinSight/
     ├── tsconfig.json
     ├── babel.config.js
     ├── metro.config.js
-    ├── .env                         # Firebase keys + backend URL (not committed)
+    ├── .env                         # Firebase keys (not committed)
     ├── .env.example
     └── src/
         ├── components/                     # Reusable UI (10), plus learn/ (card renderer, slider, explorables)
@@ -203,7 +168,6 @@ FinSight/
         │   ├── BurnRateScreen.tsx
         │   ├── MoneyManagerScreen.tsx
         │   ├── SubscriptionTrackerScreen.tsx
-        │   ├── GoalAccelerationScreen.tsx
         │   ├── TimeMachineScreen.tsx
         │   ├── GuessSpendScreen.tsx
         │   ├── SwipeCategoriseScreen.tsx
@@ -216,7 +180,6 @@ FinSight/
         │   ├── PayslipDecoderScreen.tsx
         │   ├── FlashcardScreen.tsx
         │   ├── ProfileScreen.tsx
-        │   └── PaywallScreen.tsx
         ├── navigation/
         │   ├── RootNavigator.tsx           # Auth/onboarding gate + full stack
         │   └── BottomTabs.tsx              # Feed, Vitals, Goals, Learn
@@ -225,7 +188,6 @@ FinSight/
         │   ├── hooks.ts
         │   └── slices/
         │       ├── authSlice.ts
-        │       ├── premiumSlice.ts
         │       ├── transactionsSlice.ts
         │       ├── budgetsSlice.ts
         │       ├── goalsSlice.ts
@@ -263,8 +225,6 @@ FinSight/
         │   └── haptics.ts
         ├── config/
         │   ├── firebase.ts
-        │   ├── api.ts                      # BACKEND_URL from env
-        │   └── premium.ts                  # Plans, gated features, free allowances
         ├── data/
         │   ├── courseContent.ts            # 19 modules + glossary, bundled in the app
         │   ├── taxConstants.ts             # FY 2025-26 slabs, payroll and card constants, sourced
@@ -290,7 +250,7 @@ FinSight/
 | React Navigation | 7.x | Screen routing (native stack + bottom tabs) |
 | Redux Toolkit | 2.x | Global state management (10 slices) |
 | redux-persist | 6.x | Persists Redux state across restarts |
-| Firebase | 12.9.x | Auth (email/password, Google, phone) + Firestore |
+| Firebase | 12.9.x | Auth (email/password, Google), Firestore, AI Logic (Gemini) |
 | react-hook-form + Zod | 7.x / 4.x | Form validation |
 | react-native-reanimated | 4.x | Animations |
 | react-native-svg | 15.x | SVG rendering (Time Machine chart) |
@@ -298,62 +258,15 @@ FinSight/
 | expo-sharing + react-native-view-shot | n/a | Share cards / export |
 | expo-haptics | n/a | Haptic feedback |
 | expo-notifications | ~0.32 | Local daily-session reminder; no push service, no server |
-| expo-build-properties | n/a | Enables cleartext HTTP for LAN/dev backends |
+| expo-build-properties | n/a | Android build settings |
 | Async Storage | 2.x | Local persistence (intro-seen flag, redux-persist) |
-
-### Backend
-
-| Tool | Version | Purpose |
-|---|---|---|
-| Python | 3.10+ | Runtime |
-| Flask | 3.1.3 | HTTP API framework |
-| Flask-CORS | 6.0.2 | Cross-origin support for the web build |
-| google-genai | 1.68.0 | Gemini API client |
-| google-auth | 2.49.1 | Verifies Firebase ID tokens |
-| python-dotenv | 1.1.0 | Loads environment variables |
-| gunicorn | 23.0.0 | Production WSGI server (single worker, 4 threads) |
-
----
 
 ## Prerequisites
 
 - **Node.js** v18+ and **npm** v9+
-- **Python** 3.10+
-- **pip**
 - **Expo CLI**: `npm install -g expo-cli`
 - **Expo Go** on your device, or an Android emulator
 - A **Firebase project** (free tier is sufficient)
-- A **Google Gemini API key** (free at [aistudio.google.com](https://aistudio.google.com/))
-
----
-
-## Setup: Backend
-
-```bash
-cd FinSight/FinSight-Backend
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-Create `FinSight-Backend/.env`:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-Run it:
-
-```bash
-python main.py
-```
-
-Serves on `http://0.0.0.0:5000`. For a physical device on the same network, use your machine's LAN IP, not `localhost`.
 
 ---
 
@@ -364,7 +277,7 @@ cd FinSight/FinSight-Frontend
 npm install
 ```
 
-Create a Firebase project, enable **Authentication** (Email/Password, Google and Phone) and **Firestore**, then copy `.env.example` to `.env` and fill in your Firebase config plus the backend URL:
+Create a Firebase project, enable **Authentication** (Email/Password and Google) and **Firestore**, then copy `.env.example` to `.env` and fill in your Firebase config:
 
 ```env
 EXPO_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
@@ -373,7 +286,6 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
-EXPO_PUBLIC_BACKEND_URL=http://YOUR_LOCAL_IP:5000
 ```
 
 ```bash
@@ -386,7 +298,7 @@ Scan the QR code with Expo Go. To build a standalone APK: `npx eas build --profi
 
 ### Setup: Ask anything and Bubble Room
 
-Neither needs the Flask backend.
+Both run on Firebase alone.
 
 1. **Ask anything** calls Gemini through Firebase AI Logic. In the Firebase console open **AI Logic**, choose **Get started**, then **Gemini Developer API**; the free Spark plan allows it. Optionally set `EXPO_PUBLIC_GEMINI_MODEL` (default `gemini-3.6-flash`). Until this is enabled, or with no network, the screen still works: an on-device matcher picks the tool instead, and the screen says which one did.
 2. **Bubble Room** needs the Firestore rules for `rooms/` and the player page on Firebase Hosting. From the repo root:
@@ -399,70 +311,15 @@ The player page is `bubble-web/index.html`. It reads the project's web config fr
 
 ## Environment Variables Reference
 
-### Backend (`FinSight-Backend/.env` and `render.yaml`)
-
-| Variable | Description | Required |
-|---|---|---|
-| `GEMINI_API_KEY` | Gemini API key (accepts `GOOGLE_API_KEY` as a fallback name) | Yes |
-| `GEMINI_MODEL` | Model name, defaults to `gemini-3.6-flash`; override without a redeploy if a model is retired | No |
-| `FIREBASE_PROJECT_ID` | The Firebase project whose ID tokens are accepted; defaults to `finsight-f423d` | No |
-| `ALLOWED_ORIGINS` | Comma-separated browser origins allowed by CORS; irrelevant to the native app, which is not subject to CORS | No |
-
 ### Frontend (`FinSight-Frontend/.env`)
 
 | Variable | Description | Required |
 |---|---|---|
 | `EXPO_PUBLIC_FIREBASE_*` (6 keys) | Firebase project config | Yes |
-| `EXPO_PUBLIC_BACKEND_URL` | Flask backend base URL | Yes |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google sign-in | For Google sign-in |
+| `EXPO_PUBLIC_GEMINI_MODEL` | Gemini model for Firebase AI Logic, default `gemini-3.6-flash` | No |
 
-`EXPO_PUBLIC_*` values are inlined at build time: changing the backend URL after a standalone build means a full rebuild, not just a redeploy.
-
----
-
-## API Reference
-
-Base URL: `http://<YOUR_IP>:5000`. Every route except `/health` requires `Authorization: Bearer <firebase-id-token>`; the account is read from the verified token, never from the request body.
-
-#### `GET /health`
-Unauthenticated liveness check, for an uptime pinger to keep a sleeping free-tier container warm. Returns `{ "status": "ok", "model": "...", "gemini_configured": true }`.
-
-#### `POST /api/generate-flashcards`
-Generates 5 study flashcards for a learning module.
-
-```json
-// Request
-{ "title": "What is a Mutual Fund?", "content": "...", "keyPoints": ["..."] }
-
-// Response
-[
-  { "question": "Why does diversification reduce investment risk?", "answer": "..." }
-]
-```
-Cached for 24 hours per module, since the input never changes. On any failure it returns a small hand-written fallback deck rather than an error.
-
-#### `POST /api/ai-advisor`
-The FinSight IQ coach. Sends the user's computed score, streak, and a window of recent transactions/budgets/goals; returns a mood summary, explanation and three quests as prose.
-
-```json
-// Request
-{
-  "score": 520, "streak": 5,
-  "transactions": [{ "date": "2026-09-01", "type": "debit", "amount": 450, "category": "dining", "merchant": "Swiggy" }],
-  "budgets": [{ "category": "dining", "monthlyLimit": 3000, "currentSpend": 1200 }],
-  "goals": [{ "title": "Emergency Fund", "targetAmount": 50000, "savedAmount": 15000 }]
-}
-
-// Response
-{
-  "mood": "Your spending is steady but savings need a boost.",
-  "explanation": "...",
-  "quests": [{ "title": "Cut Dining Spend", "description": "...", "points": 15 }]
-}
-```
-Cached for 1 hour per distinct input, so it regenerates when the user's finances actually change. On failure it returns a neutral, generally-applicable set of quests.
-
-#### `GET /api/cache-stats`
-Returns the in-process cache's entry count, for checking it is doing its job.
+`EXPO_PUBLIC_*` values are inlined at build time, so changing one means a new build.
 
 ---
 
@@ -479,7 +336,6 @@ Firestore (root)
         ├── age, experienceLevel, appGoals[], incomeRange     ← onboarding profile
         ├── onboardingComplete: boolean
         ├── streak: number, lastStudiedDate: string
-        ├── premium: { plan, expiresAt, ... } | null           ← FinSight Plus entitlement flag
         │
         ├── transactions/{txnId}       { amount, type, category, merchant, date, source, notes }
         ├── budgets/{budgetId}         { category, monthlyLimit, currentSpend, month }
@@ -501,7 +357,6 @@ Course content (paths, modules, glossary, tracks, sims, constants) is not stored
 ```typescript
 {
   auth: { user, isLoading, profile, profileLoading, profileSettled, profileError },
-  premium: { entitlement, purchasing, error },                 // FinSight Plus
   transactions: { items, loaded, loading, error },
   budgets: { items, loading, error },
   goals: { items, loading, error },
@@ -532,33 +387,11 @@ A bounded 0&ndash;1000 behavioural score, computed entirely on-device from the u
 
 The budget and goal terms are bounded independently so that neither can saturate the score on its own, for example by opening many generous budgets or completing two goals. This is a correction to an earlier version of the formula, documented and derived in the accompanying research paper.
 
-The score, streak and a window of recent activity are sent to `/api/ai-advisor`, which returns prose only, a mood summary, an explanation, and three quests. No field in that response is treated as a financial fact by the client.
+The score, streak and a window of recent activity go to Gemini through Firebase AI Logic, which returns prose only: a mood line, an explanation, and three quests. No field in that response is treated as a financial fact by the client.
 
 ---
 
 ## Deployment
-
-### Backend (Render.com)
-
-```yaml
-services:
-  - type: web
-    name: finsight-backend
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 1 --threads 4 --timeout 120 main:app
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        value: gemini-3.6-flash
-      - key: FIREBASE_PROJECT_ID
-        value: finsight-f423d
-      - key: ALLOWED_ORIGINS
-        value: http://localhost:8081,http://127.0.0.1:8081
-```
-
-Single worker on purpose: the response cache lives in process memory, so extra workers would each keep their own copy and miss more often. `FIREBASE_PROJECT_ID` and the deployed web origin (added to `ALLOWED_ORIGINS`) must be set before this serves real traffic. A `Procfile` is also included for Heroku-compatible platforms.
 
 ### Frontend (EAS Build)
 
@@ -572,7 +405,6 @@ npx eas build --profile preview --platform android
 npx eas build --profile production --platform android
 ```
 
-`tunnel.ps1` at the repo root exposes a local backend over HTTPS for testing a standalone build against, since `EXPO_PUBLIC_BACKEND_URL` is frozen into the binary at build time.
 
 ---
 
@@ -580,11 +412,8 @@ npx eas build --profile production --platform android
 
 | Issue | Description |
 |---|---|
-| **FinSight Plus takes no payment** | The paywall UI is real and functional, but `startPurchase` is a stand-in that writes an entitlement flag to Firestore. No RevenueCat, StoreKit/Play Billing, or Stripe integration exists yet. |
-| **No server-side rate limiting** | A signed-in user can call the Gemini-backed endpoints in a loop; the cache blunts repeated identical requests, not a determined one. |
 | **No automated test suite** | Verification during development has used throwaway scripts rather than a committed test runner. |
 | **SMS auto-listening is disabled** | The Android background SMS listener needs a development build and does not work in Expo Go, so it is not wired up; Smart Paste (clipboard-based) is the supported path. |
-| **Firestore rules include collections the app no longer writes to** | `leagues`, `squads`, `split` and `contributions` still have security rules from the removed social features; harmless, but worth pruning during cleanup. |
 
 ---
 
@@ -592,12 +421,9 @@ npx eas build --profile production --platform android
 
 Kept narrow, deliberately, in the same direction as the recent cuts: teach and track, never simulate trading or link a real bank account.
 
-- [ ] Server-side rate limiting on the Gemini-backed routes
 - [x] Daily session reminder and budget alerts (80% and 100% of a category limit, once each per month) as local notifications via `expo-notifications`; no push service
 - [ ] Vernacular support (Hindi, Marathi, Tamil, Telugu); the app is English-only today
 - [ ] Dark mode
-- [ ] On-device model for zero-latency, private queries, as an alternative to the hosted Gemini calls
-- [ ] Wire FinSight Plus to a real payment processor (RevenueCat is the natural fit given the existing plan/entitlement structure)
 - [ ] A measured accuracy study for the SMS/UPI categoriser, using the corrections already collected in `category_corrections`
 
 Deliberately **not** on this roadmap: a real or simulated brokerage, bank-account linking, live market-price display, or portfolio recommendations. Each was tried, cut, and is documented as a design decision rather than an oversight; the reasoning is in the accompanying research paper and the project's internal session notes.

@@ -8,18 +8,15 @@ import { TrendingUp } from 'lucide-react-native';
 import { FONTS, COLORS, TYPE, RADIUS, SPACING } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
 import { setUser, fetchUserProfile, toAuthUser } from '../store/slices/authSlice';
-import { setEntitlement } from '../store/slices/premiumSlice';
 import type { AppDispatch, RootState } from '../store/store';
 
 // Screens
-import GoalAccelerationScreen from '../screens/GoalAccelerationScreen';
 import LoginScreen from '../screens/LoginScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import { LearnPathDetailScreen } from '../screens/LearnPathDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BottomTabs } from './BottomTabs';
 import OnboardingScreen from '../screens/OnboardingScreen';
-import PaywallScreen from '../screens/PaywallScreen';
 import IntroScreen from '../screens/IntroScreen';
 import ModuleReaderScreen from '../screens/ModuleReaderScreen';
 import MoneyManagerScreen from '../screens/MoneyManagerScreen';
@@ -70,12 +67,6 @@ export const RootNavigator = () => {
         setIntroSeen(true);
         AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => { });
     };
-
-    // Mirror the stored entitlement into the slice so a restart, or a second
-    // device, knows what this account has without waiting for a purchase.
-    useEffect(() => {
-        dispatch(setEntitlement(profile?.premium ?? null));
-    }, [dispatch, profile?.premium]);
 
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
@@ -195,7 +186,6 @@ export const RootNavigator = () => {
                 // ── Fully onboarded user ──────────────────────────────────
                 <Stack.Group>
                     <Stack.Screen name="MainTabs" component={BottomTabs} />
-                    <Stack.Screen name="GoalAcceleration" component={GoalAccelerationScreen} />
                     <Stack.Screen name="MoneyManager" component={MoneyManagerScreen} />
                     <Stack.Screen name="SubscriptionTracker" component={SubscriptionTrackerScreen} />
                     <Stack.Screen name="Flashcards" component={FlashcardScreen} />
@@ -233,13 +223,6 @@ export const RootNavigator = () => {
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     {/* Onboarding again, prefilled, opened from Profile. */}
                     <Stack.Screen name="EditProfile" component={OnboardingScreen} />
-                    {/* Presented as a sheet: it interrupts what the user was
-                        doing and should look like it can be dismissed. */}
-                    <Stack.Screen
-                        name="Paywall"
-                        component={PaywallScreen}
-                        options={{ presentation: 'modal' }}
-                    />
                 </Stack.Group>
             )}
         </Stack.Navigator>

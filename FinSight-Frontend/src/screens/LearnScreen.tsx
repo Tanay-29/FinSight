@@ -78,6 +78,7 @@ export const LearnScreen: React.FC = () => {
     const cardResults = useAppSelector(selectCardResults);
 
     const [glossaryOpen, setGlossaryOpen] = useState(false);
+    const [libraryOpen, setLibraryOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [lockedNote, setLockedNote] = useState(false);
     const lockedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -159,6 +160,8 @@ export const LearnScreen: React.FC = () => {
 
     // ── Everything else ──────────────────────────────────────────
     const classic = paths.length > 0 ? paths : (COURSE_CONTENT as any[]);
+    const libraryTotal = classic.reduce((n: number, p: any) => n + (p.modules?.length ?? 0), 0);
+    const libraryDone = classic.reduce((n: number, p: any) => n + (progress[p.id ?? '']?.completedModules?.length ?? 0), 0);
     const displayGlossary = glossary.length > 0 ? glossary : GLOSSARY;
     const filteredGlossary = displayGlossary.filter(
         (t) =>
@@ -324,20 +327,29 @@ export const LearnScreen: React.FC = () => {
                     body="Every line explained, anything odd flagged"
                     onPress={() => navigation.navigate('PayslipDecoder')}
                 />
-                {classic.map((path) => {
+                {/* The longer reading modules, folded into one row until wanted. */}
+                <Row
+                    icon={<BookOpen size={19} color={COLORS.text.secondary} />}
+                    title="Reading library"
+                    body={`${libraryTotal} longer reads, with a quiz and flashcards for each${libraryDone > 0 ? `. ${libraryDone} read so far` : ''}`}
+                    open={libraryOpen}
+                    onPress={() => setLibraryOpen((v) => !v)}
+                />
+                {libraryOpen ? classic.map((path) => {
                     const done = progress[path.id ?? '']?.completedModules?.length ?? 0;
                     const total = path.modules?.length ?? 0;
                     return (
-                        <Row
-                            key={path.id}
-                            icon={<BookOpen size={19} color={COLORS.text.secondary} />}
-                            title={path.title}
-                            body={`Classic course, ${done}/${total} read`}
-                            done={total > 0 && done === total}
-                            onPress={() => navigation.navigate('LearnPathDetail', { path })}
-                        />
+                        <Animated.View key={path.id} entering={reduced ? FadeIn.duration(120) : FadeInDown.duration(200)} style={{ marginLeft: 16 }}>
+                            <Row
+                                icon={<BookOpen size={17} color={COLORS.text.tertiary} />}
+                                title={path.title}
+                                body={`${done}/${total} read`}
+                                done={total > 0 && done === total}
+                                onPress={() => navigation.navigate('LearnPathDetail', { path })}
+                            />
+                        </Animated.View>
                     );
-                })}
+                }) : null}
 
                 {/* Glossary, folded away until wanted. */}
                 <Pressable
@@ -438,7 +450,7 @@ const PathNode: React.FC<{
     );
 };
 
-const Row: React.FC<{ icon: React.ReactNode; title: string; body: string; done?: boolean; onPress: () => void }> = ({ icon, title, body, done, onPress }) => (
+const Row: React.FC<{ icon: React.ReactNode; title: string; body: string; done?: boolean; open?: boolean; onPress: () => void }> = ({ icon, title, body, done, open, onPress }) => (
     <PressableScale
         onPress={() => { haptics.tap(); onPress(); }}
         accessibilityRole="button"
@@ -452,7 +464,9 @@ const Row: React.FC<{ icon: React.ReactNode; title: string; body: string; done?:
             <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">{title}</Text>
             <Text style={TYPE.caption} className="text-text-secondary mt-0.5" numberOfLines={2}>{body}</Text>
         </View>
-        {done ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} /> : <ChevronRight size={18} color={COLORS.text.tertiary} />}
+        {done ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} />
+            : open !== undefined ? (open ? <ChevronDown size={18} color={COLORS.text.tertiary} /> : <ChevronRight size={18} color={COLORS.text.tertiary} />)
+                : <ChevronRight size={18} color={COLORS.text.tertiary} />}
     </PressableScale>
 );
 

@@ -1,11 +1,7 @@
 /**
  * Turn a question into a tool, through Gemini via Firebase AI Logic.
  *
- * No backend of our own: Firebase AI Logic calls the Gemini Developer API
- * from the app with the project's Firebase config, so there is no key to
- * hold on a server. It has to be switched on once in the Firebase console
- * (AI Logic, Get started, Gemini Developer API), which the free Spark plan
- * allows.
+ * Through Firebase AI Logic (config/ai.ts), so no server of our own.
  *
  * The model is asked for one thing: which tool, and what numbers to start
  * at, as JSON. It never produces a figure the learner reads; the tool's
@@ -15,11 +11,10 @@
  *
  * If anything fails (no network, AI Logic not enabled, a slow reply, a bad
  * answer) the offline matcher picks the tool instead, so the screen always
- * opens something that works. To use another provider, such as Groq,
- * replace `askModel` and keep the same return shape.
+ * opens something that works.
  */
-import { getAI, getGenerativeModel, GoogleAIBackend, Schema } from 'firebase/ai';
-import app from '../config/firebase';
+import { Schema } from 'firebase/ai';
+import { generateJson } from '../config/ai';
 import { ASK_TOOLS, findTool, initialValues, matchOffline } from '../utils/askTools';
 
 export interface AskPick {
@@ -30,7 +25,6 @@ export interface AskPick {
     source: 'model' | 'offline';
 }
 
-const MODEL = (process.env.EXPO_PUBLIC_GEMINI_MODEL as string) || 'gemini-3.6-flash';
 const TIMEOUT_MS = 9_000;
 
 const TOOL_LIST = ASK_TOOLS.map((t) =>
@@ -56,25 +50,10 @@ const responseSchema = Schema.object({
     optionalProperties: ['values', 'lookFor'],
 });
 
-let model: ReturnType<typeof getGenerativeModel> | null = null;
-function getModel() {
-    if (!model) {
-        const ai = getAI(app, { backend: new GoogleAIBackend() });
-        model = getGenerativeModel(ai, {
-            model: MODEL,
-            systemInstruction: SYSTEM,
-            generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.2 },
-        });
-    }
-    return model;
-}
-
 async function askModel(question: string): Promise<AskPick> {
-    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS));
-    const res = await Promise.race([getModel().generateContent(question), timeout]);
-    const raw = JSON.parse(res.response.text()) as {
+    const raw = await generateJson<{
         toolId?: string; values?: { key?: string; value?: number }[]; lookFor?: string;
-    };
+    }>({ system: SYSTEM, prompt: question, schema: responseSchema, temperature: 0.2, timeoutMs: TIMEOUT_MS });
     const tool = raw.toolId ? findTool(raw.toolId) : undefined;
     if (!tool) throw new Error('unknown tool');
     const given: Record<string, number> = {};

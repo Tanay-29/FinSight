@@ -183,14 +183,19 @@ const GoalCard: React.FC<{
 
                     <PressableScale
                         containerStyle={{ flex: 1 }}
-                        onPress={() => (navigation as any).navigate('GoalAcceleration', { goalId: goal.id })}
+                        // Opens the "time to a goal" calculator on Ask, set to this goal.
+                        onPress={() => (navigation as any).navigate('Ask', {
+                            question: `How fast can I reach ${goal.title}?`,
+                            toolId: 'goal',
+                            values: { target: Math.round(remaining), monthly: Math.max(500, Math.round(monthlySuggestion || remaining / 12)), rate: 7 },
+                        })}
                         accessibilityRole="button"
                         className="py-2.5 rounded-xl flex-row justify-center items-center"
                         style={{ backgroundColor: goal.color }}
                     >
                         <Zap size={15} color="white" />
                         <Text numberOfLines={1} className="text-white font-inter-bold text-sm ml-1.5">
-                            Speed up
+                            How fast?
                         </Text>
                     </PressableScale>
                 </View>

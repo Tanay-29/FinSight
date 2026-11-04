@@ -85,13 +85,9 @@ export const fetchTransactions = createAsyncThunk(
 );
 
 /**
- * Firestore writes, unlike the timeout on `fetchWithTimeout` in config/api.ts.
- *
- * That one is 45 seconds because it is waiting out a cold Render instance
- * waking up. A Firestore write has no such excuse: it is a direct connection
- * to Google's own servers, and if it has not answered in 15 seconds the
- * realistic explanation is no connection at all, which no amount of extra
- * waiting fixes.
+ * Firestore writes. A write is a direct connection to Google's servers, and
+ * if it has not answered in 15 seconds the realistic explanation is no
+ * connection at all, which no amount of extra waiting fixes.
  */
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
 

@@ -2,7 +2,6 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer, { logOutUser, deleteUserAccount, setUser } from './slices/authSlice';
-import premiumReducer from './slices/premiumSlice';
 import transactionsReducer from './slices/transactionsSlice';
 import budgetsReducer from './slices/budgetsSlice';
 import learningReducer from './slices/learningSlice';
@@ -16,7 +15,6 @@ import vitalsIntelReducer from './slices/vitalsIntelSlice';
 
 const appReducer = combineReducers({
     auth: authReducer,
-    premium: premiumReducer,
     transactions: transactionsReducer,
     budgets: budgetsReducer,
     learning: learningReducer,

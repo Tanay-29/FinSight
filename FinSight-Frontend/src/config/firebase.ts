@@ -10,7 +10,7 @@ import * as firebaseAuth from 'firebase/auth';
 import { Auth, Persistence, getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-/** Exported for the phone sign-in check, which loads Firebase in a WebView. */
+/** Exported for Bubble Room's join link, which needs the project id. */
 export const firebaseConfig = {
     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,

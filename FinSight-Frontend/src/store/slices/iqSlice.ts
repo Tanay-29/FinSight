@@ -23,7 +23,7 @@
  */
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
-import { authedFetch } from '../../config/api';
+import { generateAdvice } from '../../services/aiService';
 import { format, parseISO } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -161,20 +161,15 @@ export const fetchAIAdvice = createAsyncThunk(
                 })),
             };
 
-            const res = await authedFetch('/api/ai-advisor', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-            // friendlyError passes short custom messages straight through, so
-            // a status code here would have reached the user unchanged. It did.
-            if (!res.ok) {
-                throw new Error(
-                    res.status >= 500
-                        ? 'Your coach is waking up. Give it a moment and pull to refresh.'
-                        : 'Could not reach your coach just now.'
-                );
+            // Gemini through Firebase AI Logic; the score is passed in, never
+            // produced. On any failure the card keeps the summary it already
+            // computed on the phone (utils/localCoach.ts).
+            let advice: AIAdvice;
+            try {
+                advice = await generateAdvice(payload);
+            } catch {
+                throw new Error('Could not get a fresh summary just now.');
             }
-            const advice: AIAdvice = await res.json();
             return { advice, score };
         } catch (err: any) {
             return rejectWithValue(err.message);

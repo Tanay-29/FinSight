@@ -1,5 +1,5 @@
 /**
- * LoginScreen: signing in and creating an account, three ways.
+ * LoginScreen: signing in and creating an account, with Google or email.
  *
  * The coloured field owns the top of the screen and a sheet rises into the
  * bottom, so the form reads as something that came to you rather than a box
@@ -9,13 +9,12 @@
  * Creating an account used to be a small "Sign up" link in the corner of the
  * sheet, which people did not find. It is now one half of a switch at the top
  * of the sheet, the same size as Sign in, so the choice is the first thing
- * read. Google and phone sit above email because for most students they are
- * one tap and a code respectively; for both of them signing in and signing up
- * are the same action, so they say "Continue" in either mode.
+ * read. Google sits above email because for most students it is one tap; signing
+ * in and signing up are the same action there, so it says "Continue" in
+ * either mode.
  *
  * Motion stays thin. The switch's pill slides, the name field arrives when you
- * move to Create account, the phone flow slides in from the side it was asked
- * for, and buttons dip under the finger. No layout animations: an error that
+ * move to Create account, and buttons dip under the finger. No layout animations: an error that
  * makes the sheet taller should appear, and the form around it hold still.
  */
 import React, { useRef, useState } from 'react';
@@ -36,13 +35,12 @@ import Animated, {
     FadeIn, FadeInDown, FadeInLeft, useReducedMotion,
     useAnimatedStyle, useSharedValue, withTiming,
 } from 'react-native-reanimated';
-import { Eye, EyeOff, TrendingUp, Smartphone } from 'lucide-react-native';
+import { Eye, EyeOff, TrendingUp } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, signInUser, signInWithGoogleUser, clearError } from '../store/slices/authSlice';
 import { sendPasswordReset } from '../services/authService';
 import { PressableScale } from '../components/PressableScale';
 import { GoogleLogo } from '../components/auth/GoogleLogo';
-import { PhoneSignIn } from '../components/auth/PhoneSignIn';
 import * as haptics from '../utils/haptics';
 import type { RootState, AppDispatch } from '../store/store';
 import { COLORS, TYPE, RADIUS, GUTTER, FONTS, MOTION } from '../theme/tokens';
@@ -161,7 +159,6 @@ const LoginScreen: React.FC = () => {
     const reduced = useReducedMotion();
 
     const [mode, setMode] = useState<Mode>('signin');
-    const [method, setMethod] = useState<'choose' | 'phone'>('choose');
     // Which button started the request, so only that one spins.
     const [pending, setPending] = useState<'email' | 'google' | null>(null);
     const [name, setName] = useState('');
@@ -293,9 +290,6 @@ const LoginScreen: React.FC = () => {
                     // also takes a style, the class background can be dropped.
                     style={{ flex: 1, backgroundColor: COLORS.surface.secondary, borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, paddingHorizontal: GUTTER, paddingTop: 24, paddingBottom: 40 }}
                 >
-                    {method === 'phone' ? (
-                        <PhoneSignIn onBack={() => { haptics.tap(); setMethod('choose'); }} />
-                    ) : (
                         <Animated.View key="choose" entering={reduced ? undefined : FadeInLeft.duration(220)}>
                             <ModeSwitch mode={mode} onChange={switchMode} />
 
@@ -313,12 +307,6 @@ const LoginScreen: React.FC = () => {
                                 label="Continue with Google"
                                 onPress={handleGoogle}
                                 busy={busy && pending === 'google'}
-                                disabled={busy}
-                            />
-                            <ProviderButton
-                                icon={<Smartphone size={18} color={COLORS.text.primary} strokeWidth={1.8} />}
-                                label="Continue with phone number"
-                                onPress={() => { haptics.tap(); clearMessages(); setMethod('phone'); }}
                                 disabled={busy}
                             />
 
@@ -486,7 +474,6 @@ const LoginScreen: React.FC = () => {
                                 FinSight is educational. It holds no money and connects to no bank.
                             </Text>
                         </Animated.View>
-                    )}
                 </Animated.View>
             </ScrollView>
         </KeyboardAvoidingView>

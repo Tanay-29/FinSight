@@ -16,12 +16,11 @@ import { useScheme, type ThemePref } from '../theme/theme';
 import Constants from 'expo-constants';
 import {
     Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight, ChevronLeft, Sparkles, Moon, User, ClipboardCheck,
+    Trash2, Flame, ChevronRight, ChevronLeft, Moon, User, ClipboardCheck,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
 import { fetchGoals } from '../store/slices/goalsSlice';
-import { selectIsPremium, selectEntitlement, cancelPremium } from '../store/slices/premiumSlice';
 import { goalIcon } from '../theme/icons';
 import { exportUserData } from '../services/exportService';
 import { getReminderPreference, enableReminders, disableReminders, formatReminderTime, DEFAULT_REMINDER, ReminderPreference, ensurePermission } from '../services/reminderService';
@@ -70,8 +69,6 @@ export const ProfileScreen: React.FC = () => {
     const goals = useAppSelector((state) => state.goals.items);
     const dispatch = useAppDispatch();
 
-    const isPremium = useAppSelector(selectIsPremium);
-    const entitlement = useAppSelector(selectEntitlement);
     const [exporting, setExporting] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -237,54 +234,6 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                     </View>
                 </View>
-
-                {isPremium ? (
-                    <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4">
-                        <View className="flex-row items-center">
-                            <View className="w-9 h-9 rounded-xl bg-brand-soft items-center justify-center mr-3">
-                                <Sparkles size={18} color={COLORS.brand.primary} />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-base font-inter-bold text-text-primary">
-                                    FinSight Plus is on
-                                </Text>
-                                <Text className="text-xs text-text-secondary mt-0.5 font-inter">
-                                    {entitlement?.renewsAt
-                                        ? `Trial runs to ${new Date(entitlement.renewsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-                                        : 'Active on this account'}
-                                </Text>
-                            </View>
-                            <TouchableOpacity
-                                onPress={() => user?.uid && dispatch(cancelPremium({ uid: user.uid }))}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                accessibilityRole="button"
-                            >
-                                <Text className="text-sm font-inter-semibold text-text-secondary">Turn off</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <Text className="text-[11px] text-text-tertiary mt-3 leading-4">
-                            Demonstration only. No payment was taken and no card details were
-                            collected.
-                        </Text>
-                    </View>
-                ) : (
-                    <PressableScale
-                        onPress={() => navigation.navigate('Paywall' as never)}
-                        accessibilityRole="button"
-                        className="mx-5 mt-4 bg-brand-primary-dark rounded-card p-4 flex-row items-center"
-                    >
-                        <View className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center mr-3">
-                            <Sparkles size={18} color="#FFFFFF" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-base font-inter-bold text-white">FinSight Plus</Text>
-                            <Text className="text-xs text-brand-edge mt-0.5 font-inter">
-                                Score summaries and flashcards, as often as you like
-                            </Text>
-                        </View>
-                        <ChevronRight size={18} color="#FFFFFF" />
-                    </PressableScale>
-                )}
 
                 {/* Primary Goal, read from the user's real goals */}
                 <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4">

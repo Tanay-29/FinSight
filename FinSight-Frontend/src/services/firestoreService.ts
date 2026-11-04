@@ -436,7 +436,7 @@ export async function recordCategoryDisagreement(
 /** Every per-user subcollection. Keep in sync with firestore.rules. */
 const USER_SUBCOLLECTIONS = [
     'transactions', 'budgets', 'goals', 'learning_progress', 'flashcard_reviews',
-    'category_corrections', 'split', 'lesson_cards',
+    'category_corrections', 'lesson_cards',
 ] as const;
 
 /** Delete the contents of every per-user subcollection, keeping the profile. */

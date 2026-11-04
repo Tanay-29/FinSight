@@ -760,11 +760,14 @@ export const VitalsScreen: React.FC = () => {
                     ))}
                 </View>
 
-                {/* The coach's read of all of the above, last, once the
-                    numbers it talks about have been seen. */}
-                <View className="mb-8">
-                    <FinSightIQCard />
-                </View>
+                {/* The score and its summary, last, once the numbers it talks
+                    about have been seen. Held back until a handful of
+                    transactions exist, so it never scores an empty month. */}
+                {transactions.length >= 5 ? (
+                    <View className="mb-8">
+                        <FinSightIQCard />
+                    </View>
+                ) : <View className="mb-8" />}
                   </>
                 )}
             </ScrollView>
