@@ -25,7 +25,7 @@ import Animated, {
 import { useNavigation } from '@react-navigation/native';
 import {
     Check, Lock, Star, Search, BrainCircuit, ChevronRight, ChevronDown,
-    Drama, ScanLine, FileText, BookOpen, BrainCog,
+    Drama, ScanLine, FileText, BookOpen, BrainCog, TrendingUp,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchGlossary, fetchLearningPaths, fetchUserProgress } from '../store/slices/learningSlice';
@@ -306,6 +306,12 @@ export const LearnScreen: React.FC = () => {
                         />
                     );
                 })}
+                <Row
+                    icon={<TrendingUp size={19} color={COLORS.semantic.loss} />}
+                    title="Bubble Room: play with a group"
+                    body="Everyone scans a code and trades one hyped token for three minutes"
+                    onPress={() => navigation.navigate('BubbleRoom')}
+                />
                 <Row
                     icon={<ScanLine size={19} color={COLORS.brand.link} />}
                     title="Decode a card statement"

@@ -12,6 +12,9 @@ rules_version = '2';
 //   leagues/{week}/entries/{uid}       alias and weekly gain, readable by all
 //   squads/{code}                      shared savings goal, members only
 //   squads/{code}/contributions/{uid}  one row per member, members only
+//   rooms/{code}                       Bubble Room market, host writes, all read
+//   rooms/{code}/players/{pid}         player creates once, host updates
+//   rooms/{code}/orders/{id}           players append, host reads
 //
 // Course content (learning paths, glossary) is static and ships with the app
 // in mockData.ts, so it has no collection here at all.
@@ -293,6 +296,58 @@ service cloud.firestore {
         // first, because Firestore does not cascade from a client and once
         // the parent is gone nothing can prove membership to reach the rows.
         allow delete: if isOwner(userId) || isSquadOwner(code);
+      }
+    }
+
+    // ── Bubble Room ──────────────────────────────────────────────────────
+    //
+    // A three-minute classroom market. The host is a signed-in app user and
+    // is the only one who writes shared state: the room, and every player's
+    // holdings. Players join from a browser with no account, so their two
+    // writes are allowed without auth and validated by shape instead: they
+    // may create their own player document with the starting balances, and
+    // append buy or sell orders. Everything here is play money.
+
+    function isRoomHost(code) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/rooms/$(code)).data.hostUid == request.auth.uid;
+    }
+
+    function roomOpen(code) {
+      return get(/databases/$(database)/documents/rooms/$(code)).data.status in ['lobby', 'live'];
+    }
+
+    match /rooms/{code} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.status == 'lobby';
+      allow update, delete: if isSignedIn() && resource.data.hostUid == request.auth.uid;
+
+      match /players/{pid} {
+        allow read: if true;
+        allow create: if roomOpen(code)
+          && request.resource.data.keys().hasOnly(['name', 'cash', 'tokens', 'buys', 'sells', 'spent', 'earned', 'topBuy', 'joinedAt'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 16
+          && request.resource.data.cash == 800
+          && request.resource.data.tokens == 2
+          && request.resource.data.buys == 0
+          && request.resource.data.sells == 0
+          && request.resource.data.spent == 0
+          && request.resource.data.earned == 0
+          && request.resource.data.topBuy == 0;
+        allow update, delete: if isRoomHost(code);
+      }
+
+      match /orders/{orderId} {
+        allow create: if roomOpen(code)
+          && request.resource.data.keys().hasOnly(['pid', 'side', 'at'])
+          && request.resource.data.pid is string
+          && request.resource.data.side in ['buy', 'sell']
+          && request.resource.data.at is number;
+        allow read, delete: if isRoomHost(code);
       }
     }
 

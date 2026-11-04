@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F3ED">
+<title>Bubble Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+<!--
+  Bubble Room, the player's side. Opened from the QR code on the host's
+  phone; no install, no sign-in. It reads the Firebase web config from
+  Hosting's reserved /__/firebase/init.json, so it needs no setup of its own.
+
+  This page only ever does two writes: it creates its own player document
+  when joining, and it appends buy and sell orders. The host's phone fills
+  the orders and writes the market and everyone's holdings once a second
+  (FinSight-Frontend/src/services/bubbleService.ts). Rules: firestore.rules.
+-->
+<style>
+  :root {
+    --canvas: #F7F3ED; --card: #FFFFFF; --sunken: #F0EBE3; --line: #E7E0D6;
+    --text: #1A1613; --text2: #5C544B; --text3: #756C62;
+    --brand: #6366F1; --brandDark: #4F46E5; --brandSoft: #EEF0FF;
+    --good: #0F7B4F; --goodBg: #E6F4EC; --bad: #C4372C; --badBg: #FBEAE7; --amber: #9A5B00; --amberBg: #FDF1DC;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--canvas); color: var(--text); font-family: Inter, system-ui, sans-serif; }
+  main { max-width: 440px; margin: 0 auto; padding: 20px 20px calc(28px + env(safe-area-inset-bottom)); }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .mark { width: 32px; height: 32px; border-radius: 9px; background: var(--brandDark); display: grid; place-items: center; }
+  .mark svg { width: 18px; height: 18px; }
+  .brand b { font-size: 17px; } .brand small { display: block; color: var(--text3); font-size: 12px; font-weight: 500; }
+  .pill { margin-left: auto; font-weight: 700; font-size: 13px; padding: 5px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); letter-spacing: 1px; }
+  h1 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 34px; line-height: 1.05; margin: 0 0 8px; }
+  p { color: var(--text2); line-height: 1.5; margin: 0 0 14px; font-size: 15px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+  input { width: 100%; font: 600 18px Inter, sans-serif; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--text); outline: none; }
+  input:focus { border-color: var(--brand); }
+  button { font: 600 16px Inter, sans-serif; border: 0; border-radius: 26px; height: 54px; width: 100%; cursor: pointer; transition: transform .12s ease, opacity .2s; }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .35; }
+  .primary { background: var(--brandDark); color: #fff; margin-top: 12px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .66px; text-transform: uppercase; color: var(--text3); }
+  .price { font-family: 'Instrument Serif', serif; font-size: 68px; line-height: 1; margin: 4px 0 2px; transition: color .3s; }
+  .sub { font-size: 14px; font-weight: 500; color: var(--text2); }
+  .hot { color: var(--bad); }
+  .row { display: flex; gap: 8px; }
+  .stat { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .stat .v { font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .buy { background: var(--good); color: #fff; } .sell { background: var(--bad); color: #fff; }
+  .news { display: flex; gap: 10px; align-items: flex-start; background: var(--amberBg); color: var(--text); border-radius: 16px; padding: 14px; margin: 12px 0; font-size: 15px; line-height: 1.4; animation: pop .35s ease; }
+  .news svg { flex: none; width: 18px; height: 18px; margin-top: 2px; }
+  @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .toast { text-align: center; font-size: 13px; color: var(--text3); height: 18px; margin-top: 8px; }
+  .big { font-family: 'Instrument Serif', serif; font-size: 52px; line-height: 1; margin: 6px 0; }
+  .lesson { background: var(--brandSoft); border: 1px solid #D9DCFF; }
+  .lesson b { display: block; font-size: 18px; line-height: 1.35; margin-bottom: 4px; }
+  .hidden { display: none !important; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { background: var(--brandSoft); color: var(--brandDark); font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 999px; }
+  canvas { width: 100%; height: 120px; display: block; }
+  .err { background: var(--badBg); color: var(--bad); border-radius: 14px; padding: 14px; font-weight: 500; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <div><b>Bubble Room</b><small>FinSight · play money</small></div>
+    <span class="pill hidden" id="codePill"></span>
+  </div>
+
+  <div id="error" class="err hidden"></div>
+
+  <!-- Join -->
+  <section id="join">
+    <h1>Trade one hyped token for three minutes.</h1>
+    <p>You start with ₹800 in cash and 2 HYPE tokens. At the end, every token pays out exactly ₹100. Buy, sell, or do nothing.</p>
+    <div id="codeWrap" class="hidden" style="margin-bottom:10px"><input id="code" placeholder="Room code" maxlength="4" autocapitalize="characters" autocomplete="off"></div>
+    <input id="name" placeholder="Your first name" maxlength="16" autocomplete="given-name">
+    <button class="primary" id="joinBtn">Join the room</button>
+  </section>
+
+  <!-- Waiting -->
+  <section id="wait" class="hidden">
+    <h1>You're in.</h1>
+    <p>Watch the big screen. The market opens when the host starts it.</p>
+    <div class="card"><div class="label">In the room</div><div class="chips" id="names"></div></div>
+  </section>
+
+  <!-- Live -->
+  <section id="live" class="hidden">
+    <div class="label">HYPE price</div>
+    <div class="price" id="price">₹100</div>
+    <div class="sub" id="ratio">About what it is really worth</div>
+    <div class="news hidden" id="news"><svg viewBox="0 0 24 24" fill="none" stroke="#9A5B00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span id="newsText"></span></div>
+    <div class="card" style="padding:10px 10px 6px"><canvas id="chart"></canvas></div>
+    <div class="row">
+      <div class="stat"><div class="label">Cash</div><div class="v" id="cash">₹800</div></div>
+      <div class="stat"><div class="label">Tokens</div><div class="v" id="tokens">2</div></div>
+      <div class="stat"><div class="label">Worth now</div><div class="v" id="worth">₹1,000</div></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="buy" id="buy">Buy 1</button>
+      <button class="sell" id="sell">Sell 1</button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </section>
+
+  <!-- Ended -->
+  <section id="ended" class="hidden">
+    <div class="label">Market closed</div>
+    <h1 style="margin-top:6px">Every token pays out ₹100.</h1>
+    <div class="card">
+      <div class="label">You end with</div>
+      <div class="big" id="final">₹1,000</div>
+      <div class="sub" id="verdict"></div>
+    </div>
+    <div class="card lesson">
+      <b>Price is what people pay. Value is what it is worth.</b>
+      <p style="margin:0">The headlines moved the price, never the value. It was ₹100 the whole time.</p>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js';
+  import { getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, addDoc, collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js';
+
+  const TOKEN_VALUE = 100, START_WORTH = 1000, GAME_SECONDS = 180;
+  const $ = (id) => document.getElementById(id);
+  const rs = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+  const show = (id) => ['join', 'wait', 'live', 'ended'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
+  const fail = (msg) => { $('error').textContent = msg; $('error').classList.remove('hidden'); };
+
+  const params = new URLSearchParams(location.search);
+  let code = (params.get('r') || '').toUpperCase();
+  if (!code) $('codeWrap').classList.remove('hidden');
+
+  let db;
+  try {
+    const cfg = await (await fetch('/__/firebase/init.json')).json();
+    db = getFirestore(initializeApp(cfg));
+    // Served by the local emulator during development: talk to its Firestore.
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') connectFirestoreEmulator(db, location.hostname, 8080);
+  } catch (e) {
+    fail('This page needs to be opened from the Bubble Room link.');
+  }
+
+  const savedName = localStorage.getItem('bubble:name');
+  if (savedName) $('name').value = savedName;
+
+  let pid = null, me = null, room = null, lastHeadline = null, pending = 0;
+
+  $('joinBtn').onclick = async () => {
+    if (!db) return;
+    if (!code) code = $('code').value.trim().toUpperCase();
+    const name = $('name').value.trim().slice(0, 16);
+    if (code.length !== 4 || !name) return;
+    $('joinBtn').disabled = true;
+    try {
+      const roomSnap = await getDoc(doc(db, 'rooms', code));
+      if (!roomSnap.exists()) { fail('No room with that code.'); $('joinBtn').disabled = false; return; }
+      if (roomSnap.data().status === 'ended') { fail('That market has closed.'); $('joinBtn').disabled = false; return; }
+      localStorage.setItem('bubble:name', name);
+      pid = localStorage.getItem('bubble:pid:' + code);
+      if (!pid) {
+        pid = Math.random().toString(36).slice(2, 12);
+        await setDoc(doc(db, 'rooms', code, 'players', pid), {
+          name, cash: 800, tokens: 2, buys: 0, sells: 0, spent: 0, earned: 0, topBuy: 0, joinedAt: Date.now(),
+        });
+        localStorage.setItem('bubble:pid:' + code, pid);
+      }
+      $('codePill').textContent = code; $('codePill').classList.remove('hidden');
+      listen();
+    } catch (e) {
+      fail('Could not join. Check your connection and try again.');
+      $('joinBtn').disabled = false;
+    }
+  };
+
+  function listen() {
+    onSnapshot(doc(db, 'rooms', code), (s) => { room = s.data(); render(); });
+    onSnapshot(doc(db, 'rooms', code, 'players', pid), (s) => { me = s.data(); pending = 0; render(); });
+    onSnapshot(collection(db, 'rooms', code, 'players'), (s) => {
+      $('names').innerHTML = '';
+      s.forEach((d) => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = d.data().name; $('names').appendChild(c); });
+    });
+  }
+
+  function render() {
+    if (!room || !me) return;
+    if (room.status === 'lobby') { show('wait'); return; }
+    if (room.status === 'ended') {
+      show('ended');
+      const worth = me.cash + me.tokens * TOKEN_VALUE;
+      $('final').textContent = rs(worth);
+      $('final').style.color = worth >= START_WORTH ? 'var(--good)' : 'var(--bad)';
+      $('verdict').textContent = worth > START_WORTH
+        ? 'Up ' + rs(worth - START_WORTH) + '. You sold to someone who believed the hype.'
+        : worth < START_WORTH
+          ? 'Down ' + rs(START_WORTH - worth) + (me.topBuy > TOKEN_VALUE * 2 ? '. You paid ' + rs(me.topBuy) + ' for something worth ₹100.' : '. Doing nothing would have beaten this.')
+          : 'Exactly where you started. Doing nothing is a strategy too.';
+      return;
+    }
+    show('live');
+    const price = room.price || TOKEN_VALUE;
+    const x = price / TOKEN_VALUE;
+    $('price').textContent = rs(price);
+    $('price').classList.toggle('hot', x >= 1.5);
+    $('ratio').textContent = x >= 1.05 ? x.toFixed(1) + ' times what it is really worth' : x <= 0.95 ? 'Below what it is really worth' : 'About what it is really worth';
+    $('cash').textContent = rs(me.cash);
+    $('tokens').textContent = me.tokens;
+    $('worth').textContent = rs(me.cash + me.tokens * price);
+    $('buy').disabled = me.cash < price;
+    $('sell').disabled = me.tokens <= 0;
+    if (room.headline !== lastHeadline) {
+      lastHeadline = room.headline;
+      $('news').classList.toggle('hidden', !room.headline);
+      if (room.headline) { $('newsText').textContent = room.headline; const n = $('news'); n.style.animation = 'none'; void n.offsetWidth; n.style.animation = ''; if (navigator.vibrate) navigator.vibrate(40); }
+    }
+    $('toast').textContent = pending > 0 ? (pending === 1 ? 'Order sent' : pending + ' orders sent') : '';
+    draw(room.history || []);
+  }
+
+  function draw(history) {
+    const c = $('chart'), dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight;
+    c.width = w * dpr; c.height = h * dpr;
+    const g = c.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+    const max = Math.max(TOKEN_VALUE * 2, ...history) * 1.1, pad = 6;
+    const X = (i) => pad + (i / GAME_SECONDS) * (w - pad * 2), Y = (v) => h - pad - (v / max) * (h - pad * 2);
+    g.setLineDash([5, 5]); g.strokeStyle = '#0F7B4F'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(pad, Y(TOKEN_VALUE)); g.lineTo(w - pad, Y(TOKEN_VALUE)); g.stroke();
+    g.setLineDash([]); g.fillStyle = '#0F7B4F'; g.font = '600 10px Inter'; g.fillText('value ₹100', w - 64, Y(TOKEN_VALUE) - 5);
+    if (history.length < 2) return;
+    const last = history[history.length - 1];
+    g.strokeStyle = last / TOKEN_VALUE >= 1.5 ? '#C4372C' : '#6366F1'; g.lineWidth = 2.5; g.lineJoin = 'round';
+    g.beginPath(); history.forEach((v, i) => (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)))); g.stroke();
+  }
+
+  async function order(side) {
+    if (!room || room.status !== 'live') return;
+    pending += 1; render();
+    if (navigator.vibrate) navigator.vibrate(15);
+    try { await addDoc(collection(db, 'rooms', code, 'orders'), { pid, side, at: Date.now() }); }
+    catch (e) { pending = Math.max(0, pending - 1); fail('That order did not go through.'); }
+  }
+  $('buy').onclick = () => order('buy');
+  $('sell').onclick = () => order('sell');
+  window.addEventListener('resize', () => room && draw(room.history || []));
+</script>
+</body>
+</html>

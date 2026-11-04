@@ -34,6 +34,8 @@ import MoneyQuizScreen from '../screens/MoneyQuizScreen';
 import BurnRateScreen from '../screens/BurnRateScreen';
 // Engagement features
 import SwipeCategoriseScreen from '../screens/SwipeCategoriseScreen';
+import AskScreen from '../screens/AskScreen';
+import BubbleRoomScreen from '../screens/BubbleRoomScreen';
 // Social and shareable
 
 
@@ -226,6 +228,8 @@ export const RootNavigator = () => {
                         component={ScenarioPlayerScreen}
                         options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
                     />
+                    <Stack.Screen name="Ask" component={AskScreen} />
+                    <Stack.Screen name="BubbleRoom" component={BubbleRoomScreen} options={{ gestureEnabled: false }} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     {/* Onboarding again, prefilled, opened from Profile. */}
                     <Stack.Screen name="EditProfile" component={OnboardingScreen} />

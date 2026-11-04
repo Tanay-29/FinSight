@@ -60,6 +60,8 @@ FinSight is a monorepo with two directories:
 
 | Feature | Description | Status |
 |---|---|---|
+| **Ask anything** | Type any money question; the screen builds a working tool for it (sliders, a chart that draws itself, one plain sentence). Gemini, through Firebase AI Logic, only picks which of eleven calculators to open and its starting values; every figure is computed in `utils/askTools.ts`. Falls back to an on-device matcher when the model is unreachable | Live |
+| **Bubble Room** | A three-minute market for a room of people: the host shows a QR code, everyone trades one hyped token from their browser with no install, headlines push the price far past its value, then every token is cashed out at its real value | Live |
 | **Intro** | Three panels shown once before sign-in, each making one claim about the reader's own money rather than listing features | Live |
 | **Feed / Dashboard** | Home tab: FinSight IQ card, a rolling 30-day spend summary against the previous 30 days, and recent transactions | Live |
 | **Onboarding** | Multi-step flow capturing age, experience, goals, income range and risk profile | Live |
@@ -381,6 +383,19 @@ npm start
 Scan the QR code with Expo Go. To build a standalone APK: `npx eas build --profile preview --platform android`.
 
 ---
+
+### Setup: Ask anything and Bubble Room
+
+Neither needs the Flask backend.
+
+1. **Ask anything** calls Gemini through Firebase AI Logic. In the Firebase console open **AI Logic**, choose **Get started**, then **Gemini Developer API**; the free Spark plan allows it. Optionally set `EXPO_PUBLIC_GEMINI_MODEL` (default `gemini-3.6-flash`). Until this is enabled, or with no network, the screen still works: an on-device matcher picks the tool instead, and the screen says which one did.
+2. **Bubble Room** needs the Firestore rules for `rooms/` and the player page on Firebase Hosting. From the repo root:
+
+```bash
+firebase deploy --only firestore:rules,hosting
+```
+
+The player page is `bubble-web/index.html`. It reads the project's web config from Hosting's reserved `/__/firebase/init.json`, so it needs no configuration. Players open `https://<project-id>.web.app/?r=<CODE>` from the QR code on the host's phone.
 
 ## Environment Variables Reference
 

@@ -23,7 +23,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
-import { Flame, Check, Play, Plus, Bell, ArrowRight, Sparkles, CalendarDays, ClipboardCheck } from 'lucide-react-native';
+import { Flame, Check, Play, Plus, Bell, ArrowRight, Sparkles, CalendarDays, ClipboardCheck, ArrowUp } from 'lucide-react-native';
+import { ASK_SUGGESTIONS } from './AskScreen';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
 import { fetchUserProgress } from '../store/slices/learningSlice';
@@ -295,6 +296,36 @@ export const TodayScreen: React.FC = () => {
                             )}
                         </View>
                     </Animated.View>
+                </View>
+
+                {/* Ask anything: a question in, a working tool out. */}
+                <View style={{ ...card, padding: 14, marginTop: 14 }}>
+                    <PressableScale
+                        onPress={() => { haptics.tap(); navigation.navigate('Ask'); }}
+                        activeScale={0.98}
+                        accessibilityRole="button"
+                        accessibilityLabel="Ask any money question"
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: 14, paddingRight: 6, borderRadius: 22, backgroundColor: COLORS.surface.secondary }}
+                    >
+                        <Sparkles size={16} color={COLORS.brand.link} />
+                        <Text style={[TYPE.callout, { flex: 1, marginLeft: 10 }]} className="text-text-tertiary">Ask any money question</Text>
+                        <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}>
+                            <ArrowUp size={16} color={COLORS.brand.onAccent} strokeWidth={2.5} />
+                        </View>
+                    </PressableScale>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ gap: 8 }}>
+                        {ASK_SUGGESTIONS.slice(0, 4).map((q) => (
+                            <PressableScale
+                                key={q}
+                                onPress={() => { haptics.tap(); navigation.navigate('Ask', { question: q }); }}
+                                activeScale={0.96}
+                                accessibilityRole="button"
+                                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: COLORS.border.default }}
+                            >
+                                <Text style={[TYPE.caption, { color: COLORS.text.secondary }]}>{q}</Text>
+                            </PressableScale>
+                        ))}
+                    </ScrollView>
                 </View>
 
                 {/* The week, so a streak is something you can see. */}
