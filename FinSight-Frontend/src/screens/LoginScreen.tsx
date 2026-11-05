@@ -242,7 +242,7 @@ const LoginScreen: React.FC = () => {
     };
 
     /** Border colour is the only thing that marks focus, and it costs nothing.
-     *  Width deliberately stays at 1: thickening it on focus nudges the text. */
+     *  Width deliberately stays at 1: thickening it on focus shifts the text. */
     const fieldClass = (key: string) =>
         `bg-surface-primary rounded-control px-4 h-[52px] border ${
             focused === key ? 'border-brand-primary' : 'border-border'

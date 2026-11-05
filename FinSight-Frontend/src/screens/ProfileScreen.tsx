@@ -348,7 +348,7 @@ export const ProfileScreen: React.FC = () => {
                     <SettingsRow
                         icon={<Bell size={16} color={COLORS.text.secondary} />}
                         label="Daily session reminder"
-                        hint={reminder.enabled ? `Every day at ${formatReminderTime(reminder.hour, reminder.minute)}. Tap to change the time` : 'A three-minute nudge, on this phone only'}
+                        hint={reminder.enabled ? `Every day at ${formatReminderTime(reminder.hour, reminder.minute)}. Tap to change the time` : 'A daily reminder for your three-minute lesson'}
                         onPress={reminder.enabled ? () => setTimePickerOpen(true) : undefined}
                         rightElement={
                             <Switch

@@ -406,7 +406,7 @@ const LessonPlayerScreen: React.FC = () => {
                                 <View style={{ flex: 1, marginLeft: 12 }}>
                                     <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Remind me tomorrow</Text>
                                     <Text style={{ fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.secondary, marginTop: 2 }}>
-                                        A nudge at {formatReminderTime(DEFAULT_REMINDER.hour, DEFAULT_REMINDER.minute)}. Change the time in Profile, or turn it off there.
+                                        A reminder at {formatReminderTime(DEFAULT_REMINDER.hour, DEFAULT_REMINDER.minute)}. Change the time in Profile, or turn it off there.
                                     </Text>
                                 </View>
                                 <ChevronRight size={16} color={COLORS.brand.primary} />

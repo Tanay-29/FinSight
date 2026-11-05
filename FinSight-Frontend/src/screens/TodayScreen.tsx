@@ -221,7 +221,7 @@ export const TodayScreen: React.FC = () => {
         setReminderAsked(true);
         if (ok) {
             setReminder({ enabled: true, hour: hourOfDay, minute: 0 });
-            setReminderNote(`Done. Sikka will nudge you at ${formatReminderTime(hourOfDay, 0)}.`);
+            setReminderNote(`Done. You will get a reminder at ${formatReminderTime(hourOfDay, 0)}.`);
             celebrate();
         } else {
             setReminderNote('Notifications are off for FinSight. You can turn them on in your phone settings.');
@@ -438,13 +438,13 @@ export const TodayScreen: React.FC = () => {
                     )}
                 </View>
 
-                {/* A nudge, asked for once. Off by default, so without this card
+                {/* A reminder, asked for once. Off by default, so without this card
                     almost nobody ever gets the reminder at all. */}
                 {!reminder.enabled && !reminderAsked && (
                     <Animated.View entering={reduced ? undefined : FadeInDown.duration(240)} style={{ ...card, padding: 18, marginTop: 14 }}>
                         <View className="flex-row items-center">
                             <Bell size={18} color={COLORS.brand.link} strokeWidth={2} />
-                            <Text style={TYPE.heading} className="text-text-primary ml-2">Want a nudge from Sikka?</Text>
+                            <Text style={TYPE.heading} className="text-text-primary ml-2">Want a daily reminder?</Text>
                         </View>
                         <Text style={TYPE.caption} className="text-text-secondary mt-1">
                             One a day, at a time you pick. Never more than that, and never once you are done.

@@ -50,7 +50,7 @@ const LINES = [
     { title: 'Sikka saved you a card', body: 'It is about your own spending. Guess before you look.' },
 ];
 
-/** The one extra nudge, only when a streak would otherwise end tonight. */
+/** The one extra reminder, only when a streak would otherwise end tonight. */
 const SAVE_AT = { hour: 21, minute: 30 };
 
 const supported = Platform.OS === 'ios' || Platform.OS === 'android';
@@ -116,7 +116,7 @@ export function configureNotificationHandling(): void {
  * daily reminder is already set later than it.
  *
  * @param sessionDoneToday skip today's slots when the session is already done
- * @param streak the current streak, for the save nudge; 0 means none is sent
+ * @param streak the current streak, for the streak reminder; 0 means none is sent
  */
 export async function syncReminders(sessionDoneToday: boolean, streak = 0): Promise<void> {
     if (!supported) return;

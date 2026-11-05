@@ -105,7 +105,7 @@ export const FIRST_SALARY: Scenario = {
         {
             id: 'sip', month: 8,
             title: 'The app suggests a SIP',
-            body: 'A nudge: "Start a 5,000 SIP in an index fund." You have never invested. You also have a year of expenses to think about.',
+            body: 'A pop-up in your banking app: "Start a 5,000 SIP in an index fund." You have never invested. You also have a year of expenses to think about.',
             options: [
                 { label: 'Start 5,000 a month', outcome: 'Five thousand a month into a low-cost index fund, from the day you could. Nothing you do later will matter as much as when you started.', effect: { invest: 5_000, peace: 3 }, tag: 'wise' },
                 { label: 'Start 1,000 a month, raise it later', outcome: 'The habit matters more than the amount in year one. A thousand a month that survives is worth more than five that gets cancelled in a tight month.', effect: { invest: 1_000, peace: 2 }, tag: 'wise' },
