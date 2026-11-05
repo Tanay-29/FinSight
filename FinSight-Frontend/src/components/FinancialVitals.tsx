@@ -1,26 +1,19 @@
 /**
- * FinancialVitals - the month's spending in one card on the Feed.
+ * FinancialVitals: the last thirty days of spending in one card.
  *
- * This used to be a two-column split: total and a sparkline on the left, a
- * "Top Spends" column on the right holding two category bars squeezed into
- * half the screen width. That right column was a worse copy of the Vitals tab,
- * which is one tap away and shows every category at full width. It went.
- *
- * The footer used to read "0% higher than last month" for everyone, because
- * the Feed passed a hardcoded zero. It now takes a real comparison, or null
- * when there is no previous month to compare against, and renders nothing in
- * that case rather than inventing a number.
- *
- * The chart used to be seven UTC days under a thirty-day heading, drawn
- * through a viewBox that never matched the card. It is now SpendSparkline:
- * thirty local days, measured pixels, drawn in on first paint.
+ * The big number is the thirty-day total. Run a finger along the chart and it
+ * becomes the day under the finger instead, with that day's date above it;
+ * lift and it goes back. The footer compares with the thirty days before, or
+ * says nothing when there is nothing to compare with.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
-import { SpendSparkline, SparkDay } from './SpendSparkline';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
-import { COLORS } from '../theme/tokens';
+import { SpendSparkline, SparkDay, dayLabel } from './SpendSparkline';
+import { AnimatedNumber } from './AnimatedNumber';
+import { inr } from '../utils/moneyMath';
+import { COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
 
 interface FinancialVitalsProps {
     totalSpent: number;
@@ -30,50 +23,53 @@ interface FinancialVitalsProps {
     comparison: { type: 'increase' | 'decrease' | 'flat'; percentage: number } | null;
 }
 
-export const FinancialVitals: React.FC<FinancialVitalsProps> = ({
-    totalSpent,
-    dailyTrend,
-    comparison,
-}) => {
+export const FinancialVitals: React.FC<FinancialVitalsProps> = ({ totalSpent, dailyTrend, comparison }) => {
     const reduced = useReducedMotion();
+    const [day, setDay] = useState<number | null>(null);
 
     const tone =
         comparison === null || comparison.type === 'flat'
-            ? { Icon: Minus, color: COLORS.text.secondary, text: 'text-text-secondary' }
+            ? { Icon: Minus, color: COLORS.text.secondary }
             : comparison.type === 'increase'
-                ? { Icon: TrendingUp, color: COLORS.semantic.alertAmberFill, text: 'text-alert-amber' }
-                : { Icon: TrendingDown, color: COLORS.semantic.profit, text: 'text-profit' };
+                ? { Icon: TrendingUp, color: COLORS.semantic.alertAmber }
+                : { Icon: TrendingDown, color: COLORS.semantic.profit };
+
+    const picked = day !== null ? dailyTrend[day] : null;
+    const perDay = dailyTrend.length > 0 ? totalSpent / dailyTrend.length : 0;
 
     return (
-        // The card fades in once when the Feed first paints. It is the number
-        // the screen exists to show, so it is worth arriving rather than
-        // appearing.
         <Animated.View entering={FadeIn.duration(reduced ? 160 : 320)}>
-            {/* Classes on a plain View: they do not reach a Reanimated one. */}
-            <View className="bg-surface-primary border border-border rounded-xl p-4 mx-5">
-            <Text className="text-xs font-inter-bold text-text-secondary mb-1 uppercase tracking-wider">
-                Last 30 days
-            </Text>
-            <Text
-                className="text-[32px] leading-10 font-inter-bold text-text-primary"
-                style={{ fontVariant: ['tabular-nums'] }}
-            >
-                ₹{totalSpent.toLocaleString('en-IN')}
-            </Text>
-
-            <Text className="text-xs text-text-tertiary mt-3 font-inter">Day by day</Text>
-            <SpendSparkline days={dailyTrend} />
-
-            {comparison && (
-                <View className="mt-3 pt-3 border-t border-border flex-row items-center">
-                    <tone.Icon size={12} color={tone.color} />
-                    <Text className={`text-xs font-inter-semibold ml-1 ${tone.text}`}>
-                        {comparison.type === 'flat'
-                            ? 'About the same as the 30 days before'
-                            : `${comparison.percentage}% ${comparison.type === 'increase' ? 'higher' : 'lower'} than the 30 days before`}
+            <View style={{ marginHorizontal: GUTTER, padding: 16, paddingBottom: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
+                <Text style={{ ...TYPE.micro, color: picked ? COLORS.brand.link : COLORS.text.tertiary }}>
+                    {picked ? dayLabel(picked.key, true) : 'Last 30 days'}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
+                    {picked ? (
+                        <Text style={{ ...TYPE.amountLg, fontSize: 32, lineHeight: 38, color: COLORS.text.primary }}>₹{inr(picked.amount)}</Text>
+                    ) : (
+                        <AnimatedNumber value={totalSpent} format={(v) => `₹${inr(v)}`} style={{ ...TYPE.amountLg, fontSize: 32, lineHeight: 38, color: COLORS.text.primary }} />
+                    )}
+                    <Text style={{ ...TYPE.caption, color: COLORS.text.tertiary, marginLeft: 8 }}>
+                        {picked
+                            ? (picked.amount === 0 ? 'nothing spent' : picked.amount > perDay * 1.5 ? 'a heavy day' : picked.amount < perDay * 0.5 ? 'a light day' : 'a usual day')
+                            : `about ₹${inr(perDay)} a day`}
                     </Text>
                 </View>
-            )}
+
+                <View style={{ marginTop: 10 }}>
+                    <SpendSparkline days={dailyTrend} onScrub={setDay} />
+                </View>
+
+                {comparison ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border.default }}>
+                        <tone.Icon size={13} color={tone.color} />
+                        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: tone.color, marginLeft: 6 }}>
+                            {comparison.type === 'flat'
+                                ? 'About the same as the 30 days before'
+                                : `${comparison.percentage}% ${comparison.type === 'increase' ? 'more' : 'less'} than the 30 days before`}
+                        </Text>
+                    </View>
+                ) : null}
             </View>
         </Animated.View>
     );

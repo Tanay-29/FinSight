@@ -1,739 +1,498 @@
-// app/src/screens/GoalsScreen.tsx
-
-import React, { useEffect, useState } from 'react';
+/**
+ * GoalsScreen: what you are saving for, and how close each one is.
+ *
+ * One summary at the top (everything saved, as a ring and as a bar split by
+ * goal), then a card per active goal: its own ring with its icon, what it
+ * takes a month to make the date, and one main action, Add money. "How
+ * fast?" opens the time-to-goal calculator on Ask with this goal's numbers.
+ * Goals already reached fold into a short list at the end.
+ *
+ * Adding money and creating a goal both happen in a bottom sheet with a
+ * large amount field and a live preview, so the result of a choice is on
+ * screen before it is confirmed.
+ */
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    Modal,
-    TextInput,
-    Alert,
-    ActivityIndicator,
-    Platform,
-    KeyboardAvoidingView,
+    View, Text, ScrollView, Modal, TextInput, Alert, Platform, KeyboardAvoidingView, Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, Trash2, PiggyBank, TrendingUp, CheckCircle, CalendarDays, Star, Zap, CloudOff } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInDown, SlideInDown, useReducedMotion } from 'react-native-reanimated';
+import { Plus, PiggyBank, CalendarDays, Zap, CloudOff, X, Check, MoreHorizontal, Trophy } from 'lucide-react-native';
+import { addMonths, differenceInCalendarMonths, differenceInDays, format, parseISO } from 'date-fns';
+import { useNavigation } from '@react-navigation/native';
 import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import {
-    fetchGoals,
-    createGoal,
-    depositToGoal,
-    removeGoal,
-} from '../store/slices/goalsSlice';
+import { fetchGoals, createGoal, depositToGoal, removeGoal } from '../store/slices/goalsSlice';
 import { FirestoreGoal } from '../services/firestoreService';
-import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { EmptyState } from '../components/EmptyState';
-import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
+import { ProgressRing } from '../components/ProgressRing';
+import { AmountInput } from '../components/AmountInput';
+import { AnimatedNumber } from '../components/AnimatedNumber';
+import { Confetti } from '../components/Confetti';
+import { inr } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { addMonths, differenceInDays, format, parseISO } from 'date-fns';
-import { useNavigation } from '@react-navigation/native';
-import { COLORS, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
 
-// ─── Goal Card ────────────────────────────────────────────────
+const rs = (n: number) => `₹${inr(n)}`;
+const toAmount = (raw: string): number => {
+    const n = Number(raw.replace(/[₹,\s]/g, ''));
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+};
 
-// ─── Goal Card ────────────────────────────────────────────────
-
-const GoalCard: React.FC<{
-    goal: FirestoreGoal;
-    onDeposit: (goal: FirestoreGoal) => void;
-    onDelete: (goalId: string) => void;
-}> = ({ goal, onDeposit, onDelete }) => {
-
-    // NEW: We need navigation inside the card to route to Accelerate
-    const navigation = useNavigation();
-
-    const progress = Math.min((goal.savedAmount / goal.targetAmount) * 100, 100);
+/** What a goal needs each month to make its date, or 0 if it is done or late. */
+function monthlyNeed(goal: FirestoreGoal): number {
     const remaining = goal.targetAmount - goal.savedAmount;
-    const isComplete = progress >= 100;
-    const daysLeft = differenceInDays(parseISO(goal.deadline), new Date());
-    const deadlineLabel =
-        daysLeft < 0
-            ? 'Overdue'
-            : daysLeft === 0
-                ? 'Due today'
-                : `${daysLeft}d left`;
-    const monthlySuggestion =
-        daysLeft > 0 && remaining > 0
-            ? Math.ceil(remaining / Math.max(Math.ceil(daysLeft / 30), 1))
-            : 0;
+    const months = Math.max(1, differenceInCalendarMonths(parseISO(goal.deadline), new Date()));
+    return remaining > 0 && differenceInDays(parseISO(goal.deadline), new Date()) > 0 ? Math.ceil(remaining / months) : 0;
+}
 
+/** A goal's icon by its saved key. */
+const GoalGlyph: React.FC<{ icon?: string; size: number; color: string }> = ({ icon, size, color }) =>
+    React.createElement(goalIcon(icon), { size, color });
+
+// ─── Summary ─────────────────────────────────────────────────
+
+const Summary: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
+    const target = goals.reduce((s, g) => s + g.targetAmount, 0);
+    const saved = goals.reduce((s, g) => s + Math.min(g.savedAmount, g.targetAmount), 0);
+    const reached = goals.filter((g) => g.savedAmount >= g.targetAmount).length;
+    const pct = target > 0 ? saved / target : 0;
     return (
-        <View className="bg-surface-primary border border-border rounded-xl p-4 mx-5 mb-3">
-            {/* Header */}
-            <View className="flex-row items-center justify-between mb-3">
-                <View className="flex-row items-center flex-1">
-                    <View
-                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                        style={{ backgroundColor: `${goal.color}20` }}
-                    >
-                        {React.createElement(goalIcon(goal.icon), { size: 20, color: goal.color })}
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-bold text-text-primary" numberOfLines={1}>
-                            {goal.title}
-                        </Text>
-                        <View className="flex-row items-center">
-                            {isComplete ? (
-                                <Star size={11} color={COLORS.semantic.profit} />
-                            ) : (
-                                <CalendarDays size={11} color={daysLeft < 7 ? COLORS.semantic.alertCritical : COLORS.text.tertiary} />
-                            )}
-                            <Text
-                                className="text-xs font-inter-medium ml-0.5"
-                                style={{ color: daysLeft < 7 && !isComplete ? COLORS.semantic.alertCritical : COLORS.text.tertiary }}
-                            >
-                                {isComplete ? 'Goal reached!' : deadlineLabel}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                <TouchableOpacity
-                    onPress={() =>
-                        Alert.alert('Delete goal', `Remove "${goal.title}"?`, [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                                text: 'Delete',
-                                style: 'destructive',
-                                onPress: () => onDelete(goal.id!),
-                            },
-                        ])
-                    }
-                    className="p-2"
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete the goal ${goal.title}`}
-                >
-                    <Trash2 color={COLORS.text.tertiary} size={16} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Amount row */}
-            <View className="flex-row items-baseline mb-3">
-                <Text
-                    className="text-2xl font-inter-bold"
-                    style={{ color: isComplete ? COLORS.semantic.profit : goal.color }}
-                >
-                    ₹{goal.savedAmount.toLocaleString('en-IN')}
-                </Text>
-                <Text className="text-sm text-text-tertiary ml-1 font-inter">
-                    {' '}/ ₹{goal.targetAmount.toLocaleString('en-IN')}
-                </Text>
-            </View>
-
-            <BarFill
-                percent={progress}
-                height={12}
-                color={isComplete ? COLORS.semantic.profit : goal.color}
-                style={{ marginBottom: 8 }}
-            />
-
-            {/* The bar already says what percentage is saved, so the only line
-                worth spending here is the one it cannot show. */}
-            <View className="flex-row justify-end items-center mb-4">
-                {!isComplete && remaining > 0 && (
-                    <Text className="text-xs text-text-tertiary font-inter">
-                        ₹{remaining.toLocaleString('en-IN')} to go
-                    </Text>
-                )}
-            </View>
-
-            {/* Suggestion chip */}
-            {!isComplete && monthlySuggestion > 0 && (
-                <View className="bg-surface-secondary rounded-xl p-3 mb-3 flex-row items-center">
-                    <TrendingUp color={COLORS.brand.primary} size={14} />
-                    <Text className="text-xs text-text-secondary ml-2 font-inter">
-                        Save{' '}
-                        <Text className="font-inter-semibold text-brand-primary">
-                            ₹{monthlySuggestion.toLocaleString('en-IN')}/mo
-                        </Text>{' '}
-                        to hit your goal on time
+        <View style={{ marginHorizontal: GUTTER, marginTop: 14, borderRadius: RADIUS.card, padding: 18, backgroundColor: COLORS.brand.primaryDark }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                    <Text style={{ ...TYPE.micro, color: 'rgba(255,255,255,0.75)' }}>Saved so far</Text>
+                    <AnimatedNumber value={saved} format={rs} style={{ ...TYPE.amountLg, fontSize: 32, lineHeight: 38, color: '#FFFFFF', marginTop: 4 }} />
+                    <Text style={{ ...TYPE.caption, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
+                        of {rs(target)}{reached > 0 ? ` · ${reached} reached` : ''}
                     </Text>
                 </View>
-            )}
-
-            {/* Action buttons */}
-            {!isComplete ? (
-                <View className="flex-row gap-3">
-                    <PressableScale
-                        containerStyle={{ flex: 1 }}
-                        className="py-2.5 rounded-xl border flex-row items-center justify-center"
-                        style={{ borderColor: goal.color, backgroundColor: `${goal.color}10` }}
-                        onPress={() => onDeposit(goal)}
-                        accessibilityRole="button"
-                    >
-                        {/* Short enough that it cannot wrap at any font scale.
-                            "Add money" was being clipped to "Add" on narrower
-                            phones, which left the button reading as half a
-                            word beside a plus sign. */}
-                        <Plus size={15} color={goal.color} />
-                        <Text
-                            numberOfLines={1}
-                            style={{ color: goal.color }}
-                            className="font-inter-bold text-sm ml-1.5"
-                        >
-                            Add
-                        </Text>
-                    </PressableScale>
-
-                    <PressableScale
-                        containerStyle={{ flex: 1 }}
-                        // Opens the "time to a goal" calculator on Ask, set to this goal.
-                        onPress={() => (navigation as any).navigate('Ask', {
-                            question: `How fast can I reach ${goal.title}?`,
-                            toolId: 'goal',
-                            values: { target: Math.round(remaining), monthly: Math.max(500, Math.round(monthlySuggestion || remaining / 12)), rate: 7 },
-                        })}
-                        accessibilityRole="button"
-                        className="py-2.5 rounded-xl flex-row justify-center items-center"
-                        style={{ backgroundColor: goal.color }}
-                    >
-                        <Zap size={15} color="white" />
-                        <Text numberOfLines={1} className="text-white font-inter-bold text-sm ml-1.5">
-                            How fast?
-                        </Text>
-                    </PressableScale>
-                </View>
-            ) : (
-                <View className="bg-profit-bg rounded-xl py-2.5 items-center flex-row justify-center">
-                    <CheckCircle color={COLORS.semantic.profit} size={16} />
-                    <Text className="text-profit font-inter-semibold text-sm ml-2">Completed</Text>
-                </View>
-            )}
+                <ProgressRing value={pct} size={76} stroke={8} color="#FFFFFF" trackColor="rgba(255,255,255,0.2)">
+                    <Text style={{ ...TYPE.amountSm, color: '#FFFFFF' }}>{Math.round(pct * 100)}%</Text>
+                </ProgressRing>
+            </View>
+            {/* One bar, split by goal: where the saved money sits. */}
+            <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 16 }}>
+                {goals.map((g) => (
+                    <View key={g.id} style={{ width: `${(Math.min(g.savedAmount, g.targetAmount) / Math.max(target, 1)) * 100}%`, backgroundColor: g.color, borderRightWidth: 2, borderRightColor: COLORS.brand.primaryDark }} />
+                ))}
+            </View>
         </View>
     );
 };
 
-// ─── Deposit Modal ────────────────────────────────────────────
+// ─── Goal card ───────────────────────────────────────────────
 
-const DepositModal: React.FC<{
-    visible: boolean;
-    goal: FirestoreGoal | null;
-    error: string | null;
-    onClose: () => void;
-    onConfirm: (amount: number) => void;
-}> = ({ visible, goal, error, onClose, onConfirm }) => {
-    const insets = useSafeAreaInsets();
-    const [amount, setAmount] = useState('');
-    const quickAmounts = [500, 1000, 2000, 5000];
-
-    useEffect(() => {
-        if (visible) setAmount('');
-    }, [visible]);
+const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () => void }> = ({ goal, onAdd, onMore }) => {
+    const navigation = useNavigation<any>();
+    const pct = goal.targetAmount > 0 ? goal.savedAmount / goal.targetAmount : 0;
+    const need = monthlyNeed(goal);
+    const days = differenceInDays(parseISO(goal.deadline), new Date());
+    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+    const late = days < 0;
 
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <KeyboardAvoidingView
-                className="flex-1 justify-end bg-black/40"
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                {/* The sheet's own bottom padding clears the system bar: the
-                    three-button navigation bar on Android sat over the
-                    action row until this. Gesture phones get the same
-                    padding, smaller. */}
-                <View className="bg-surface-primary rounded-t-3xl p-6" style={{ paddingBottom: 24 + insets.bottom }}>
-                    <View className="flex-row items-center mb-1">
-                        {React.createElement(goalIcon(goal?.icon), { size: 20, color: goal?.color ?? COLORS.brand.primary })}
-                        <Text className="text-xl font-inter-bold text-text-primary ml-2">
-                            Add to {goal?.title}
-                        </Text>
-                    </View>
-                    <Text className="text-sm text-text-secondary mb-5 font-inter">
-                        ₹{goal?.savedAmount.toLocaleString('en-IN')} saved of ₹
-                        {goal?.targetAmount.toLocaleString('en-IN')}
+        <View style={{ marginHorizontal: GUTTER, marginBottom: 12, borderRadius: RADIUS.card, padding: 16, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ProgressRing value={pct} size={58} stroke={5} color={goal.color}>
+                    <GoalGlyph icon={goal.icon} size={22} color={goal.color} />
+                </ProgressRing>
+                <View style={{ flex: 1, marginLeft: 14 }}>
+                    <Text numberOfLines={1} style={{ ...TYPE.heading, fontSize: 17, color: COLORS.text.primary }}>{goal.title}</Text>
+                    <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
+                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.text.primary }}>{rs(goal.savedAmount)}</Text> of {rs(goal.targetAmount)}
                     </Text>
-
-                    {/* Quick amounts */}
-                    <View className="flex-row gap-2 mb-4">
-                        {quickAmounts.map((q) => (
-                            <PressableScale
-                                key={q}
-                                containerStyle={{ flex: 1 }}
-                                activeScale={0.94}
-                                accessibilityRole="button"
-                                className="border border-border rounded-xl py-2 items-center"
-                                onPress={() => { haptics.select(); setAmount(String(q)); }}
-                                style={
-                                    amount === String(q)
-                                        ? { borderColor: goal?.color, backgroundColor: `${goal?.color}15` }
-                                        : {}
-                                }
-                            >
-                                <Text
-                                    className="text-xs font-inter-semibold"
-                                    style={{ color: amount === String(q) ? goal?.color : COLORS.text.secondary }}
-                                >
-                                    ₹{q.toLocaleString('en-IN')}
-                                </Text>
-                            </PressableScale>
-                        ))}
-                    </View>
-
-                    {/* Custom amount */}
-                    <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-6 flex-row items-center">
-                        <Text className="text-lg font-inter-bold text-text-primary mr-2">₹</Text>
-                        <TextInput
-                            className="flex-1 text-lg font-inter-bold text-text-primary"
-                            placeholder="Enter amount"
-                            placeholderTextColor={COLORS.text.tertiary}
-                            keyboardType="numeric"
-                            value={amount}
-                            onChangeText={setAmount}
-                        />
-                    </View>
-
-                    {error && (
-                        <Text className="text-loss text-sm mb-4 leading-5 font-inter">{error}</Text>
-                    )}
-
-                    <View className="flex-row gap-3">
-                        <TouchableOpacity
-                            className="flex-1 border border-border rounded-xl py-3 items-center"
-                            onPress={onClose}
-                        >
-                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
-                        </TouchableOpacity>
-                        <PressableScale
-                            containerStyle={{ flex: 1 }}
-                            className="rounded-xl py-3 items-center"
-                            style={{
-                                backgroundColor:
-                                    !amount || parseFloat(amount) <= 0
-                                        ? COLORS.border.default
-                                        : goal?.color ?? COLORS.brand.primary,
-                            }}
-                            accessibilityRole="button"
-                            onPress={() => {
-                                const val = parseFloat(amount);
-                                if (val > 0) { haptics.commit(); onConfirm(val); }
-                            }}
-                            disabled={!amount || parseFloat(amount) <= 0}
-                        >
-                            <Text className="text-white font-inter-bold">Confirm</Text>
-                        </PressableScale>
-                    </View>
                 </View>
+                <Text style={{ ...TYPE.amountMd, color: goal.color }}>{Math.round(pct * 100)}%</Text>
+                <Pressable onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More for ${goal.title}`} style={{ marginLeft: 8, padding: 2 }}>
+                    <MoreHorizontal size={18} color={COLORS.text.tertiary} />
+                </Pressable>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
+                <CalendarDays size={14} color={late ? COLORS.semantic.alertCritical : COLORS.text.tertiary} />
+                <Text style={{ ...TYPE.caption, marginLeft: 6, flex: 1, color: late ? COLORS.semantic.alertCritical : COLORS.text.secondary }}>
+                    {late
+                        ? `Past ${format(parseISO(goal.deadline), 'd MMM')}, ${rs(remaining)} to go`
+                        : `${rs(need)} a month to make it by ${format(parseISO(goal.deadline), 'd MMM yyyy')}`}
+                </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                <PressableScale
+                    onPress={onAdd}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add money to ${goal.title}`}
+                    containerStyle={{ flex: 1 }}
+                    style={{ height: 44, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: goal.color }}
+                >
+                    <Plus size={16} color="#FFFFFF" strokeWidth={2.6} />
+                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: '#FFFFFF', marginLeft: 6 }}>Add money</Text>
+                </PressableScale>
+                <PressableScale
+                    onPress={() => navigation.navigate('Ask', {
+                        question: `How fast can I reach ${goal.title}?`,
+                        toolId: 'goal',
+                        values: { target: Math.round(remaining), monthly: Math.max(500, need || Math.round(remaining / 12)), rate: 7 },
+                    })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`How fast can I reach ${goal.title}`}
+                    style={{ height: 44, paddingHorizontal: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}
+                >
+                    <Zap size={15} color={COLORS.text.primary} />
+                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 6 }}>How fast?</Text>
+                </PressableScale>
+            </View>
+        </View>
+    );
+};
+
+const ReachedRow: React.FC<{ goal: FirestoreGoal; last: boolean; onMore: () => void }> = ({ goal, last, onMore }) => {
+    return (
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: last ? 0 : 1, borderBottomColor: COLORS.border.default }}>
+            <View style={{ width: 36, height: 36, borderRadius: RADIUS.tile, alignItems: 'center', justifyContent: 'center', backgroundColor: `${goal.color}22` }}>
+                <GoalGlyph icon={goal.icon} size={18} color={goal.color} />
+            </View>
+            <Text numberOfLines={1} style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 12, flex: 1 }}>{goal.title}</Text>
+            <Text style={{ ...TYPE.amountSm, color: COLORS.text.secondary }}>{rs(goal.targetAmount)}</Text>
+            <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.semantic.profit, marginLeft: 10 }}>
+                <Check size={13} color="#FFFFFF" strokeWidth={3} />
+            </View>
+            <Pressable onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More for ${goal.title}`} style={{ marginLeft: 8 }}>
+                <MoreHorizontal size={18} color={COLORS.text.tertiary} />
+            </Pressable>
+        </View>
+    );
+};
+
+// ─── Sheet ───────────────────────────────────────────────────
+
+const Sheet: React.FC<{ visible: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ visible, onClose, title, children }) => {
+    const insets = useSafeAreaInsets();
+    const reduced = useReducedMotion();
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+            <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,8,6,0.45)' }} onPress={onClose} accessibilityLabel="Close" />
+                <Animated.View
+                    entering={reduced ? FadeIn.duration(150) : SlideInDown.duration(280)}
+                    style={{ maxHeight: '90%', borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: COLORS.surface.primary, paddingBottom: 16 + insets.bottom }}
+                >
+                    <View style={{ alignItems: 'center', paddingTop: 10 }}>
+                        <View style={{ width: 38, height: 4, borderRadius: 2, backgroundColor: COLORS.border.strong }} />
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingTop: 12, paddingBottom: 6 }}>
+                        <Text style={{ ...TYPE.heading, color: COLORS.text.primary, flex: 1 }}>{title}</Text>
+                        <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close"
+                            style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}>
+                            <X size={16} color={COLORS.text.secondary} />
+                        </Pressable>
+                    </View>
+                    <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                        {children}
+                    </ScrollView>
+                </Animated.View>
             </KeyboardAvoidingView>
         </Modal>
     );
 };
 
-// ─── Add Goal Modal ───────────────────────────────────────────
+const Chip: React.FC<{ label: string; active: boolean; color: string; onPress: () => void }> = ({ label, active, color, onPress }) => (
+    <PressableScale
+        onPress={() => { haptics.select(); onPress(); }}
+        activeScale={0.95}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: active ? color : COLORS.border.default, backgroundColor: active ? `${color}1F` : COLORS.surface.primary }}
+    >
+        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: active ? color : COLORS.text.secondary }}>{label}</Text>
+    </PressableScale>
+);
 
-/**
- * Swatches for the goal colour picker.
- *
- * Deliberately literal rather than theme tokens. The chosen value is written
- * onto the goal and read back later, so it has to mean the same thing in both
- * themes: a goal picked as green while the phone was in dark mode should not
- * come back a different green in daylight. These are the category hues, which
- * are chosen to sit on either ground.
- */
-const GOAL_COLORS = [
-    '#6366F1', '#047857', '#8A5406', '#C0392F',
-    '#BE185D', '#6D28D9', '#1D4ED8', '#0F766E',
+const PrimaryButton: React.FC<{ label: string; color: string; disabled?: boolean; onPress: () => void }> = ({ label, color, disabled, onPress }) => (
+    <PressableScale
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityRole="button"
+        style={{ height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: disabled ? COLORS.surface.tertiary : color, marginTop: 18 }}
+    >
+        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: disabled ? COLORS.text.tertiary : '#FFFFFF' }}>{label}</Text>
+    </PressableScale>
+);
+
+// ─── Add money ───────────────────────────────────────────────
+
+const AddMoneySheet: React.FC<{
+    goal: FirestoreGoal | null; error: string | null; onClose: () => void; onConfirm: (amount: number) => void;
+}> = ({ goal, error, onClose, onConfirm }) => {
+    const [amount, setAmount] = useState('');
+    if (!goal) return null;
+    const value = toAmount(amount);
+    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+    const after = goal.savedAmount + value;
+    const chips = [500, 1000, 2000].filter((q) => q < remaining);
+    return (
+        <Sheet visible onClose={onClose} title={`Add to ${goal.title}`}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.secondary }}>
+                <ProgressRing value={goal.savedAmount / goal.targetAmount} preview={after / goal.targetAmount} size={52} stroke={5} color={goal.color}>
+                    <GoalGlyph icon={goal.icon} size={20} color={goal.color} />
+                </ProgressRing>
+                <View style={{ marginLeft: 14, flex: 1 }}>
+                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>
+                        {value > 0 ? (after >= goal.targetAmount ? 'This reaches the goal' : `${Math.round((after / goal.targetAmount) * 100)}% after this`) : `${Math.round((goal.savedAmount / goal.targetAmount) * 100)}% saved`}
+                    </Text>
+                    <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
+                        {value > 0 ? `${rs(Math.max(0, goal.targetAmount - after))} still to go` : `${rs(remaining)} to go`}
+                    </Text>
+                </View>
+            </View>
+            <View style={{ paddingTop: 14, paddingBottom: 10 }}>
+                <AmountInput value={amount} onChange={setAmount} color={COLORS.text.primary} autoFocus label="Amount to add" />
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                {chips.map((q) => <Chip key={q} label={rs(q)} active={value === q} color={goal.color} onPress={() => setAmount(String(q))} />)}
+                {remaining > 0 ? <Chip label={`All ${rs(remaining)}`} active={value === remaining} color={goal.color} onPress={() => setAmount(String(remaining))} /> : null}
+            </View>
+            {error ? <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, textAlign: 'center', marginTop: 12 }}>{error}</Text> : null}
+            <PrimaryButton label={value > 0 ? `Add ${rs(value)}` : 'Enter an amount'} color={goal.color} disabled={value <= 0} onPress={() => { haptics.commit(); onConfirm(value); }} />
+        </Sheet>
+    );
+};
+
+// ─── New goal ────────────────────────────────────────────────
+
+/** Literal on purpose: a goal's colour is saved and must mean the same in both themes. */
+const GOAL_COLORS = ['#6366F1', '#0F766E', '#047857', '#B45309', '#C0392F', '#BE185D', '#6D28D9', '#1D4ED8'];
+
+const WHEN: { label: string; months: number }[] = [
+    { label: '3 months', months: 3 }, { label: '6 months', months: 6 }, { label: '1 year', months: 12 }, { label: '2 years', months: 24 },
 ];
 
-const AddGoalModal: React.FC<{
-    visible: boolean;
-    error: string | null;
-    onClose: () => void;
-    onSave: (goal: Omit<FirestoreGoal, 'id'>) => void;
+const NewGoalSheet: React.FC<{
+    visible: boolean; error: string | null; onClose: () => void; onSave: (g: Omit<FirestoreGoal, 'id'>) => void;
 }> = ({ visible, error, onClose, onSave }) => {
-    const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('');
     const [target, setTarget] = useState('');
-    // Defaults to three months out: far enough to be a goal, near enough to
-    // matter, and it means the field is never empty.
-    const [deadlineDate, setDeadlineDate] = useState(() => addMonths(new Date(), 3));
+    const [deadline, setDeadline] = useState(() => addMonths(new Date(), 6));
+    const [preset, setPreset] = useState<number | null>(6);
     const [pickerOpen, setPickerOpen] = useState(false);
-    const [selectedIcon, setSelectedIcon] = useState<string>(DEFAULT_GOAL_ICON_KEY);
-    const [selectedColor, setSelectedColor] = useState(COLORS.brand.primary);
+    const [icon, setIcon] = useState<string>(DEFAULT_GOAL_ICON_KEY);
+    const [color, setColor] = useState(GOAL_COLORS[0]);
 
-    useEffect(() => {
-        if (visible) {
-            setTitle('');
-            setTarget('');
-            setDeadlineDate(addMonths(new Date(), 3));
-            setSelectedIcon(DEFAULT_GOAL_ICON_KEY);
-            setSelectedColor(COLORS.brand.primary);
-        }
-    }, [visible]);
-
-    const handleSave = () => {
-        const amount = parseFloat(target);
-        if (!title.trim() || isNaN(amount) || amount <= 0) {
-            Alert.alert('Missing info', 'Give the goal a name and an amount.');
-            return;
-        }
-        onSave({
-            title: title.trim(),
-            icon: selectedIcon,
-            targetAmount: amount,
-            savedAmount: 0,
-            deadline: format(deadlineDate, 'yyyy-MM-dd'),
-            color: selectedColor,
-            createdAt: new Date().toISOString(),
-        });
-    };
+    const amount = toAmount(target);
+    const months = Math.max(1, differenceInCalendarMonths(deadline, new Date()));
+    const ready = title.trim().length > 0 && amount > 0;
 
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <KeyboardAvoidingView
-                className="flex-1 justify-end bg-black/40"
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                {/* Tall sheet: it scrolls inside a capped height so the action
-                    row is always reachable, and its bottom padding clears the
-                    system navigation bar on button phones. */}
-                <View className="bg-surface-primary rounded-t-3xl" style={{ maxHeight: '88%', paddingBottom: 24 + insets.bottom }}>
-                <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 0 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                    <Text className="text-xl font-inter-bold text-text-primary mb-5">
-                        New Savings Goal
-                    </Text>
-
-                    {/* Emoji picker */}
-                    <Text className="text-xs font-inter-semibold text-text-secondary mb-2 uppercase tracking-wide">
-                        Pick an icon
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-                        <View className="flex-row gap-2">
-                            {GOAL_ICON_KEYS.map((key) => {
-                                const Icon = GOAL_ICONS[key];
-                                const isSelected = selectedIcon === key;
-                                return (
-                                    <TouchableOpacity
-                                        key={key}
-                                        accessibilityRole="button"
-                                        accessibilityLabel={`${key} icon`}
-                                        accessibilityState={{ selected: isSelected }}
-                                        className={`w-10 h-10 rounded-xl items-center justify-center border-2 ${isSelected ? 'border-brand-primary' : 'border-transparent bg-surface-secondary'
-                                            }`}
-                                        onPress={() => setSelectedIcon(key)}
-                                    >
-                                        <Icon size={20} color={isSelected ? selectedColor : COLORS.text.secondary} />
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                    </ScrollView>
-
-                    {/* Color picker */}
-                    <Text className="text-xs font-inter-semibold text-text-secondary mb-2 uppercase tracking-wide">
-                        Accent color
-                    </Text>
-                    <View className="flex-row gap-2 mb-4">
-                        {GOAL_COLORS.map((c) => (
-                            <TouchableOpacity
-                                key={c}
-                                className="w-8 h-8 rounded-full"
-                                style={{
-                                    backgroundColor: c,
-                                    borderWidth: selectedColor === c ? 3 : 0,
-                                    borderColor: '#fff',
-                                    shadowColor: c,
-                                    shadowOpacity: selectedColor === c ? 0.6 : 0,
-                                    shadowRadius: 4,
-                                    elevation: selectedColor === c ? 4 : 0,
-                                }}
-                                onPress={() => setSelectedColor(c)}
-                            />
-                        ))}
-                    </View>
-
-                    {/* Goal title */}
-                    <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-3">
-                        <Text className="text-xs text-text-tertiary mb-1 font-inter">Goal name</Text>
-                        <TextInput
-                            className="text-base text-text-primary font-inter-medium"
-                            placeholder="e.g. Emergency Fund, Goa Trip"
-                            placeholderTextColor={COLORS.text.tertiary}
-                            value={title}
-                            onChangeText={setTitle}
-                        />
-                    </View>
-
-                    {/* Target amount */}
-                    <View className="bg-surface-secondary rounded-xl px-4 py-3 mb-3 flex-row items-center">
-                        <Text className="text-text-secondary mr-2">₹</Text>
-                        <View className="flex-1">
-                            <Text className="text-xs text-text-tertiary mb-1 font-inter">Target amount</Text>
-                            <TextInput
-                                className="text-base text-text-primary font-inter-medium"
-                                placeholder="50000"
-                                placeholderTextColor={COLORS.text.tertiary}
-                                keyboardType="numeric"
-                                value={target}
-                                onChangeText={setTarget}
-                            />
-                        </View>
-                    </View>
-
-                    {/* Deadline. Typed dates meant learning a format and getting
-                        it wrong; this opens the platform picker instead. */}
-                    <TouchableOpacity
-                        className="bg-surface-secondary rounded-xl px-4 py-3 mb-6 flex-row items-center justify-between"
-                        onPress={() => setPickerOpen(true)}
-                        activeOpacity={0.7}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Target date, ${format(deadlineDate, 'd MMMM yyyy')}. Tap to change.`}
-                    >
-                        <View>
-                            <Text className="text-xs text-text-tertiary mb-1 font-inter">Target date</Text>
-                            <Text className="text-base text-text-primary font-inter-medium">
-                                {format(deadlineDate, 'd MMM yyyy')}
-                            </Text>
-                        </View>
-                        <CalendarDays size={18} color={COLORS.text.tertiary} />
-                    </TouchableOpacity>
-
-                    {pickerOpen && (
-                        <DateTimePicker
-                            value={deadlineDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                            minimumDate={new Date()}
-                            onChange={(event, picked) => {
-                                // Android fires once and dismisses itself; iOS
-                                // keeps the inline picker up until dismissed.
-                                if (Platform.OS === 'android') setPickerOpen(false);
-                                if (event.type === 'dismissed') return;
-                                if (picked) setDeadlineDate(picked);
-                            }}
-                        />
-                    )}
-
-                    {error && (
-                        <Text className="text-loss text-sm mb-4 leading-5 font-inter">{error}</Text>
-                    )}
-
-                    <View className="flex-row gap-3">
-                        <TouchableOpacity
-                            className="flex-1 border border-border rounded-xl py-3 items-center"
-                            onPress={onClose}
-                        >
-                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
-                        </TouchableOpacity>
-                        <PressableScale
-                            containerStyle={{ flex: 1 }}
-                            className="rounded-xl py-3 items-center"
-                            style={{ backgroundColor: selectedColor }}
-                            onPress={handleSave}
-                            accessibilityRole="button"
-                        >
-                            <Text className="text-white font-inter-bold">Create goal</Text>
-                        </PressableScale>
-                    </View>
-                </ScrollView>
+        <Sheet visible={visible} onClose={onClose} title="New goal">
+            {/* What it will look like, before it exists. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.secondary }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: `${color}22` }}>
+                    <GoalGlyph icon={icon} size={22} color={color} />
                 </View>
-            </KeyboardAvoidingView>
-        </Modal>
-    );
-};
-
-// ─── Summary Banner ───────────────────────────────────────────
-
-const SummaryBanner: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
-    const totalTarget = goals.reduce((s, g) => s + g.targetAmount, 0);
-    const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
-    const completed = goals.filter((g) => g.savedAmount >= g.targetAmount).length;
-    const overallPct = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
-
-    return (
-        <View className="mx-5 mt-3 bg-brand-primary-dark rounded-card p-4">
-            <View className="flex-row justify-between items-center mb-3">
-                <View>
-                    <Text className="text-white/70 text-xs mb-0.5 font-inter">Total saved</Text>
-                    <Text className="text-white text-2xl font-inter-bold">
-                        ₹{totalSaved.toLocaleString('en-IN')}
+                <View style={{ marginLeft: 14, flex: 1 }}>
+                    <Text numberOfLines={1} style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: title ? COLORS.text.primary : COLORS.text.tertiary }}>{title || 'Your goal'}</Text>
+                    <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
+                        {amount > 0 ? `${rs(Math.ceil(amount / months))} a month, by ${format(deadline, 'MMM yyyy')}` : `By ${format(deadline, 'd MMM yyyy')}`}
                     </Text>
-                    <Text className="text-white/70 text-xs font-inter">
-                        of ₹{totalTarget.toLocaleString('en-IN')} across {goals.length} goal
-                        {goals.length !== 1 ? 's' : ''}
-                    </Text>
-                </View>
-                <View className="items-center">
-                    <View className="w-16 h-16 rounded-full border-4 border-white/30 items-center justify-center">
-                        <Text numberOfLines={1} className="text-white font-inter-bold text-base" style={{ fontVariant: ['tabular-nums'] }}>{overallPct}%</Text>
-                    </View>
-                    {completed > 0 && (
-                        <View className="flex-row items-center mt-1">
-                            <Star size={11} color="rgba(255,255,255,0.8)" />
-                            <Text className="text-white/80 text-xs ml-1 font-inter">
-                                {completed} done
-                            </Text>
-                        </View>
-                    )}
                 </View>
             </View>
 
-            <BarFill percent={overallPct} trackClassName="bg-white/20" fillClassName="bg-surface-primary" />
-        </View>
+            <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Name it, like Goa trip"
+                placeholderTextColor={COLORS.text.tertiary}
+                maxLength={40}
+                accessibilityLabel="Goal name"
+                style={{ ...TYPE.body, color: COLORS.text.primary, marginTop: 16, height: 50, paddingHorizontal: 16, borderRadius: RADIUS.control, borderWidth: 1, borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary }}
+            />
+            <View style={{ paddingTop: 12, paddingBottom: 4 }}>
+                <AmountInput value={target} onChange={setTarget} color={COLORS.text.primary} label="Target amount" size={44} />
+            </View>
+
+            <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginTop: 6, marginBottom: 8 }}>By when</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {WHEN.map((w) => <Chip key={w.months} label={w.label} active={preset === w.months} color={color} onPress={() => { setPreset(w.months); setDeadline(addMonths(new Date(), w.months)); }} />)}
+                <Chip label={preset === null ? format(deadline, 'd MMM yyyy') : 'Pick a date'} active={preset === null} color={color} onPress={() => setPickerOpen(true)} />
+            </View>
+            {pickerOpen ? (
+                <DateTimePicker
+                    value={deadline}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                    minimumDate={new Date()}
+                    onChange={(event, picked) => {
+                        if (Platform.OS === 'android') setPickerOpen(false);
+                        if (event.type === 'dismissed') return;
+                        if (picked) { setDeadline(picked); setPreset(null); }
+                    }}
+                />
+            ) : null}
+
+            <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginTop: 18, marginBottom: 8 }}>Icon</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {GOAL_ICON_KEYS.map((key) => {
+                    const I = GOAL_ICONS[key];
+                    const on = icon === key;
+                    return (
+                        <PressableScale key={key} onPress={() => { haptics.select(); setIcon(key); }} activeScale={0.92} accessibilityRole="button" accessibilityLabel={`${key} icon`} accessibilityState={{ selected: on }}
+                            style={{ width: 46, height: 46, borderRadius: RADIUS.tile, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? `${color}22` : COLORS.surface.secondary, borderWidth: 1.5, borderColor: on ? color : 'transparent' }}>
+                            <I size={20} color={on ? color : COLORS.text.secondary} />
+                        </PressableScale>
+                    );
+                })}
+            </View>
+
+            <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginTop: 18, marginBottom: 8 }}>Colour</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+                {GOAL_COLORS.map((c) => (
+                    <Pressable key={c} onPress={() => { haptics.select(); setColor(c); }} accessibilityRole="button" accessibilityLabel={`Colour ${c}`} accessibilityState={{ selected: color === c }}
+                        style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: c }}>
+                        {color === c ? <Check size={16} color="#FFFFFF" strokeWidth={3} /> : null}
+                    </Pressable>
+                ))}
+            </View>
+
+            {error ? <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, marginTop: 12 }}>{error}</Text> : null}
+            <PrimaryButton
+                label={ready ? 'Create goal' : !title.trim() ? 'Name your goal' : 'Enter a target'}
+                color={color}
+                disabled={!ready}
+                onPress={() => {
+                    haptics.commit();
+                    onSave({
+                        title: title.trim(), icon, targetAmount: amount, savedAmount: 0,
+                        deadline: format(deadline, 'yyyy-MM-dd'), color, createdAt: new Date().toISOString(),
+                    });
+                }}
+            />
+        </Sheet>
     );
 };
 
-// ─── Main Screen ──────────────────────────────────────────────
+// ─── Screen ──────────────────────────────────────────────────
 
 export const GoalsScreen: React.FC = () => {
     const dispatch = useAppDispatch();
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const reduced = useReducedMotion();
-    const { items: goals, loading, error } = useAppSelector((state) => state.goals);
+    const { items: goals, error } = useAppSelector((state) => state.goals);
     const { user, profile } = useAppSelector((state) => state.auth);
     const userInitial = (user?.displayName || profile?.name)?.charAt(0).toUpperCase() || 'U';
 
-    const [addModalVisible, setAddModalVisible] = useState(false);
-    const [depositModalVisible, setDepositModalVisible] = useState(false);
-    const [selectedGoal, setSelectedGoal] = useState<FirestoreGoal | null>(null);
+    const [newOpen, setNewOpen] = useState(false);
+    const [depositGoal, setDepositGoal] = useState<FirestoreGoal | null>(null);
+    const [celebrate, setCelebrate] = useState(false);
 
-    useEffect(() => {
-        dispatch(fetchGoals());
-    }, [dispatch]);
+    useEffect(() => { dispatch(fetchGoals()); }, [dispatch]);
 
-    const handleCreateGoal = async (goal: Omit<FirestoreGoal, 'id'>) => {
-        // Closing regardless is what made a failed save look like a button
-        // that did nothing at all.
+    const active = useMemo(() => goals.filter((g) => g.savedAmount < g.targetAmount), [goals]);
+    const reached = useMemo(() => goals.filter((g) => g.savedAmount >= g.targetAmount), [goals]);
+
+    const create = async (goal: Omit<FirestoreGoal, 'id'>) => {
         const result = await dispatch(createGoal(goal));
-        if (createGoal.fulfilled.match(result)) {
-            haptics.commit();
-            setAddModalVisible(false);
-        }
+        if (createGoal.fulfilled.match(result)) setNewOpen(false);
     };
 
-    const handleDeposit = (goal: FirestoreGoal) => {
-        setSelectedGoal(goal);
-        setDepositModalVisible(true);
-    };
-
-    const handleConfirmDeposit = async (amount: number) => {
-        if (!selectedGoal?.id) return;
-        const result = await dispatch(depositToGoal({ goalId: selectedGoal.id, amount }));
+    const deposit = async (amount: number) => {
+        const goal = depositGoal;
+        if (!goal?.id) return;
+        const result = await dispatch(depositToGoal({ goalId: goal.id, amount }));
         if (depositToGoal.fulfilled.match(result)) {
-            setDepositModalVisible(false);
-            setSelectedGoal(null);
+            setDepositGoal(null);
+            if (goal.savedAmount + amount >= goal.targetAmount) { haptics.celebrate(); setCelebrate(true); }
         }
     };
 
-    const handleDelete = async (goalId: string) => {
-        await dispatch(removeGoal(goalId));
+    const more = (goal: FirestoreGoal) => {
+        haptics.tap();
+        Alert.alert(goal.title, undefined, [
+            { text: 'Delete goal', style: 'destructive', onPress: () => goal.id && dispatch(removeGoal(goal.id)) },
+            { text: 'Cancel', style: 'cancel' },
+        ]);
     };
+
+    const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
 
     return (
-        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-            {/* Modals */}
-            <AddGoalModal
-                error={addModalVisible ? error : null}
-                visible={addModalVisible}
-                onClose={() => setAddModalVisible(false)}
-                onSave={handleCreateGoal}
-            />
-            <DepositModal
-                error={depositModalVisible ? error : null}
-                visible={depositModalVisible}
-                goal={selectedGoal}
-                onClose={() => setDepositModalVisible(false)}
-                onConfirm={handleConfirmDeposit}
-            />
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
+            <NewGoalSheet key={newOpen ? 'open' : 'closed'} visible={newOpen} error={newOpen ? error : null} onClose={() => setNewOpen(false)} onSave={create} />
+            <AddMoneySheet key={depositGoal?.id ?? 'none'} goal={depositGoal} error={depositGoal ? error : null} onClose={() => setDepositGoal(null)} onConfirm={deposit} />
 
-            <ScrollView
-                className="flex-1"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 140 }}
-            >
-                {/* Header */}
-                <View className="px-5 pt-4 pb-2 flex-row justify-between items-center">
-                    <View>
-                        <Text style={TYPE.title} className="text-text-primary">
-                            Savings goals
-                        </Text>
-                        <Text className="text-sm text-text-secondary font-inter">
-                            {goals.length === 0
-                                ? 'Nothing set yet'
-                                : `${goals.length} goal${goals.length === 1 ? '' : 's'} on the go`}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+                <View style={{ paddingHorizontal: GUTTER, paddingTop: 12, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ ...TYPE.title, color: COLORS.text.primary }}>Goals</Text>
+                        <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
+                            {goals.length === 0 ? 'Save towards something' : `${rs(totalSaved)} saved across ${goals.length} goal${goals.length === 1 ? '' : 's'}`}
                         </Text>
                     </View>
-                    <View className="flex-row items-center gap-3">
-                        {loading && <ActivityIndicator size="small" color={COLORS.brand.primary} />}
-                        <PressableScale
-                            onPress={() => navigation.navigate('Profile' as never)}
-                            activeScale={0.92}
-                            accessibilityRole="button"
-                            accessibilityLabel="Your profile"
-                            className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
-                        >
-                            <Text className="text-white font-inter-bold text-base">{userInitial}</Text>
-                        </PressableScale>
-                    </View>
+                    <PressableScale onPress={() => navigation.navigate('Profile')} activeScale={0.92} accessibilityRole="button" accessibilityLabel="Your profile"
+                        style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}>
+                        <Text style={{ fontFamily: FONTS.bold, fontSize: 16, color: COLORS.brand.onAccent }}>{userInitial}</Text>
+                    </PressableScale>
                 </View>
 
-                {/* A save that did not reach Firestore is worth saying once,
-                    quietly. It used to be an Alert telling the user to go and
-                    check their Firebase security rules. */}
-                {error && (
-                    <Animated.View
-                        entering={FadeIn.duration(200)}
-                        style={{
-                            marginHorizontal: 20, marginTop: 8, paddingHorizontal: 12, paddingVertical: 10,
-                            flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12,
-                            backgroundColor: COLORS.surface.primary, borderColor: COLORS.border.default,
-                        }}
-                    >
+                {error && !newOpen && !depositGoal ? (
+                    <Animated.View entering={FadeIn.duration(200)} style={{ marginHorizontal: GUTTER, marginTop: 10, padding: 12, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.control, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
                         <CloudOff size={14} color={COLORS.text.secondary} />
-                        <Text className="text-xs text-text-secondary ml-2 flex-1 leading-4 font-inter">
-                            {error}
-                        </Text>
+                        <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginLeft: 8, flex: 1 }}>{error}</Text>
                     </Animated.View>
-                )}
+                ) : null}
 
-                {goals.length > 0 && <SummaryBanner goals={goals} />}
+                {goals.length > 0 ? <Summary goals={goals} /> : null}
 
-                {/* Goals list */}
-                <View className="mt-4">
-                    {goals.length > 0 ? (
-                        goals.map((goal, i) => (
-                            <Animated.View
-                                key={goal.id}
-                                entering={
-                                    reduced
-                                        ? FadeIn.duration(160)
-                                        : FadeInDown.duration(200)
-                                }
-                            >
-                                <GoalCard
-                                    goal={goal}
-                                    onDeposit={handleDeposit}
-                                    onDelete={handleDelete}
-                                />
+                {goals.length === 0 ? (
+                    <EmptyState
+                        icon={<PiggyBank color={COLORS.brand.primary} size={36} />}
+                        title="No goals yet"
+                        body="A trip, a phone, a cushion for bad months. Set one and see what it takes each month."
+                        actionLabel="Create your first goal"
+                        onAction={() => setNewOpen(true)}
+                    />
+                ) : (
+                    <>
+                        {active.length > 0 ? (
+                            <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginHorizontal: GUTTER, marginTop: 22, marginBottom: 10 }}>In progress</Text>
+                        ) : null}
+                        {active.map((goal, i) => (
+                            <Animated.View key={goal.id} entering={reduced ? FadeIn.duration(150) : FadeInDown.delay(i * 60).duration(260)}>
+                                <GoalCard goal={goal} onAdd={() => { haptics.tap(); setDepositGoal(goal); }} onMore={() => more(goal)} />
                             </Animated.View>
-                        ))
-                    ) : (
-                        <EmptyState
-                            icon={<PiggyBank color={COLORS.brand.primary} size={36} />}
-                            title="No goals yet"
-                            body="Set one savings goal, a trip, an emergency fund, a new phone, and this screen tracks how close you are and what it takes each month."
-                            actionLabel="Create your first goal"
-                            onAction={() => setAddModalVisible(true)}
-                        />
-                    )}
-                </View>
+                        ))}
+                        {reached.length > 0 ? (
+                            <View style={{ marginHorizontal: GUTTER, marginTop: 14 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                    <Trophy size={13} color={COLORS.text.tertiary} />
+                                    <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginLeft: 6 }}>Reached</Text>
+                                </View>
+                                <View style={{ paddingHorizontal: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
+                                    {reached.map((g, i) => <ReachedRow key={g.id} goal={g} last={i === reached.length - 1} onMore={() => more(g)} />)}
+                                </View>
+                            </View>
+                        ) : null}
+                    </>
+                )}
             </ScrollView>
 
-            {goals.length > 0 && (
+            {goals.length > 0 ? (
                 <PressableScale
-                    className="absolute bottom-6 right-6 bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center shadow-lg"
-                    onPress={() => setAddModalVisible(true)}
+                    onPress={() => { haptics.tap(); setNewOpen(true); }}
                     activeScale={0.92}
                     accessibilityRole="button"
-                    accessibilityLabel="Add a goal"
+                    accessibilityLabel="New goal"
+                    containerStyle={{ position: 'absolute', right: GUTTER, bottom: 24 }}
+                    style={{ height: 52, paddingHorizontal: 20, borderRadius: 26, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.brand.primaryDark, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
                 >
-                    <Plus color="white" size={24} />
+                    <Plus size={18} color={COLORS.brand.onAccent} strokeWidth={2.6} />
+                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent, marginLeft: 6 }}>New goal</Text>
                 </PressableScale>
-            )}
+            ) : null}
+
+            <Confetti active={celebrate} onDone={() => setCelebrate(false)} />
         </SafeAreaView>
     );
 };

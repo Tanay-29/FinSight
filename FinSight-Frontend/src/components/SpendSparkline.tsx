@@ -1,28 +1,33 @@
 /**
- * Thirty days of spending as one drawn line.
+ * Thirty days of spending as one curve you can run a finger along.
  *
- * Replaces a 7-point polyline that sat under a "Last 30 days" heading, was
- * scaled by a viewBox that never matched the card width, and matched
- * transactions by UTC date so an evening entry in India landed on the next
- * day's point. This one takes measured pixels, local days, and draws itself
- * in on first paint.
+ * At rest it shows the shape of the month: a smooth line through each day's
+ * total, a soft gradient under it, two faint gridlines with their amounts,
+ * the heaviest day labelled, and a slow pulse on today.
  *
- * The line is a Catmull-Rom spline through the daily totals, filled to the
- * baseline with a gradient that fades to nothing, so the shape reads as
- * weight rather than as a stock chart. The heaviest day gets a dot and a
- * label; today gets a pulse-free ring so the eye lands on "now". Weekly
- * ticks along the baseline give the thirty days a scale without an axis.
+ * Press and slide to read any single day: a guide line follows the finger,
+ * the point on the curve grows, and `onScrub` tells the card above which day
+ * is under the finger, so its big number can show that day instead of the
+ * month. A light tick of haptics marks each new day.
  *
- * Draw-in uses stroke-dashoffset on a Reanimated-wrapped Path, on the UI
- * thread; reduced motion paints the finished line at once.
+ * One very large day (rent, say) would flatten every other day into the
+ * baseline, so the scale stops short of it (see `softMax`) and that day is
+ * drawn clipped at the top with a small mark, its real amount in the label.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
-import Animated, { useAnimatedProps, useSharedValue, withTiming, Easing, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+    useAnimatedProps, useSharedValue, withTiming, withRepeat, withDelay, Easing, useReducedMotion,
+} from 'react-native-reanimated';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle, Line } from 'react-native-svg';
-import { COLORS, FONTS, MOTION } from '../theme/tokens';
+import { smoothPath, areaPath, nearestIndex, softMax, niceCeil } from './charts/curve';
+import { ScrubOverlay } from './charts/ScrubOverlay';
+import { inrShort } from '../utils/moneyMath';
+import * as haptics from '../utils/haptics';
+import { COLORS, FONTS } from '../theme/tokens';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export interface SparkDay {
     /** 'YYYY-MM-DD', local. */
@@ -33,71 +38,77 @@ export interface SparkDay {
 interface Props {
     days: SparkDay[];
     height?: number;
+    /** The day under the finger, or null when the finger lifts. */
+    onScrub?: (index: number | null) => void;
 }
 
-/** Catmull-Rom to cubic bezier, so the curve passes through every point. */
-function splinePath(pts: { x: number; y: number }[]): string {
-    if (pts.length < 2) return '';
-    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-        const p0 = pts[Math.max(0, i - 1)];
-        const p1 = pts[i];
-        const p2 = pts[i + 1];
-        const p3 = pts[Math.min(pts.length - 1, i + 2)];
-        const c1x = p1.x + (p2.x - p0.x) / 6;
-        const c1y = p1.y + (p2.y - p0.y) / 6;
-        const c2x = p2.x - (p3.x - p1.x) / 6;
-        const c2y = p2.y - (p3.y - p1.y) / 6;
-        d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-    }
-    return d;
-}
-
-const dayLabel = (key: string) => {
+export const dayLabel = (key: string, withWeekday = false) => {
     const [y, m, d] = key.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    return new Date(y, m - 1, d).toLocaleDateString('en-IN', withWeekday ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' });
 };
 
-export const SpendSparkline: React.FC<Props> = ({ days, height = 96 }) => {
+const PAD_X = 8;
+const PAD_RIGHT = 30;
+const PAD_TOP = 24;
+const PAD_BOTTOM = 20;
+
+export const SpendSparkline: React.FC<Props> = ({ days, height = 132, onScrub }) => {
     const [width, setWidth] = useState(0);
+    const [active, setActive] = useState<number | null>(null);
     const reduced = useReducedMotion();
     const progress = useSharedValue(reduced ? 1 : 0);
-
-    const PAD_X = 6;
-    const PAD_TOP = 22;
-    const PAD_BOTTOM = 18;
+    const pulse = useSharedValue(0);
     const baseline = height - PAD_BOTTOM;
 
     const model = useMemo(() => {
         if (width <= 0 || days.length < 2) return null;
-        const max = Math.max(...days.map((d) => d.amount));
-        const usable = height - PAD_TOP - PAD_BOTTOM;
+        const amounts = days.map((d) => d.amount);
+        const max = Math.max(...amounts);
+        const top = niceCeil(softMax(amounts));
+        const usable = baseline - PAD_TOP;
+        const plotW = width - PAD_X - PAD_RIGHT;
         const pts = days.map((d, i) => ({
-            x: PAD_X + (i / (days.length - 1)) * (width - PAD_X * 2),
-            y: max > 0 ? baseline - (d.amount / max) * usable : baseline,
+            x: PAD_X + (i / (days.length - 1)) * plotW,
+            y: top > 0 ? baseline - (Math.min(d.amount, top) / top) * usable : baseline,
         }));
-        const line = splinePath(pts);
-        const area = `${line} L${pts[pts.length - 1].x.toFixed(1)},${baseline} L${pts[0].x.toFixed(1)},${baseline} Z`;
-        let peakIdx = 0;
-        days.forEach((d, i) => { if (d.amount > days[peakIdx].amount) peakIdx = i; });
-        const ticks = pts.filter((_, i) => (days.length - 1 - i) % 7 === 0);
-        // Generous upper bound on the path length, for the dash draw-in.
-        const dash = width * 2 + height * 2;
-        return { pts, line, area, peakIdx, max, ticks, dash };
+        const line = smoothPath(pts);
+        const area = areaPath(line, pts, baseline);
+        let peak = 0;
+        amounts.forEach((a, i) => { if (a > amounts[peak]) peak = i; });
+        const clipped = amounts.map((a) => top > 0 && a > top);
+        const dash = width * 3 + height * 4;
+        return { pts, line, area, peak, max, top, clipped, dash, plotW };
     }, [days, width, height, baseline]);
 
     useEffect(() => {
         if (!model || reduced) return;
         progress.value = 0;
-        progress.value = withTiming(1, { duration: 600, easing: Easing.bezier(...MOTION.easing.reveal) });
-    }, [model, reduced, progress]);
+        progress.value = withTiming(1, { duration: 1100, easing: Easing.bezier(0.23, 1, 0.32, 1) });
+        pulse.value = 0;
+        pulse.value = withDelay(1100, withRepeat(withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad) }), -1, false));
+        // Draw once per new data and width, not on every scrub.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [model?.line, reduced]);
 
-    const lineProps = useAnimatedProps(() => ({
-        strokeDashoffset: model ? model.dash * (1 - progress.value) : 0,
-    }));
+    const lineProps = useAnimatedProps(() => ({ strokeDashoffset: model ? model.dash * (1 - progress.value) : 0 }));
     const areaProps = useAnimatedProps(() => ({ opacity: progress.value }));
+    const pulseProps = useAnimatedProps(() => ({ r: 5 + pulse.value * 9, opacity: 0.35 * (1 - pulse.value) }));
 
     const empty = !model || model.max <= 0;
+
+    const scrub = (x: number) => {
+        if (!model || empty) return;
+        const i = nearestIndex(model.pts, x);
+        if (i !== active) {
+            haptics.select();
+            setActive(i);
+            onScrub?.(i);
+        }
+    };
+    const end = () => { setActive(null); onScrub?.(null); };
+
+    const last = model ? model.pts[model.pts.length - 1] : null;
+    const a = active !== null && model ? model.pts[active] : null;
 
     return (
         <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
@@ -105,16 +116,18 @@ export const SpendSparkline: React.FC<Props> = ({ days, height = 96 }) => {
                 <Svg width={width} height={height}>
                     <Defs>
                         <LinearGradient id="spendFill" x1="0" y1="0" x2="0" y2="1">
-                            <Stop offset="0" stopColor={COLORS.brand.primary} stopOpacity={0.28} />
+                            <Stop offset="0" stopColor={COLORS.brand.primary} stopOpacity={0.30} />
+                            <Stop offset="0.7" stopColor={COLORS.brand.primary} stopOpacity={0.06} />
                             <Stop offset="1" stopColor={COLORS.brand.primary} stopOpacity={0} />
                         </LinearGradient>
                     </Defs>
 
-                    {/* Baseline and weekly ticks: the scale, without an axis. */}
-                    <Line x1={PAD_X} y1={baseline} x2={width - PAD_X} y2={baseline} stroke={COLORS.border.default} strokeWidth={1} />
-                    {model?.ticks.map((t, i) => (
-                        <Line key={i} x1={t.x} y1={baseline} x2={t.x} y2={baseline + 4} stroke={COLORS.border.strong} strokeWidth={1} />
-                    ))}
+                    {/* Two faint gridlines give the curve a scale without an axis. */}
+                    {model && !empty ? [1, 0.5].map((f) => {
+                        const y = baseline - f * (baseline - PAD_TOP);
+                        return <Line key={f} x1={PAD_X} y1={y} x2={PAD_X + model.plotW} y2={y} stroke={COLORS.border.default} strokeWidth={1} strokeDasharray={[2, 4]} />;
+                    }) : null}
+                    <Line x1={PAD_X} y1={baseline} x2={width - PAD_RIGHT} y2={baseline} stroke={COLORS.border.strong} strokeWidth={1} />
 
                     {model && !empty ? (
                         <>
@@ -123,47 +136,70 @@ export const SpendSparkline: React.FC<Props> = ({ days, height = 96 }) => {
                                 d={model.line}
                                 fill="none"
                                 stroke={COLORS.brand.primary}
-                                strokeWidth={2.25}
+                                strokeWidth={2.5}
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeDasharray={[model.dash, model.dash]}
                                 animatedProps={lineProps}
                             />
-                            {/* Heaviest day */}
-                            <Circle cx={model.pts[model.peakIdx].x} cy={model.pts[model.peakIdx].y} r={4} fill={COLORS.brand.primaryDark} />
-                            {/* Today */}
-                            <Circle cx={model.pts[model.pts.length - 1].x} cy={model.pts[model.pts.length - 1].y} r={5} fill={COLORS.surface.primary} stroke={COLORS.brand.primary} strokeWidth={2} />
+                            {/* A day too big for the scale: a cap mark where it leaves the chart. */}
+                            {model.clipped.map((c, i) => c ? (
+                                <Path key={`cap${i}`} d={`M${model.pts[i].x - 4},${PAD_TOP + 2} L${model.pts[i].x},${PAD_TOP - 3} L${model.pts[i].x + 4},${PAD_TOP + 2}`} stroke={COLORS.brand.primaryDark} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            ) : null)}
+
+                            {a ? (
+                                <>
+                                    <Line x1={a.x} y1={PAD_TOP - 6} x2={a.x} y2={baseline} stroke={COLORS.text.tertiary} strokeWidth={1} />
+                                    <Circle cx={a.x} cy={a.y} r={10} fill={COLORS.brand.primary} opacity={0.16} />
+                                    <Circle cx={a.x} cy={a.y} r={5} fill={COLORS.surface.primary} stroke={COLORS.brand.primaryDark} strokeWidth={2.5} />
+                                </>
+                            ) : (
+                                <>
+                                    <Circle cx={model.pts[model.peak].x} cy={model.pts[model.peak].y} r={3.5} fill={COLORS.brand.primaryDark} />
+                                    {last ? <AnimatedCircle cx={last.x} cy={last.y} fill={COLORS.brand.primary} animatedProps={pulseProps} /> : null}
+                                    {last ? <Circle cx={last.x} cy={last.y} r={4.5} fill={COLORS.surface.primary} stroke={COLORS.brand.primary} strokeWidth={2.5} /> : null}
+                                </>
+                            )}
                         </>
                     ) : null}
                 </Svg>
             ) : null}
 
-            {model && !empty ? (
+            {/* Gridline amounts, on the right edge. */}
+            {model && !empty ? [1, 0.5].map((f) => (
+                <Text key={f} style={{ position: 'absolute', right: 0, width: PAD_RIGHT - 4, top: baseline - f * (baseline - PAD_TOP) - 7, textAlign: 'right', fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary, fontVariant: ['tabular-nums'] }}>
+                    {inrShort(model.top * f)}
+                </Text>
+            )) : null}
+
+            {/* Resting label on the heaviest day; hidden while scrubbing. */}
+            {model && !empty && active === null ? (
                 <Text
                     style={{
                         position: 'absolute',
-                        top: Math.max(0, model.pts[model.peakIdx].y - 20),
-                        left: Math.min(Math.max(0, model.pts[model.peakIdx].x - 40), width - 96),
-                        width: 96,
-                        textAlign: model.pts[model.peakIdx].x > width - 60 ? 'right' : model.pts[model.peakIdx].x < 60 ? 'left' : 'center',
-                        fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.brand.primaryDark,
-                        fontVariant: ['tabular-nums'],
+                        top: Math.max(0, Math.min(model.pts[model.peak].y, PAD_TOP) - 22),
+                        left: Math.min(Math.max(0, model.pts[model.peak].x - 50), width - PAD_RIGHT - 100),
+                        width: 100,
+                        textAlign: model.pts[model.peak].x > width - 80 ? 'right' : model.pts[model.peak].x < 50 ? 'left' : 'center',
+                        fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.brand.link, fontVariant: ['tabular-nums'],
                     }}
                 >
-                    {dayLabel(days[model.peakIdx].key)} {'·'} {Math.round(days[model.peakIdx].amount).toLocaleString('en-IN')}
+                    {dayLabel(days[model.peak].key)} {'·'} ₹{inrShort(days[model.peak].amount)}
                 </Text>
             ) : null}
 
             {empty && width > 0 ? (
-                <Text style={{ position: 'absolute', top: PAD_TOP + 8, left: 0, right: 0, textAlign: 'center', fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.tertiary }}>
+                <Text style={{ position: 'absolute', top: PAD_TOP + 14, left: 0, right: 0, textAlign: 'center', fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.tertiary }}>
                     Nothing logged in the last 30 days
                 </Text>
             ) : null}
 
-            <View style={{ position: 'absolute', bottom: 0, left: PAD_X, right: PAD_X, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 10, color: COLORS.text.tertiary }}>{days.length > 0 ? dayLabel(days[0].key) : ''}</Text>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 10, color: COLORS.text.tertiary }}>Today</Text>
+            <View pointerEvents="none" style={{ position: 'absolute', bottom: 0, left: PAD_X, right: PAD_RIGHT, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>{days.length > 0 ? dayLabel(days[0].key) : ''}</Text>
+                <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>Today</Text>
             </View>
+
+            {!empty ? <ScrubOverlay onScrub={scrub} onEnd={end} label="Daily spending chart. Press and slide to read a day." /> : null}
         </View>
     );
 };

@@ -1,48 +1,92 @@
 /**
- * AddTransactionScreen
+ * AddTransactionScreen: write down money that went out or came in.
  *
- * Paste a bank message and the amount, merchant and category are read out of
- * it; or fill the three fields by hand.
+ * Amount first, because that is the one thing everybody knows when they open
+ * this. It is large, in the middle, and its colour says which way the money
+ * moved. Then where it went (or where it came from) and a grid of categories
+ * with their icons, the same icons the lists use.
  *
- * The three validation failures here used to be Alert dialogs. An Alert is the
- * right shape for "this cannot be undone", not for "you have not pasted
- * anything yet": it takes over the screen, has to be dismissed, and puts the
- * message somewhere other than the field it is about. They are one inline line
- * under the paste box now, next to the thing that needs fixing.
+ * Pasting a bank message is still here, one tap down: it fills the amount,
+ * the merchant and the category, and the fields stay editable afterwards.
+ *
+ * Problems are one line above the Save button, next to what needs fixing,
+ * never a dialog.
  */
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, TextInput, TouchableOpacity, ScrollView,
-    KeyboardAvoidingView, Platform, ActivityIndicator, ViewStyle,
+    View, Text, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
-import { Sparkles, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-react-native';
+import {
+    X, ClipboardPaste, ChevronDown, Check, AlertCircle, Users, Briefcase, Laptop, GraduationCap, RotateCcw, Gift, Wallet,
+} from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addTransaction, fetchCategoryCorrections } from '../store/slices/transactionsSlice';
 import { parseBankSMS } from '../utils/smartCategorizer';
-import { CATEGORIES, INCOME_SOURCES } from '../utils/categories';
+import { CATEGORIES, INCOME_SOURCES, IncomeSource } from '../utils/categories';
+import { CATEGORY_ICON_MAP } from '../components/TransactionRow';
 import { PressableScale } from '../components/PressableScale';
+import { AmountInput } from '../components/AmountInput';
+import { inr } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { COLORS } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, categoryTint, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
 
 /**
- * "1,200", "₹ 1200.50" and "1200" are all the same amount. parseFloat read the
- * first as 1, and saved "." as NaN, which then turned every total that summed
- * it into NaN as well. Null when the text is not a positive amount.
+ * "1,200", "₹ 1200.50" and "1200" are all the same amount. Null when the text
+ * is not a positive amount.
  */
 const toAmount = (raw: string): number | null => {
     const n = Number(raw.replace(/[₹,\s]/g, ''));
     return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
 };
 
+/** A green that white text reads on in both themes; the semantic one lifts in dark. */
+const INCOME_FILL = '#0E7C5A';
+
+const INCOME_ICONS: Record<IncomeSource, React.ComponentType<{ size?: number; color?: string }>> = {
+    allowance: Users,
+    salary: Briefcase,
+    freelance: Laptop,
+    scholarship: GraduationCap,
+    refund: RotateCcw,
+    gift: Gift,
+    other_income: Wallet,
+};
+
+/** One square in the category grid. */
+const Tile: React.FC<{
+    label: string; icon: React.ComponentType<{ size?: number; color?: string }>; color: string; tint: string; selected: boolean; onPress: () => void;
+}> = ({ label, icon, color, tint, selected, onPress }) => (
+    <PressableScale
+        onPress={onPress}
+        activeScale={0.94}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ selected }}
+        containerStyle={{ width: '25%', padding: 4 }}
+        style={{
+            alignItems: 'center', paddingVertical: 12, borderRadius: RADIUS.tile,
+            backgroundColor: selected ? tint : 'transparent',
+            borderWidth: 1.5, borderColor: selected ? color : 'transparent',
+        }}
+    >
+        <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? color : tint }}>
+            {React.createElement(icon, { size: 19, color: selected ? COLORS.surface.primary : color })}
+        </View>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ ...TYPE.caption, fontSize: 12, marginTop: 6, color: selected ? COLORS.text.primary : COLORS.text.secondary, fontFamily: selected ? FONTS.semibold : FONTS.medium }}>
+            {label}
+        </Text>
+    </PressableScale>
+);
+
 export default function AddTransactionScreen() {
     const navigation = useNavigation();
     const dispatch = useAppDispatch();
     const reduced = useReducedMotion();
 
-    const { syncStatus, corrections } = useAppSelector((state) => state.transactions);
+    const { corrections } = useAppSelector((state) => state.transactions);
 
     // Load what the user has already taught the categoriser, so a paste lands
     // in the right category first time for merchants the rules do not know.
@@ -51,37 +95,39 @@ export default function AddTransactionScreen() {
     }, [dispatch]);
 
     const [smsText, setSmsText] = useState('');
+    const [pasteOpen, setPasteOpen] = useState(false);
     const [amount, setAmount] = useState('');
     const [merchant, setMerchant] = useState('');
     // Spending and income are filed against different lists, so each type
     // remembers its own choice rather than carrying a nonsensical one across.
     const [category, setCategory] = useState('other');
-    const [incomeSource, setIncomeSource] = useState('allowance');
+    const [incomeSource, setIncomeSource] = useState<string>('allowance');
     const [type, setType] = useState<'debit' | 'credit'>('debit');
     const [isParsed, setIsParsed] = useState(false);
-    // What the parser guessed, kept separate from `category` so that if the
-    // user edits the picker afterward, the original guess survives to save
-    // time. Without this there was no way to tell "the parser was right" from
-    // "there was never a guess", which is what the categoriser accuracy study
-    // needs to compute a real number.
+    // What the parser guessed, kept apart from `category` so a later edit in
+    // the grid does not erase the record of what was guessed.
     const [predictedCategory, setPredictedCategory] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    // Local, not the slice's syncStatus: a background refresh of the list
+    // should not turn this button into a spinner.
+    const [saving, setSaving] = useState(false);
 
-    const handleSmartPaste = () => {
+    const isDebit = type === 'debit';
+    const accent = isDebit ? COLORS.text.primary : COLORS.semantic.profit;
+    const value = toAmount(amount);
+
+    const readMessage = () => {
         if (!smsText.trim()) {
-            setNotice('Paste a bank message above first.');
+            setNotice('Paste a bank message first.');
             return;
         }
-
         const extracted = parseBankSMS(smsText, corrections);
-
         if (extracted.amount === 0) {
-            setNotice('No amount found. The message needs to contain INR, Rs or the rupee sign.');
+            setNotice('No amount in that message. It needs INR, Rs or ₹ before the number.');
             return;
         }
-
         setNotice(null);
-        setAmount(extracted.amount.toString());
+        setAmount(String(extracted.amount));
         setMerchant(extracted.merchant);
         setType(extracted.type as 'debit' | 'credit');
         if (extracted.type === 'debit') {
@@ -91,217 +137,202 @@ export default function AddTransactionScreen() {
             setPredictedCategory(null);
         }
         setIsParsed(true);
+        setPasteOpen(false);
         haptics.success();
     };
 
-    const handleSave = async () => {
-        const value = toAmount(amount);
-        if (!amount || !merchant.trim()) {
-            setNotice(type === 'debit'
-                ? 'An amount and a merchant are both needed to save.'
-                : 'An amount and a source are both needed to save.');
-            return;
-        }
+    const save = async () => {
         if (value === null) {
             setNotice('Enter an amount above zero, like 250 or 1,200.');
             return;
         }
-
+        if (!merchant.trim()) {
+            setNotice(isDebit ? 'Add where you spent it.' : 'Add where it came from.');
+            return;
+        }
+        setSaving(true);
         try {
             await dispatch(addTransaction({
                 amount: value,
                 merchant: merchant.trim(),
-                category: type === 'debit' ? category : incomeSource,
+                category: isDebit ? category : incomeSource,
                 type,
                 date: new Date().toISOString(),
                 source: isParsed ? 'auto' : 'manual',
-                ...(type === 'debit' && predictedCategory ? { predictedCategory } : {}),
+                ...(isDebit && predictedCategory ? { predictedCategory } : {}),
             })).unwrap();
-
             haptics.commit();
             navigation.goBack();
         } catch {
             setNotice('That did not save. Check your connection and try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
-    /** The segmented control marks its selection with colour, not movement. */
-    const segmentStyle = (active: boolean): ViewStyle => ({
-        paddingVertical: 8,
-        borderRadius: 8,
-        alignItems: 'center',
-        backgroundColor: active ? COLORS.surface.primary : 'transparent',
-        transitionProperty: ['backgroundColor'],
-        transitionDuration: reduced ? 0 : 150,
-        transitionTimingFunction: 'ease-out',
-    } as ViewStyle);
-
     return (
-        <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                className="flex-1"
-            >
-                <View className="px-4 py-4 flex-row items-center border-b border-border bg-surface-primary">
-                    <TouchableOpacity
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+                {/* Close, and which way the money moved. */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 10, paddingBottom: 4 }}>
+                    <Pressable
                         onPress={() => navigation.goBack()}
-                        className="mr-3"
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        hitSlop={10}
                         accessibilityRole="button"
-                        accessibilityLabel="Go back"
+                        accessibilityLabel="Close"
+                        style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}
                     >
-                        <ChevronLeft size={28} color={COLORS.text.primary} />
-                    </TouchableOpacity>
-                    <Text className="text-xl font-inter-bold text-text-primary">Add a transaction</Text>
-                </View>
-
-                <ScrollView
-                    className="flex-1 px-5 pt-4"
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    <View className="bg-brand-soft border border-brand-edge rounded-2xl p-4 mb-6">
-                        <View className="flex-row items-center mb-2">
-                            <Sparkles size={18} color={COLORS.brand.primaryDark} />
-                            <Text className="text-base font-inter-bold text-brand-link ml-2">Smart paste</Text>
-                        </View>
-                        <Text className="text-xs text-brand-link/80 mb-3 font-inter">
-                            Paste your bank SMS below and the amount, merchant and category are
-                            read out of it.
-                        </Text>
-                        <TextInput
-                            className="bg-surface-primary border border-brand-edge rounded-xl p-3 text-sm text-text-primary mb-3 min-h-[80px] font-inter"
-                            placeholder="e.g. INR 649.00 debited from A/c XX1234 at NETFLIX on 21-Mar-26"
-                            placeholderTextColor={COLORS.text.tertiary}
-                            multiline
-                            textAlignVertical="top"
-                            value={smsText}
-                            onChangeText={(text) => {
-                                setSmsText(text);
-                                setIsParsed(false);
-                                setNotice(null);
-                            }}
-                        />
-
-                        {notice && (
-                            <Animated.View
-                                entering={FadeIn.duration(180)}
-                                style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}
-                            >
-                                <AlertCircle size={13} color={COLORS.semantic.alertCritical} style={{ marginTop: 2 }} />
-                                <Text className="text-xs text-loss ml-1.5 flex-1 leading-4 font-inter">
-                                    {notice}
-                                </Text>
-                            </Animated.View>
-                        )}
-
-                        <PressableScale
-                            onPress={handleSmartPaste}
-                            accessibilityRole="button"
-                            className={`flex-row justify-center items-center py-3 rounded-xl ${isParsed ? 'bg-profit' : 'bg-brand-primary-dark'}`}
-                        >
-                            {isParsed ? <CheckCircle2 size={18} color="white" /> : <Sparkles size={18} color="white" />}
-                            <Text className="text-white font-inter-bold ml-2">
-                                {isParsed ? 'Filled in below' : 'Read this message'}
-                            </Text>
-                        </PressableScale>
-                    </View>
-
-                    <Text className="text-sm font-inter-bold text-text-secondary uppercase tracking-wider mb-3 ml-1">
-                        Details
-                    </Text>
-
-                    <View className="flex-row bg-surface-tertiary rounded-xl p-1 mb-4">
-                        {(['debit', 'credit'] as const).map((t) => (
-                            <TouchableOpacity
-                                key={t}
-                                className="flex-1"
-                                onPress={() => { haptics.select(); setType(t); }}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: type === t }}
-                            >
-                                <Animated.View style={segmentStyle(type === t)}>
-                                    <Text
-                                        className={`font-inter-semibold ${
-                                            type === t
-                                                ? t === 'debit' ? 'text-alert-critical' : 'text-profit'
-                                                : 'text-text-secondary'
-                                        }`}
-                                    >
-                                        {t === 'debit' ? 'Expense' : 'Income'}
-                                    </Text>
-                                </Animated.View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <View className="flex-row gap-3 mb-4">
-                        <View className="flex-1 bg-surface-primary border border-border rounded-xl p-3">
-                            <Text className="text-xs text-text-secondary mb-1 font-inter">Amount (₹)</Text>
-                            <TextInput
-                                className="text-xl font-inter-bold text-text-primary p-0"
-                                keyboardType="decimal-pad"
-                                placeholder="0"
-                                placeholderTextColor={COLORS.text.tertiary}
-                                value={amount}
-                                onChangeText={(t) => { setAmount(t); setNotice(null); }}
-                            />
-                        </View>
-                        <View className="flex-1 bg-surface-primary border border-border rounded-xl p-3">
-                            <Text className="text-xs text-text-secondary mb-1 font-inter">
-                                {type === 'debit' ? 'Merchant' : 'From'}
-                            </Text>
-                            <TextInput
-                                className="text-lg font-inter-semibold text-text-primary p-0"
-                                placeholder={type === 'debit' ? 'e.g. Zomato' : 'e.g. Dad'}
-                                placeholderTextColor={COLORS.text.tertiary}
-                                value={merchant}
-                                onChangeText={setMerchant}
-                            />
-                        </View>
-                    </View>
-
-                    <View className="bg-surface-primary border border-border rounded-xl p-4 mb-8">
-                        <Text className="text-xs text-text-secondary mb-3 font-inter">
-                            {type === 'debit' ? 'Category' : 'Where it came from'}
-                        </Text>
-                        <View className="flex-row flex-wrap gap-2">
-                            {(type === 'debit' ? CATEGORIES : INCOME_SOURCES).map(({ key, label }) => {
-                                const selected = type === 'debit' ? category === key : incomeSource === key;
+                        <X size={18} color={COLORS.text.secondary} />
+                    </Pressable>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', padding: 3, borderRadius: 20, backgroundColor: COLORS.surface.tertiary }}>
+                            {(['debit', 'credit'] as const).map((t) => {
+                                const on = type === t;
                                 return (
-                                    <PressableScale
-                                        key={key}
-                                        onPress={() => {
-                                            haptics.select();
-                                            if (type === 'debit') setCategory(key);
-                                            else setIncomeSource(key);
-                                        }}
-                                        activeScale={0.94}
+                                    <Pressable
+                                        key={t}
+                                        onPress={() => { haptics.select(); setType(t); setNotice(null); }}
                                         accessibilityRole="button"
-                                        accessibilityState={{ selected }}
-                                        className={`px-3 py-2 rounded-full border ${selected ? 'bg-brand-primary border-brand-primary' : 'bg-surface-secondary border-border'}`}
+                                        accessibilityState={{ selected: on }}
+                                        style={{ paddingHorizontal: 18, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? COLORS.surface.primary : 'transparent' }}
                                     >
-                                        <Text className={`text-sm ${selected ? 'text-white font-inter-bold' : 'text-text-primary'}`}>
-                                            {label}
+                                        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: on ? (t === 'debit' ? COLORS.text.primary : COLORS.semantic.profit) : COLORS.text.tertiary }}>
+                                            {t === 'debit' ? 'Spent' : 'Received'}
                                         </Text>
-                                    </PressableScale>
+                                    </Pressable>
                                 );
                             })}
                         </View>
                     </View>
+                    <View style={{ width: 36 }} />
+                </View>
+
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    {/* The amount. */}
+                    <View style={{ alignItems: 'center', paddingTop: 30, paddingBottom: 4 }}>
+                        <AmountInput
+                            value={amount}
+                            onChange={(t) => { setAmount(t); setNotice(null); }}
+                            color={accent}
+                            prefix={isDebit ? '₹' : '+₹'}
+                            decimals
+                            autoFocus={!isParsed}
+                            label="Amount"
+                            size={58}
+                        />
+                        <Text style={{ ...TYPE.caption, color: COLORS.text.tertiary, marginTop: 2 }}>
+                            {isDebit ? 'How much did you spend?' : 'How much came in?'}
+                        </Text>
+                    </View>
+
+                    {/* Where. */}
+                    <View style={{ marginHorizontal: GUTTER, marginTop: 18, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default, paddingHorizontal: 16, paddingVertical: 12 }}>
+                        <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary }}>{isDebit ? 'Where' : 'From'}</Text>
+                        <TextInput
+                            value={merchant}
+                            onChangeText={(t) => { setMerchant(t); setNotice(null); }}
+                            placeholder={isDebit ? 'Zomato, metro card, rent' : 'Dad, internship, refund'}
+                            placeholderTextColor={COLORS.text.tertiary}
+                            maxLength={40}
+                            accessibilityLabel={isDebit ? 'Where you spent it' : 'Where it came from'}
+                            style={{ ...TYPE.body, fontFamily: FONTS.semibold, fontSize: 17, color: COLORS.text.primary, padding: 0, marginTop: 4, height: 28 }}
+                        />
+                    </View>
+
+                    {/* What for. */}
+                    <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginHorizontal: GUTTER, marginTop: 22, marginBottom: 6 }}>
+                        {isDebit ? 'Category' : 'Source'}
+                    </Text>
+                    <Animated.View key={type} entering={reduced ? undefined : FadeIn.duration(180)} style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: GUTTER - 4 }}>
+                        {isDebit
+                            ? CATEGORIES.map(({ key, label }) => (
+                                <Tile
+                                    key={key}
+                                    label={label === 'Rent & Housing' ? 'Rent' : label}
+                                    icon={CATEGORY_ICON_MAP[key]}
+                                    color={CATEGORY_COLORS[key]}
+                                    tint={categoryTint(key)}
+                                    selected={category === key}
+                                    onPress={() => { haptics.select(); setCategory(key); }}
+                                />
+                            ))
+                            : INCOME_SOURCES.map(({ key, label }) => (
+                                <Tile
+                                    key={key}
+                                    label={label === 'Something else' ? 'Other' : label === 'From family' ? 'Family' : label}
+                                    icon={INCOME_ICONS[key]}
+                                    color={COLORS.semantic.profit}
+                                    tint={COLORS.semantic.profitBg}
+                                    selected={incomeSource === key}
+                                    onPress={() => { haptics.select(); setIncomeSource(key); }}
+                                />
+                            ))}
+                    </Animated.View>
+
+                    {/* Or read it from a bank message. */}
+                    <Animated.View layout={reduced ? undefined : LinearTransition.duration(220)} style={{ marginHorizontal: GUTTER, marginTop: 18, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default, overflow: 'hidden' }}>
+                        <Pressable
+                            onPress={() => { haptics.tap(); setPasteOpen((o) => !o); }}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: pasteOpen }}
+                            style={{ flexDirection: 'row', alignItems: 'center', padding: 14 }}
+                        >
+                            <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: isParsed ? COLORS.semantic.profitBg : COLORS.brand.soft }}>
+                                {isParsed ? <Check size={17} color={COLORS.semantic.profit} strokeWidth={2.6} /> : <ClipboardPaste size={17} color={COLORS.brand.link} />}
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                                <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>
+                                    {isParsed ? 'Filled from your message' : 'Paste a bank message'}
+                                </Text>
+                                <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>
+                                    {isParsed ? 'Check the details above' : 'Fills the amount, place and category'}
+                                </Text>
+                            </View>
+                            <ChevronDown size={18} color={COLORS.text.tertiary} style={{ transform: [{ rotate: pasteOpen ? '180deg' : '0deg' }] }} />
+                        </Pressable>
+                        {pasteOpen ? (
+                            <Animated.View entering={reduced ? undefined : FadeInDown.duration(200)} style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
+                                <TextInput
+                                    value={smsText}
+                                    onChangeText={(t) => { setSmsText(t); setIsParsed(false); setNotice(null); }}
+                                    placeholder="INR 649.00 debited from A/c XX1234 at NETFLIX on 21-Mar-26"
+                                    placeholderTextColor={COLORS.text.tertiary}
+                                    multiline
+                                    textAlignVertical="top"
+                                    accessibilityLabel="Bank message"
+                                    style={{ ...TYPE.caption, fontFamily: FONTS.regular, fontSize: 14, lineHeight: 20, color: COLORS.text.primary, minHeight: 84, padding: 12, borderRadius: RADIUS.control, backgroundColor: COLORS.surface.secondary }}
+                                />
+                                <PressableScale
+                                    onPress={readMessage}
+                                    accessibilityRole="button"
+                                    style={{ marginTop: 10, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.soft }}
+                                >
+                                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.link }}>Read this message</Text>
+                                </PressableScale>
+                            </Animated.View>
+                        ) : null}
+                    </Animated.View>
                 </ScrollView>
 
-                <View className="p-4 bg-surface-primary border-t border-border">
+                <View style={{ paddingHorizontal: GUTTER, paddingTop: 10, paddingBottom: 10 }}>
+                    {notice ? (
+                        <Animated.View entering={FadeIn.duration(180)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                            <AlertCircle size={14} color={COLORS.semantic.alertCritical} />
+                            <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, marginLeft: 6 }}>{notice}</Text>
+                        </Animated.View>
+                    ) : null}
                     <PressableScale
-                        onPress={handleSave}
-                        disabled={!amount || syncStatus === 'syncing'}
+                        onPress={save}
+                        disabled={saving}
                         accessibilityRole="button"
-                        className={`py-4 rounded-xl items-center ${(!amount || syncStatus === 'syncing') ? 'bg-brand-primary/40' : 'bg-brand-primary'}`}
+                        style={{ height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: value ? (isDebit ? COLORS.brand.primaryDark : INCOME_FILL) : COLORS.surface.tertiary }}
                     >
-                        {syncStatus === 'syncing' ? (
-                            <ActivityIndicator color="#fff" />
+                        {saving ? (
+                            <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text className="text-white text-lg font-inter-bold">Save</Text>
+                            <Text style={{ ...TYPE.callout, fontSize: 16, fontFamily: FONTS.semibold, color: value ? '#FFFFFF' : COLORS.text.tertiary }}>
+                                {value ? `Save ₹${inr(value)}` : 'Save'}
+                            </Text>
                         )}
                     </PressableScale>
                 </View>

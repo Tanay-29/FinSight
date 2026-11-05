@@ -49,25 +49,21 @@ const Stack = createNativeStackNavigator();
  */
 const INTRO_SEEN_KEY = 'finsight:intro-seen';
 
-export const RootNavigator = () => {
+/**
+ * The last answer, kept for the life of the app. A theme change rebuilds the
+ * navigator, and without this it would read the flag from disk again and show
+ * the splash for a frame on every switch.
+ */
+let introSeenCache: boolean | undefined;
+
+/**
+ * Follows sign-in and sign-out. Lives outside the navigator (App renders it
+ * next to the NavigationContainer) because the navigator is rebuilt on every
+ * theme switch, and re-subscribing each time refetched the profile for no
+ * reason.
+ */
+export const useAuthListener = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { user, initializing, profile, profileLoading, profileSettled, profileError } =
-        useSelector((state: RootState) => state.auth);
-    const reduced = useReducedMotion();
-    const [introSeen, setIntroSeen] = useState<boolean | undefined>(undefined);
-
-    useEffect(() => {
-        AsyncStorage.getItem(INTRO_SEEN_KEY)
-            .then((v) => setIntroSeen(v === '1'))
-            // A storage read that fails should not trap anyone on the intro.
-            .catch(() => setIntroSeen(true));
-    }, []);
-
-    const dismissIntro = () => {
-        setIntroSeen(true);
-        AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => { });
-    };
-
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
             if (firebaseUser) {
@@ -80,6 +76,27 @@ export const RootNavigator = () => {
         });
         return unsubscribe;
     }, [dispatch]);
+};
+
+export const RootNavigator = () => {
+    const dispatch = useDispatch<AppDispatch>();
+    const { user, initializing, profile, profileLoading, profileSettled, profileError } =
+        useSelector((state: RootState) => state.auth);
+    const reduced = useReducedMotion();
+    const [introSeen, setIntroSeen] = useState<boolean | undefined>(introSeenCache);
+
+    useEffect(() => {
+        AsyncStorage.getItem(INTRO_SEEN_KEY)
+            .then((v) => { introSeenCache = v === '1'; setIntroSeen(introSeenCache); })
+            // A storage read that fails should not trap anyone on the intro.
+            .catch(() => { introSeenCache = true; setIntroSeen(true); });
+    }, []);
+
+    const dismissIntro = () => {
+        introSeenCache = true;
+        setIntroSeen(true);
+        AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => { });
+    };
 
     // Block only on the very first profile read.
     //

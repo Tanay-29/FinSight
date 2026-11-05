@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, NavigationState, createNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './src/store/store';
-import { RootNavigator } from './src/navigation/RootNavigator';
+import { RootNavigator, useAuthListener } from './src/navigation/RootNavigator';
 import { COLORS } from './src/theme/tokens';
 import { ThemeProvider, useScheme } from './src/theme/theme';
 import {
@@ -43,6 +43,9 @@ installCrashRecorder();
 // Untyped on purpose: the app's stacks are declared without a param list.
 const navigationRef = createNavigationContainerRef<any>();
 
+/** Where the person is, so a theme switch can put them back there. */
+let savedNavState: NavigationState | undefined;
+
 /**
  * A tapped notification opens what it is about: the daily session, or the
  * Money tab for a budget alert. Only when the stack actually has the
@@ -66,16 +69,19 @@ function openSessionFromNotification(response: Notifications.NotificationRespons
 /**
  * Sits inside ThemeProvider so it can see the resolved scheme.
  *
- * The key on RootNavigator is deliberate. Class-based colour follows the theme
- * on its own, but inline JS colour, every Lucide icon and SVG stroke in the
- * app, is read during render, so a screen that is mounted and idle would keep
- * the old palette until something else made it re-render. Remounting the stack
- * is the one line that makes the switch complete rather than gradual. The cost
- * is that switching theme returns you to the root of the stack, which is a
- * fair trade for something done once and then left alone.
+ * The key on the container is deliberate. Class-based colour follows the
+ * theme on its own, but inline JS colour, every Lucide icon and SVG stroke in
+ * the app, is read during render, so a screen that is mounted and idle would
+ * keep the old palette until something else made it re-render. Rebuilding the
+ * navigator is what makes the switch complete rather than gradual.
+ *
+ * It used to cost the person their place: every switch landed on Today. The
+ * navigation state is kept as it changes and handed back to the rebuilt
+ * container, so a switch made in Profile stays in Profile.
  */
 const Root: React.FC = () => {
   const { scheme } = useScheme();
+  useAuthListener();
 
   useEffect(() => {
     // A tap while the app is running, and the tap that launched it.
@@ -90,13 +96,18 @@ const Root: React.FC = () => {
   }, []);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      key={scheme}
+      ref={navigationRef}
+      initialState={savedNavState}
+      onStateChange={(state) => { savedNavState = state; }}
+    >
       <StatusBar
         style={scheme === 'dark' ? 'light' : 'dark'}
         backgroundColor={COLORS.surface.secondary}
         translucent={false}
       />
-      <RootNavigator key={scheme} />
+      <RootNavigator />
     </NavigationContainer>
   );
 };

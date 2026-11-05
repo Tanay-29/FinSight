@@ -21,7 +21,7 @@ interface TransactionRowProps {
 
 // Keyed on the canonical union only. Legacy spellings never reach this map,
 // because normaliseCategory resolves them on the way in.
-const CATEGORY_ICON_MAP: Record<Category, React.ComponentType<any>> = {
+export const CATEGORY_ICON_MAP: Record<Category, React.ComponentType<any>> = {
     dining: Utensils,
     groceries: ShoppingCart,
     transport: Car,

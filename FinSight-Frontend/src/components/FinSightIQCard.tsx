@@ -13,9 +13,9 @@
  */
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, useReducedMotion, useSharedValue, useAnimatedProps, withTiming, withDelay, Easing } from 'react-native-reanimated';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw, CloudOff } from 'lucide-react-native';
+import { BrainCircuit, Target, BookOpen, TrendingUp, MessageCircle, RefreshCw } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
 import { buildLocalAdvice, isServerPlaceholder } from '../utils/localCoach';
@@ -65,6 +65,9 @@ const START_DEG = 240;
 const SWEEP_DEG = 240;
 
 const TRACK_D = arcPath(CX, CY, RADIUS, START_DEG, SWEEP_DEG);
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 
 // ─── Grade helper ──────────────────────────────────────────────
@@ -116,6 +119,16 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
     const fillDeg = fillPct * SWEEP_DEG;
     const fillD = fillDeg > 0 ? arcPath(CX, CY, RADIUS, START_DEG, fillDeg) : '';
     const dot = polarToCartesian(CX, CY, RADIUS, START_DEG + fillDeg);
+    // The arc sweeps out from empty, and the dot lands once it arrives.
+    const arcLen = (Math.PI * RADIUS * fillDeg) / 180;
+    const reduced = useReducedMotion();
+    const sweep = useSharedValue(reduced ? 1 : 0);
+    useEffect(() => {
+        sweep.value = 0;
+        sweep.value = reduced ? 1 : withDelay(150, withTiming(1, { duration: 1100, easing: Easing.bezier(0.23, 1, 0.32, 1) }));
+    }, [score, reduced, sweep]);
+    const arcProps = useAnimatedProps(() => ({ strokeDashoffset: arcLen * (1 - sweep.value) }));
+    const dotProps = useAnimatedProps(() => ({ opacity: Math.max(0, (sweep.value - 0.85) / 0.15) }));
 
     return (
         <View style={{ alignItems: 'center' }}>
@@ -142,18 +155,21 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
 
                 {/* Filled arc */}
                 {fillD.length > 0 && (
-                    <Path
+                    <AnimatedPath
                         d={fillD}
                         fill="none"
                         stroke="url(#gaugeFill)"
                         strokeWidth={STROKE}
                         strokeLinecap="round"
+                        strokeDasharray={[arcLen, arcLen]}
+                        animatedProps={arcProps}
                     />
                 )}
 
                 {/* Needle dot */}
                 {fillDeg > 0 && (
-                    <Circle
+                    <AnimatedCircle
+                        animatedProps={dotProps}
                         cx={dot.x}
                         cy={dot.y}
                         r={STROKE / 2 + 2}
@@ -203,7 +219,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
 const FinSightIQCard: React.FC = () => {
     const dispatch = useAppDispatch();
     const reduced = useReducedMotion();
-    const { advice, adviceLoading, adviceError, lastFetchedAt } = useAppSelector((s) => s.iq);
+    const { advice, adviceLoading, lastFetchedAt } = useAppSelector((s) => s.iq);
     const transactions  = useAppSelector((s) => s.transactions.items);
     const budgets       = useAppSelector((s) => s.budgets.items);
     const goals         = useAppSelector((s: any) => s.goals?.items ?? []);
@@ -309,25 +325,6 @@ const FinSightIQCard: React.FC = () => {
                                 {shown.explanation}
                             </Text>
                         </View>
-                    </View>
-                </View>
-            ) : null}
-            {!fromModel && !adviceLoading && adviceError ? (
-                // The score above is computed on the phone and is always right.
-                // Only the model's read on it needs the server, so say that
-                // rather than leaving the space blank or spinning for ever.
-                <View style={{ marginHorizontal: 16, marginBottom: 12, padding: 14, backgroundColor: COLORS.surface.secondary, borderRadius: 16, flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <CloudOff size={14} color={COLORS.text.tertiary} style={{ marginTop: 2 }} />
-                    <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17 }}>
-                            {adviceError} The read above is computed on your phone.
-                        </Text>
-                        <Text
-                            onPress={handleRefresh}
-                            style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.brand.primary, marginTop: 6 }}
-                        >
-                            Try again
-                        </Text>
                     </View>
                 </View>
             ) : null}

@@ -35,32 +35,45 @@ const SettingsRow: React.FC<{
     rightElement?: React.ReactNode;
     danger?: boolean;
     disabled?: boolean;
-}> = ({ icon, label, hint, onPress, rightElement, danger, disabled }) => (
+}> = ({ icon, label, hint, onPress, rightElement, danger, disabled }) => {
+    const body = (
+        <>
+            <View className="w-8 h-8 rounded-lg bg-surface-secondary items-center justify-center mr-3">
+                {icon}
+            </View>
+            <View className="flex-1">
+                <Text className={`text-base ${danger ? 'text-loss' : 'text-text-primary'}`}>
+                    {label}
+                </Text>
+                {hint ? <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{hint}</Text> : null}
+            </View>
+            {rightElement ?? <ChevronRight size={16} color={COLORS.text.tertiary} />}
+        </>
+    );
+    // A row whose control sits on the right (a switch, the theme picker) is
+    // not itself a button. Wrapping it in a disabled Pressable blocked taps
+    // on the control inside it.
+    if (!onPress) {
+        return <View className="flex-row items-center px-4 py-3.5 border-b border-border" style={{ opacity: disabled ? 0.5 : 1 }}>{body}</View>;
+    }
     // A settings row marks press with its own background rather than scaling,
     // for the same reason a transaction row does.
-    <Pressable
-        className="flex-row items-center px-4 py-3.5 border-b border-border"
-        onPress={onPress ? () => { haptics.tap(); onPress(); } : undefined}
-        disabled={disabled || !onPress}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={({ pressed }) => ({
-            opacity: disabled ? 0.5 : 1,
-            backgroundColor: pressed && onPress ? COLORS.surface.secondary : 'transparent',
-        })}
-    >
-        <View className="w-8 h-8 rounded-lg bg-surface-secondary items-center justify-center mr-3">
-            {icon}
-        </View>
-        <View className="flex-1">
-            <Text className={`text-base ${danger ? 'text-loss' : 'text-text-primary'}`}>
-                {label}
-            </Text>
-            {hint ? <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{hint}</Text> : null}
-        </View>
-        {rightElement ?? <ChevronRight size={16} color={COLORS.text.tertiary} />}
-    </Pressable>
-);
+    return (
+        <Pressable
+            className="flex-row items-center px-4 py-3.5 border-b border-border"
+            onPress={() => { haptics.tap(); onPress(); }}
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            style={({ pressed }) => ({
+                opacity: disabled ? 0.5 : 1,
+                backgroundColor: pressed ? COLORS.surface.secondary : 'transparent',
+            })}
+        >
+            {body}
+        </Pressable>
+    );
+};
 
 export const ProfileScreen: React.FC = () => {
     const { pref, setPref } = useScheme();

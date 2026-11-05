@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-    Modal, TextInput, KeyboardAvoidingView, Platform,
+    Modal, TextInput, KeyboardAvoidingView, Platform, Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package,
-    ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank, Calculator,
+    ChevronRight, Leaf, Wallet, CloudOff, Plus, PiggyBank, Calculator, Gauge,
 } from 'lucide-react-native';
 import { summariseNoSpendDays } from '../utils/noSpendDays';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -18,8 +18,11 @@ import { BudgetBar } from '../components/BudgetBar';
 import { BarFill } from '../components/BarFill';
 import { EmptyState } from '../components/EmptyState';
 import type { Category } from '../utils/categories';
-import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory } from '../utils/categories';
-import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
+import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory, categoryLabel } from '../utils/categories';
+import { ShareBar } from '../components/charts/ShareBar';
+import { inr } from '../utils/moneyMath';
+import * as haptics from '../utils/haptics';
+import { COLORS, CATEGORY_COLORS, categoryTint, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
 import { PressableScale } from '../components/PressableScale';
 import { resolveMonthlyIncome, savingsRate, savingsRateVerdict } from '../utils/income';
 import { summariseSpending } from '../utils/spendSummary';
@@ -66,34 +69,26 @@ const getCategoryIconNode = (category: string, size = 16, color?: string) => {
  */
 const getCategoryColor = (category: string) => CATEGORY_COLORS[normaliseCategory(category)];
 
-// ─── Bar Chart ───────────────────────────────────────────────────
+// ─── Where it went ───────────────────────────────────────────────
 
 /**
- * Category spending, as horizontal bars.
- *
- * This was vertical bars in an SVG whose viewBox was sized to the number of
- * categories while the SVG itself rendered at width 100%. With two categories
- * the whole drawing scaled up to fill the screen and the labels came out
- * enormous; with eight it shrank. The labels were also cut to six characters
- * with no ellipsis, so Entertainment read as "Entert".
- *
- * Horizontal bars fix both. The row height is fixed, so any number of
- * categories looks the same, and a long Indian category name has the full width
- * of the card to sit in.
+ * The month's spending by category: one bar split by share, then a row per
+ * category with its icon, amount and share. Tap a row to pick its part out
+ * of the bar.
  */
 const SpendingBarChart: React.FC<{
-    data: { name: string; amount: number; color: string }[];
+    data: { key: string; label: string; amount: number; color: string }[];
     monthLabel: string;
 }> = ({ data, monthLabel }) => {
+    const [selected, setSelected] = React.useState<string | null>(null);
     if (data.length === 0) {
         return (
             <View className="py-6 px-2 items-center">
-                <Text className="text-text-secondary text-sm text-center font-inter">
+                <Text style={TYPE.callout} className="text-text-secondary text-center">
                     Nothing logged in {monthLabel} yet.
                 </Text>
-                <Text className="text-text-tertiary text-xs text-center mt-1 leading-4 font-inter">
-                    This card and the budgets cover one calendar month, so they
-                    start again on the 1st. The 30-day summary at the top still has it.
+                <Text style={TYPE.caption} className="text-text-tertiary text-center mt-1">
+                    This card starts again on the 1st. The 30-day chart above still has it.
                 </Text>
             </View>
         );
@@ -104,34 +99,39 @@ const SpendingBarChart: React.FC<{
 
     return (
         <View>
-            {data.map((item, i) => {
-                const share = Math.round((item.amount / total) * 100);
-                return (
-                    <View key={item.name} className="mb-3.5">
-                        <View className="flex-row items-baseline justify-between mb-1.5">
-                            <Text
-                                className="text-sm font-inter-medium text-text-primary flex-1 mr-3"
-                                numberOfLines={1}
-                            >
-                                {item.name}
-                            </Text>
-                            <Text className="text-sm font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
-                                ₹{item.amount.toLocaleString('en-IN')}
-                            </Text>
-                            <Text className="text-xs text-text-tertiary ml-2 w-9 text-right font-inter">
-                                {share}%
-                            </Text>
-                        </View>
-
-                        {/* Staggered down the list so the eye reads top to
-                            bottom instead of everything arriving at once. */}
-                        <BarFill
-                            percent={Math.max((item.amount / maxAmount) * 100, 2)}
-                            color={item.color}
-                            />
-                    </View>
-                );
-            })}
+            <ShareBar parts={data.map((d) => ({ key: d.key, value: d.amount, color: d.color }))} selected={selected} />
+            <View style={{ marginTop: 8 }}>
+                {data.map((item, i) => {
+                    const share = Math.round((item.amount / total) * 100);
+                    const on = selected === item.key;
+                    return (
+                        <Pressable
+                            key={item.key}
+                            onPress={() => { haptics.select(); setSelected(on ? null : item.key); }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: on }}
+                            accessibilityLabel={`${item.label}, ₹${inr(item.amount)}, ${share} percent`}
+                            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, opacity: selected && !on ? 0.5 : 1 }}
+                        >
+                            <View style={{ width: 34, height: 34, borderRadius: RADIUS.control, alignItems: 'center', justifyContent: 'center', backgroundColor: item.key === 'rest' ? COLORS.surface.tertiary : categoryTint(item.key as Category) }}>
+                                {item.key === 'rest' ? <Package size={16} color={COLORS.text.tertiary} strokeWidth={1.8} /> : getCategoryIconNode(item.key)}
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                                    <Text numberOfLines={1} style={[TYPE.callout, { fontFamily: FONTS.semibold, flex: 1 }]} className="text-text-primary">{item.label}</Text>
+                                    <Text style={[TYPE.amountSm]} className="text-text-primary">₹{inr(item.amount)}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                                    <View style={{ flex: 1 }}>
+                                        <BarFill percent={Math.max((item.amount / maxAmount) * 100, 2)} color={item.color} height={4} delay={i * 60} />
+                                    </View>
+                                    <Text style={[TYPE.caption, { fontSize: 12, width: 38, textAlign: 'right' }]} className="text-text-tertiary">{share}%</Text>
+                                </View>
+                            </View>
+                        </Pressable>
+                    );
+                })}
+            </View>
         </View>
     );
 };
@@ -472,23 +472,29 @@ export const VitalsScreen: React.FC = () => {
     const totalSpent = transactions
         .filter((t) => t.type === 'debit' && format(new Date(t.date), 'yyyy-MM') === currentMonthKey)
         .reduce((sum, t) => sum + t.amount, 0);
-    const overallPercentage = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+    // Spending against budgets counts only the categories that have one.
+    // Rent with no budget used to push this past 100% while every budget
+    // underneath it read On track.
+    const budgetedSpent = monthBudgets.reduce((sum, b) => sum + transactions
+        .filter((t) => t.type === 'debit' && normaliseCategory(t.category) === normaliseCategory(b.category) && format(new Date(t.date), 'yyyy-MM') === currentMonthKey)
+        .reduce((s2, t) => s2 + t.amount, 0), 0);
+    const overallPercentage = totalBudget > 0 ? Math.round((budgetedSpent / totalBudget) * 100) : 0;
 
     const chartData = React.useMemo(() => {
         const totals: Record<string, number> = {};
         transactions.forEach((t) => {
             if (t.type === 'debit' && format(new Date(t.date), 'yyyy-MM') === currentMonthKey) {
-                totals[t.category] = (totals[t.category] || 0) + t.amount;
+                const key = normaliseCategory(t.category);
+                totals[key] = (totals[key] || 0) + t.amount;
             }
         });
-        return Object.entries(totals)
-            .map(([name, amount]) => ({
-                name: name.charAt(0).toUpperCase() + name.slice(1),
-                amount,
-                color: getCategoryColor(name),
-            }))
-            .sort((a, b) => b.amount - a.amount)
-            .slice(0, 6);
+        const rows = Object.entries(totals)
+            .map(([key, amount]) => ({ key, label: categoryLabel(key), amount, color: getCategoryColor(key) }))
+            .sort((a, b) => b.amount - a.amount);
+        if (rows.length <= 6) return rows;
+        // Past five, the rest share one row so the list stays short.
+        const rest = rows.slice(5).reduce((sum, r) => sum + r.amount, 0);
+        return [...rows.slice(0, 5), { key: 'rest', label: 'Everything else', amount: rest, color: COLORS.text.muted }];
     }, [transactions, currentMonthKey]);
 
     const handleCreateBudget = async (category: string, limit: number) => {
@@ -598,7 +604,7 @@ export const VitalsScreen: React.FC = () => {
                     <Glance
                         icon={<Leaf color={COLORS.semantic.profit} size={16} />}
                         value={String(noSpend.thisMonth)}
-                        label={noSpend.currentRun > 1 ? `clear days, ${noSpend.currentRun} in a row` : 'clear days this month'}
+                        label={noSpend.currentRun > 1 ? `days with no spending, ${noSpend.currentRun} in a row` : `${noSpend.thisMonth === 1 ? 'day' : 'days'} with no spending`}
                     />
                     <View className="w-px bg-border my-3" />
                     {(() => {
@@ -625,9 +631,9 @@ export const VitalsScreen: React.FC = () => {
                     })()}
                     <View className="w-px bg-border my-3" />
                     <Glance
-                        icon={<ChevronRight color={COLORS.text.tertiary} size={16} />}
-                        value={`₹${recentSpending.spentThisWeek.toLocaleString('en-IN')}`}
-                        label="this week, see the pace"
+                        icon={<Gauge color={COLORS.semantic.alertAmber} size={16} />}
+                        value={`₹${inr(recentSpending.spentThisWeek)}`}
+                        label="this week, tap for your pace"
                         onPress={() => navigation.navigate('BurnRate' as never)}
                     />
                 </View>
@@ -660,15 +666,15 @@ export const VitalsScreen: React.FC = () => {
                         <View className="mb-4">
                             <View className="flex-row items-baseline justify-between mb-2">
                                 <View className="flex-row items-baseline">
-                                    <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>₹{totalSpent.toLocaleString('en-IN')}</Text>
-                                    <Text className="text-sm text-text-tertiary ml-1.5 font-inter">of ₹{totalBudget.toLocaleString('en-IN')}</Text>
+                                    <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>₹{inr(budgetedSpent)}</Text>
+                                    <Text className="text-sm text-text-tertiary ml-1.5 font-inter">of ₹{inr(totalBudget)} budgeted</Text>
                                 </View>
                                 <Text className="text-sm font-inter-semibold text-text-secondary">{overallPercentage}%</Text>
                             </View>
                             <BarFill
                                 percent={Math.min(overallPercentage, 100)}
                                 height={10}
-                                fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber' : 'bg-alert-critical'}
+                                fillClassName={overallPercentage < 80 ? 'bg-profit' : overallPercentage < 100 ? 'bg-alert-amber-fill' : 'bg-alert-critical'}
                             />
                         </View>
                     ) : (
@@ -681,7 +687,7 @@ export const VitalsScreen: React.FC = () => {
                         const dynamicSpend = transactions
                             .filter((t) =>
                                 t.type === 'debit' &&
-                                t.category.toLowerCase() === budget.category.toLowerCase() &&
+                                normaliseCategory(t.category) === normaliseCategory(budget.category) &&
                                 format(new Date(t.date), 'yyyy-MM') === budget.month
                             )
                             .reduce((sum, t) => sum + t.amount, 0);
