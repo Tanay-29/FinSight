@@ -36,18 +36,18 @@ export const DEFAULT_REMINDER: ReminderPreference = { enabled: false, hour: 20, 
 
 /**
  * Copy rotates so seven days of the same line do not read as spam, and it is
- * in Sikka's voice, the mascot on the Today screen, so a reminder sounds like
+ * in Fini's voice, the mascot on the Today screen, so a reminder sounds like
  * someone rather than a system. Never guilt: the lowest note is "I kept your
  * seat", not "you failed".
  */
 const LINES = [
-    { title: 'Sikka here', body: 'Three minutes on money today? I kept your seat.' },
+    { title: 'Fini here', body: 'Three minutes on money today? I kept your seat.' },
     { title: 'Your lesson is ready', body: 'Short enough for the queue at the chai stall.' },
     { title: 'Got three minutes?', body: 'One new idea, one quick check, and you are done.' },
-    { title: 'Quick one from Sikka', body: 'Spent anything today? Tell me, then a short lesson.' },
+    { title: 'Quick one from Fini', body: 'Spent anything today? Tell me, then a short lesson.' },
     { title: 'Something you missed is back', body: 'The cards you got wrong return until they stick.' },
     { title: 'Small habit, kept', body: 'Beats a big plan, abandoned. Three minutes.' },
-    { title: 'Sikka saved you a card', body: 'It is about your own spending. Guess before you look.' },
+    { title: 'Fini saved you a card', body: 'It is about your own spending. Guess before you look.' },
 ];
 
 /** The one extra reminder, only when a streak would otherwise end tonight. */

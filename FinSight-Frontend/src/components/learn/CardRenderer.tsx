@@ -12,7 +12,7 @@ import { ExternalLink, RotateCcw } from 'lucide-react-native';
 import type {
     Card, ChoiceCard, TrueFalseCard, EstimateCard, TapSortCard, OrderStepsCard, SpotTrapCard, ExplorableCard, InfoCard,
 } from '../../data/lessons/schema';
-import { Prompt, OptionRow, Feedback, CheckButton } from './CardChrome';
+import { Prompt, OptionRow, Feedback, CheckButton, Brief } from './CardChrome';
 import { Slider } from './Slider';
 import { PressableScale } from '../PressableScale';
 import { MinimumDueExplorable } from './explorables/MinimumDueExplorable';
@@ -47,7 +47,7 @@ const InfoView: React.FC<{ card: InfoCard }> = ({ card }) => (
                 <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 4 }}>{card.stat.label}</Text>
             </View>
         ) : null}
-        <Text style={{ ...TYPE.body, fontSize: 17, lineHeight: 26, color: COLORS.text.primary }}>{card.body}</Text>
+        <Brief text={card.body} style={{ ...TYPE.body, fontSize: 17, lineHeight: 26, color: COLORS.text.primary }} />
         {card.source ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
                 <ExternalLink size={11} color={COLORS.text.tertiary} />

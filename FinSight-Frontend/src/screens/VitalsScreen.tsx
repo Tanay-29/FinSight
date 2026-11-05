@@ -577,10 +577,10 @@ export const VitalsScreen: React.FC = () => {
                     <EmptyState
                         icon={<Wallet color={COLORS.brand.primary} size={36} />}
                         title="Nothing to show yet"
-                        body="Every number on this screen comes from what you have spent. Log an expense and your burn rate, categories and budgets start filling in."
+                        body="Log an expense and this screen fills in."
                         actionLabel="Add an expense"
                         onAction={() => navigation.navigate('AddTransaction' as never)}
-                        hint="Paste a bank SMS and the amount, merchant and category are read for you."
+                        hint="Or paste a bank SMS."
                     />
                 ) : (
                   <>

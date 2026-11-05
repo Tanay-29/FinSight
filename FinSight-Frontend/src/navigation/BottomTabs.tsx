@@ -54,7 +54,7 @@ import { checkBudgetAlerts } from '../services/budgetAlertService';
 const Tab = createBottomTabNavigator();
 
 /**
- * Today is the habit (Sikka, the streak, the lesson, the check-in), Learn is
+ * Today is the habit (Fini, the streak, the lesson, the check-in), Learn is
  * the path, Money is every number, Goals is what the money is for.
  */
 const ICONS: Record<string, React.ComponentType<{ size: number; color: string; strokeWidth?: number }>> = {

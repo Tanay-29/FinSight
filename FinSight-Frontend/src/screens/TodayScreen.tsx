@@ -6,15 +6,15 @@
  * confidently wrong; stop logging and the app had nothing to say. Today opens
  * on the habit instead, which works whether or not anything was logged:
  *
- *   Sikka, the mascot, says one thing that fits the moment
+ *   Fini, the mascot, says one thing that fits the moment
  *   the week, as seven days of streak
  *   one three-minute lesson
  *   one question about money: spent anything today?
  *
  * That is the loop. Everything about money in detail lives on the Money tab.
  *
- * Sikka's line is chosen in code from the state below, in priority order, and
- * the mood follows it. Tapping Sikka shows a money tip, which is the small
+ * Fini's line is chosen in code from the state below, in priority order, and
+ * the mood follows it. Tapping Fini shows a money tip, which is the small
  * reward for poking at a character, and every tip is a plain fact.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -26,7 +26,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Flame, Check, Play, Plus, Bell, ArrowRight, Sparkles, CalendarDays, ClipboardCheck, ArrowUp } from 'lucide-react-native';
 import { ASK_SUGGESTIONS } from './AskScreen';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchCardResults, selectCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
+import { fetchCardResults, selectSessionDoneToday } from '../store/slices/lessonsSlice';
 import { fetchUserProgress } from '../store/slices/learningSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import { fetchBudgets } from '../store/slices/budgetsSlice';
@@ -35,7 +35,6 @@ import { recordCheckIn, selectTodayCheckIn } from '../store/slices/checkInsSlice
 import { Mascot, MascotMood } from '../components/mascot/Mascot';
 import { PressableScale } from '../components/PressableScale';
 import { buildAutopsy } from '../utils/autopsy';
-import { buildSession } from '../utils/lessonSession';
 import { daysBetween, toDateKey } from '../utils/streak';
 import { inr } from '../utils/moneyMath';
 import { QUIZ_RETAKE_AFTER_DAYS } from '../data/moneyQuiz';
@@ -81,8 +80,6 @@ export const TodayScreen: React.FC = () => {
     const goals = useAppSelector((s) => s.goals.items);
     const sessionDone = useAppSelector(selectSessionDoneToday);
     const checkIn = useAppSelector(selectTodayCheckIn);
-    const cardResults = useAppSelector(selectCardResults);
-    const progress = useAppSelector((s) => s.learning.progress);
 
     const [refreshing, setRefreshing] = useState(false);
     const [tip, setTip] = useState<string | null>(null);
@@ -153,18 +150,6 @@ export const TodayScreen: React.FC = () => {
         () => buildAutopsy(transactions, profile?.incomeRange),
         [transactions, profile?.incomeRange],
     );
-    // What the session holds today, so the card says it rather than a slogan.
-    const session = useMemo(() => {
-        const completedByTrack: Record<string, string[]> = {};
-        for (const [pathId, p] of Object.entries(progress)) completedByTrack[pathId] = p.completedModules ?? [];
-        return buildSession(cardResults, completedByTrack, transactions, undefined, profile?.incomeRange);
-    }, [cardResults, progress, transactions, profile?.incomeRange]);
-    const sessionParts = [
-        session.reviewCount > 0 ? `${session.reviewCount} to fix` : null,
-        session.newCount > 0 ? `${session.newCount} new` : null,
-        session.hasYourMoney ? 'one about your money' : null,
-    ].filter(Boolean).join(', ');
-
     // The knowledge check: offered once to set a starting score, then again
     // three weeks after the last time, to show what changed.
     const quizBase = profile?.quizBaseline;
@@ -174,7 +159,7 @@ export const TodayScreen: React.FC = () => {
 
     const step = nextStep(profile?.appGoals, budgets.length > 0, goals.length > 0);
 
-    // ── Sikka ────────────────────────────────────────────────────
+    // ── Fini ────────────────────────────────────────────────────
     const name = (user?.displayName || profile?.name || '').trim().split(/\s+/)[0];
     const hour = new Date().getHours();
     const checkedIn = spentToday > 0 || checkIn !== undefined;
@@ -190,7 +175,7 @@ export const TodayScreen: React.FC = () => {
         }
         if (sessionDone) return { line: 'Lesson done. Quick one: spent anything today?', mood: 'happy' };
         if (streak === 0 && !last) {
-            return { line: `Hi${name ? ` ${name}` : ''}, I'm Sikka. One small lesson a day and money stops being confusing.`, mood: 'happy' };
+            return { line: `Hi${name ? ` ${name}` : ''}, I'm Fini. One small lesson a day and money stops being confusing.`, mood: 'happy' };
         }
         const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
         return { line: `${greeting}${name ? `, ${name}` : ''}! Ready for today's three minutes?`, mood: 'idle' };
@@ -279,7 +264,7 @@ export const TodayScreen: React.FC = () => {
                     </View>
                 </View>
 
-                {/* Sikka and what Sikka has to say. */}
+                {/* Fini and what Fini has to say. */}
                 <View className="flex-row items-center mt-3">
                     <Mascot mood={burst ? 'celebrate' : mood} size={118} onPress={showTip} />
                     <Animated.View
@@ -379,11 +364,9 @@ export const TodayScreen: React.FC = () => {
                                 <Text style={[TYPE.heading, { color: sessionDone ? COLORS.text.primary : COLORS.brand.onAccent, marginTop: 2 }]}>
                                     {sessionDone ? 'Done for today' : 'Three minutes on money'}
                                 </Text>
-                                <Text style={TYPE.caption} className={sessionDone ? 'text-text-secondary mt-0.5' : 'text-brand-on-dark mt-0.5'}>
-                                    {sessionDone
-                                        ? 'Tap to practise again. Tomorrow\'s is new.'
-                                        : `${sessionParts ? `${sessionParts.charAt(0).toUpperCase()}${sessionParts.slice(1)}. ` : ''}About three minutes.`}
-                                </Text>
+                                {sessionDone ? (
+                                    <Text style={TYPE.caption} className="text-text-secondary mt-0.5">Tap to practise again</Text>
+                                ) : null}
                             </View>
                         </View>
                     </PressableScale>
@@ -413,9 +396,6 @@ export const TodayScreen: React.FC = () => {
                     ) : (
                         <>
                             <Text style={TYPE.heading} className="text-text-primary mt-2">Spent anything today?</Text>
-                            <Text style={TYPE.caption} className="text-text-secondary mt-0.5">
-                                Ten seconds. Paste the bank text or type the amount.
-                            </Text>
                             <View className="flex-row mt-4" style={{ gap: 10 }}>
                                 <PressableScale
                                     onPress={noSpendToday}
@@ -447,7 +427,7 @@ export const TodayScreen: React.FC = () => {
                             <Text style={TYPE.heading} className="text-text-primary ml-2">Want a daily reminder?</Text>
                         </View>
                         <Text style={TYPE.caption} className="text-text-secondary mt-1">
-                            One a day, at a time you pick. Never more than that, and never once you are done.
+                            One a day, at a time you pick.
                         </Text>
                         <View className="flex-row mt-3.5" style={{ gap: 8 }}>
                             {[9, 13, 20].map((h) => (
@@ -486,7 +466,6 @@ export const TodayScreen: React.FC = () => {
                         </View>
                         <View className="flex-1">
                             <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Your month, in review</Text>
-                            <Text style={TYPE.caption} className="text-text-secondary mt-0.5">A short deck built from last month's spending.</Text>
                         </View>
                         <ArrowRight size={18} color={COLORS.text.tertiary} />
                     </PressableScale>
@@ -507,9 +486,7 @@ export const TodayScreen: React.FC = () => {
                                 {quizBase ? 'See how much you have learned' : 'How much do you know about money?'}
                             </Text>
                             <Text style={TYPE.caption} className="text-text-secondary mt-0.5">
-                                {quizBase
-                                    ? `You started at ${quizBase.score}/10. Same ten questions, two minutes.`
-                                    : 'Ten questions, two minutes. Take it again in three weeks and see what changed.'}
+                                {quizBase ? `You started at ${quizBase.score}/10` : 'Ten questions, two minutes'}
                             </Text>
                         </View>
                         <ArrowRight size={18} color={COLORS.text.tertiary} />

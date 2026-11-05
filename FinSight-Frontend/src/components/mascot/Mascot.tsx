@@ -1,5 +1,5 @@
 /**
- * Sikka, FinSight's mascot: a coin with a sprout, because a rupee you keep
+ * Fini, FinSight's mascot: a coin with a sprout, because a rupee you keep
  * is a rupee that grows.
  *
  * Built the way Duolingo builds Duo, as a small set of states rather than a
@@ -14,8 +14,8 @@
  * The coin's colours are its own and do not theme, the same way a logo does
  * not. It reads on both the light and the dark canvas.
  */
-import React, { useEffect } from 'react';
-import { Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { GestureResponderEvent, Pressable } from 'react-native';
 import Animated, {
     Easing,
     cancelAnimation,
@@ -36,6 +36,10 @@ import { FONTS } from '../../theme/tokens';
 export type MascotMood = 'idle' | 'happy' | 'celebrate' | 'thinking' | 'sleepy' | 'concerned';
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+/** What a tap can turn into, briefly. Picked so two taps in a row differ. */
+const TAP_REACTIONS: MascotMood[] = ['happy', 'celebrate', 'thinking', 'happy', 'celebrate'];
 
 const GOLD = '#F5B82E';
 const RIM = '#D9960F';
@@ -62,8 +66,22 @@ interface MascotProps {
     onPress?: () => void;
 }
 
-export const Mascot: React.FC<MascotProps> = ({ mood = 'idle', size = 140, onPress }) => {
+export const Mascot: React.FC<MascotProps> = ({ mood: baseMood = 'idle', size = 140, onPress }) => {
     const reduced = useReducedMotion();
+
+    // A tap shows a short reaction over whatever mood the screen asked for,
+    // then hands back to it.
+    const [reaction, setReaction] = useState<MascotMood | null>(null);
+    const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const taps = useRef(0);
+    useEffect(() => () => { if (reactionTimer.current) clearTimeout(reactionTimer.current); }, []);
+    const mood = reaction ?? baseMood;
+
+    // Where the eyes look (in the 120 box), the squish while held, and a spin.
+    const lookX = useSharedValue(0);
+    const lookY = useSharedValue(0);
+    const squish = useSharedValue(0);
+    const spin = useSharedValue(0);
 
     const breathe = useSharedValue(0);
     const hop = useSharedValue(0);
@@ -135,10 +153,10 @@ export const Mascot: React.FC<MascotProps> = ({ mood = 'idle', size = 140, onPre
 
     const bodyStyle = useAnimatedStyle(() => ({
         transform: [
-            { translateY: hop.value },
-            { rotate: `${tilt.value}deg` },
-            { scaleX: 1 + 0.012 * breathe.value },
-            { scaleY: 1 + 0.03 * breathe.value },
+            { translateY: hop.value + squish.value * size * 0.06 },
+            { rotate: `${tilt.value + spin.value}deg` },
+            { scaleX: 1 + 0.012 * breathe.value + 0.1 * squish.value },
+            { scaleY: 1 + 0.03 * breathe.value - 0.14 * squish.value },
         ],
     }));
 
@@ -149,23 +167,65 @@ export const Mascot: React.FC<MascotProps> = ({ mood = 'idle', size = 140, onPre
         opacity: 0.18 + hop.value / 200,
     }));
 
-    const eyeProps = useAnimatedProps(() => ({ ry: 7 * blink.value }));
+    const leftEye = useAnimatedProps(() => ({ ry: 7 * blink.value, cx: 47 + lookX.value, cy: 57 + lookY.value }));
+    const rightEye = useAnimatedProps(() => ({ ry: 7 * blink.value, cx: 73 + lookX.value, cy: 57 + lookY.value }));
+    const leftShine = useAnimatedProps(() => ({ cx: 48.8 + lookX.value, cy: 54 + lookY.value }));
+    const rightShine = useAnimatedProps(() => ({ cx: 74.8 + lookX.value, cy: 54 + lookY.value }));
 
     const sparkStyle = useAnimatedStyle(() => ({
         opacity: sparkle.value > 0 && sparkle.value < 1 ? 1 - sparkle.value : 0,
         transform: [{ scale: 0.6 + sparkle.value * 0.7 }],
     }));
 
+    // The eyes turn toward the finger the moment it lands.
+    const look = (e: GestureResponderEvent) => {
+        if (reduced) return;
+        const { locationX, locationY } = e.nativeEvent;
+        const dx = (locationX / size - 0.5) * 2;
+        const dy = (locationY / (size * 1.08) - 0.5) * 2;
+        lookX.set(withSpring(Math.max(-1, Math.min(1, dx)) * 3.2, { damping: 14, stiffness: 260 }));
+        lookY.set(withSpring(Math.max(-1, Math.min(1, dy)) * 2.4, { damping: 14, stiffness: 260 }));
+    };
+
+    const release = () => {
+        lookX.set(withDelay(500, withSpring(0, { damping: 14 })));
+        lookY.set(withDelay(500, withSpring(0, { damping: 14 })));
+        if (squish.get() > 0) {
+            squish.set(withSpring(0, { damping: 6, stiffness: 300 }));
+            haptics.tap();
+        }
+    };
+
     const tap = () => {
         haptics.tap();
+        taps.current += 1;
         if (!reduced) {
             hop.set(withSequence(
                 withTiming(-14, { duration: 140, easing: Easing.out(Easing.quad) }),
                 withSpring(0, { damping: 8, stiffness: 260 }),
             ));
             tilt.set(withSequence(withTiming(6, { duration: 100 }), withSpring(0, { damping: 8 })));
+            // Every third tap is a full turn.
+            if (taps.current % 3 === 0) {
+                spin.set(0);
+                spin.set(withTiming(360, { duration: 520, easing: Easing.out(Easing.cubic) }));
+            }
         }
+        const next = TAP_REACTIONS[taps.current % TAP_REACTIONS.length];
+        setReaction(next === baseMood ? 'celebrate' : next);
+        if (reactionTimer.current) clearTimeout(reactionTimer.current);
+        reactionTimer.current = setTimeout(() => setReaction(null), 1400);
         onPress?.();
+    };
+
+    // Hold to squish; letting go pops it back.
+    const hold = () => {
+        if (reduced) return;
+        haptics.select();
+        squish.set(withSpring(1, { damping: 12, stiffness: 200 }));
+        setReaction('happy');
+        if (reactionTimer.current) clearTimeout(reactionTimer.current);
+        reactionTimer.current = setTimeout(() => setReaction(null), 1800);
     };
 
     const eyesClosed = mood === 'sleepy';
@@ -174,8 +234,12 @@ export const Mascot: React.FC<MascotProps> = ({ mood = 'idle', size = 140, onPre
     return (
         <Pressable
             onPress={tap}
+            onPressIn={look}
+            onPressOut={release}
+            onLongPress={hold}
+            delayLongPress={320}
             accessibilityRole="imagebutton"
-            accessibilityLabel="Sikka, your FinSight coin"
+            accessibilityLabel="Fini, your FinSight coin"
             hitSlop={8}
             style={{ width: size, height: size * 1.08 }}
         >
@@ -228,10 +292,10 @@ export const Mascot: React.FC<MascotProps> = ({ mood = 'idle', size = 140, onPre
                         </G>
                     ) : (
                         <G>
-                            <AnimatedEllipse cx={47} cy={57} rx={softEyes ? 5.5 : 5} fill={INK} animatedProps={eyeProps} />
-                            <AnimatedEllipse cx={73} cy={57} rx={softEyes ? 5.5 : 5} fill={INK} animatedProps={eyeProps} />
-                            <Circle cx={48.8} cy={54} r={1.7} fill="#FFFFFF" />
-                            <Circle cx={74.8} cy={54} r={1.7} fill="#FFFFFF" />
+                            <AnimatedEllipse cx={47} cy={57} rx={softEyes ? 5.5 : 5} fill={INK} animatedProps={leftEye} />
+                            <AnimatedEllipse cx={73} cy={57} rx={softEyes ? 5.5 : 5} fill={INK} animatedProps={rightEye} />
+                            <AnimatedCircle cx={48.8} cy={54} r={1.7} fill="#FFFFFF" animatedProps={leftShine} />
+                            <AnimatedCircle cx={74.8} cy={54} r={1.7} fill="#FFFFFF" animatedProps={rightShine} />
                             {softEyes && (
                                 <G stroke={INK} strokeWidth={2} strokeLinecap="round">
                                     <Path d="M40 47 L52 49" />
@@ -258,7 +322,7 @@ export const Mascot: React.FC<MascotProps> = ({ mood = 'idle', size = 140, onPre
     );
 };
 
-/** A small "z" that drifts up and fades, on a loop, while Sikka dozes. */
+/** A small "z" that drifts up and fades, on a loop, while Fini dozes. */
 const SleepyZ: React.FC<{ size: number; reduced: boolean }> = ({ size, reduced }) => {
     const t = useSharedValue(0);
     useEffect(() => {

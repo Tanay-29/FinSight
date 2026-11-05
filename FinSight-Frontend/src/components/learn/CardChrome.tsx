@@ -3,8 +3,8 @@
  * feedback panel and the check button. Kept in one file so all eight card
  * types read as one deck rather than eight screens.
  */
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, TextStyle } from 'react-native';
 import Animated, {
     FadeIn, FadeInDown, useReducedMotion, useSharedValue, useAnimatedStyle, withSequence, withSpring, withTiming,
 } from 'react-native-reanimated';
@@ -101,6 +101,29 @@ export const OptionRow: React.FC<{
     );
 };
 
+/**
+ * Long text, shortened: the first sentence, and "More" for the rest. Nobody
+ * reads a paragraph on a phone between two taps; the first sentence carries
+ * the point, and the rest is there for whoever wants it.
+ */
+export const Brief: React.FC<{ text: string; style: TextStyle; linkColor?: string }> = ({ text, style, linkColor }) => {
+    const [open, setOpen] = useState(false);
+    // First sentence: up to the first full stop, question or exclamation mark
+    // followed by a space and a capital or a digit. Short texts stay whole.
+    const m = text.match(/^(.{40,}?[.?!])\s+(?=[A-Z0-9"'])/);
+    const first = m ? m[1] : text;
+    const rest = m ? text.slice(m[0].length) : '';
+    if (!rest || text.length < 140) return <Text style={style}>{text}</Text>;
+    return (
+        <View>
+            <Text style={style}>{open ? text : first}</Text>
+            <Pressable onPress={() => setOpen((v) => !v)} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 4 }}>
+                <Text style={{ fontFamily: FONTS.semibold, fontSize: 13, color: linkColor ?? COLORS.brand.link }}>{open ? 'Less' : 'More'}</Text>
+            </Pressable>
+        </View>
+    );
+};
+
 /** What the learner reads after answering. Always the explanation, right or wrong. */
 export const Feedback: React.FC<{ correct: boolean; explain: string; source?: string }> = ({ correct, explain, source }) => {
     const reduced = useReducedMotion();
@@ -121,7 +144,7 @@ export const Feedback: React.FC<{ correct: boolean; explain: string; source?: st
                     {correct ? 'Right' : 'Not quite'}
                 </Text>
             </View>
-            <Text style={{ ...TYPE.body, fontSize: 15, lineHeight: 22, color: COLORS.text.secondary }}>{explain}</Text>
+            <Brief text={explain} style={{ ...TYPE.body, fontSize: 15, lineHeight: 22, color: COLORS.text.secondary }} linkColor={tone} />
             {source ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
                     <ExternalLink size={11} color={COLORS.text.tertiary} />

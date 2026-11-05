@@ -20,6 +20,7 @@ import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif'
 import * as SplashScreen from 'expo-splash-screen';
 import { configureNotificationHandling } from './src/services/reminderService';
 import './src/global.css';
+import { ErrorBoundary, installCrashRecorder, showLastCrashOnce } from './src/components/ErrorBoundary';
 
 // NOTE: SMS background listener is disabled (native permissions removed).
 // The Smart Paste feature in AddTransactionScreen handles SMS parsing safely.
@@ -35,6 +36,9 @@ SplashScreen.setOptions({ duration: 300, fade: true });
 
 // How a session reminder shows if it lands while the app is open.
 configureNotificationHandling();
+
+// Save the message of any error that closes the app, to show on next launch.
+installCrashRecorder();
 
 // Untyped on purpose: the app's stacks are declared without a param list.
 const navigationRef = createNavigationContainerRef<any>();
@@ -115,6 +119,7 @@ export default function App() {
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded) {
       await SplashScreen.hideAsync();
+      showLastCrashOnce();
     }
   }, [fontsLoaded]);
 
@@ -132,7 +137,9 @@ export default function App() {
       <PersistGate loading={null} persistor={persistor}>
         <ThemeProvider>
           <SafeAreaProvider onLayout={onLayoutRootView}>
-            <Root />
+            <ErrorBoundary>
+              <Root />
+            </ErrorBoundary>
           </SafeAreaProvider>
         </ThemeProvider>
       </PersistGate>

@@ -475,7 +475,7 @@ const Summary: React.FC<{ data: OnboardingData; reduced: boolean; editing: boole
         {
             Icon: LayoutList,
             title: 'Your daily habit',
-            body: 'Sikka, a three-minute lesson and a ten-second money check-in, every day on Today.',
+            body: 'Fini, a three-minute lesson and a ten-second money check-in, every day on Today.',
         },
         {
             Icon: Calculator,

@@ -6,10 +6,10 @@
  * segmented progress bar, Continue once the card is answered, and a results
  * card at the end that says what was learned in concepts, not percentages.
  *
- * Sikka, the mascot from Today, rides along: an answer bar at the bottom
- * where Sikka reacts to each answer (a hop and a short line when right, a
+ * Fini, the mascot from Today, rides along: an answer bar at the bottom
+ * where Fini reacts to each answer (a hop and a short line when right, a
  * kind face and a pointer to the explanation when not, a cheer on a run of
- * three), and the results screen opens on Sikka rather than an icon. The
+ * three), and the results screen opens on Fini rather than an icon. The
  * reaction is the reward; it is what makes a right answer feel like one.
  *
  * Every scorable answer is written to the mistake bank the moment it lands,
@@ -22,7 +22,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import Animated, { FadeIn, FadeInDown, SlideInRight, ZoomIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { X, ChevronRight, Flame, BrainCircuit, RotateCcw, Bell, Check, Award } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { answerLessonCard, markSessionDone, selectCardResults } from '../store/slices/lessonsSlice';
@@ -139,7 +139,7 @@ const LessonPlayerScreen: React.FC = () => {
     const canContinue = !needsAnswer || answered[index] !== undefined;
     const verdict = needsAnswer ? answered[index] : undefined;
 
-    // Right answers in a row up to this card, for Sikka's cheer at three.
+    // Right answers in a row up to this card, for Fini's cheer at three.
     let run = 0;
     for (let i = index; i >= 0; i--) {
         if (answered[i] === true) run += 1;
@@ -259,7 +259,7 @@ const LessonPlayerScreen: React.FC = () => {
                         </Animated.View>
                     </ScrollView>
 
-                    {/* The answer bar: Sikka reacts, then Continue. Tinted by
+                    {/* The answer bar: Fini reacts, then Continue. Tinted by
                         the verdict, so right and wrong are felt before read. */}
                     <View
                         style={{
@@ -268,26 +268,29 @@ const LessonPlayerScreen: React.FC = () => {
                             borderTopLeftRadius: 22, borderTopRightRadius: 22,
                         }}
                     >
-                        {verdict !== undefined && (
-                            <Animated.View
-                                key={`verdict-${index}`}
-                                entering={reduced ? FadeIn.duration(140) : FadeInDown.duration(220)}
-                                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
-                            >
-                                <Mascot
-                                    mood={(verdict ? (run >= 3 ? 'celebrate' : 'happy') : 'concerned') as MascotMood}
-                                    size={54}
-                                />
-                                <View style={{ flex: 1, marginLeft: 10 }}>
+                        {/* One Fini for the whole deck: it waits while you think and
+                            changes face when you answer, rather than being built
+                            again on every card. */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, minHeight: 50 }}>
+                            <Mascot
+                                mood={(verdict === undefined ? 'thinking' : verdict ? (run >= 3 ? 'celebrate' : 'happy') : 'concerned') as MascotMood}
+                                size={46}
+                            />
+                            {verdict !== undefined ? (
+                                <Animated.View
+                                    key={`verdict-${index}`}
+                                    entering={reduced ? FadeIn.duration(140) : FadeInDown.duration(220)}
+                                    style={{ flex: 1, marginLeft: 10 }}
+                                >
                                     <Text style={{ ...TYPE.heading, color: verdict ? COLORS.semantic.profit : COLORS.semantic.alertAmber }}>
-                                        {verdict ? (run >= 3 ? `${run} in a row!` : 'Correct') : 'Not quite'}
+                                        {verdict ? (run >= 3 ? `${run} in a row` : 'Correct') : 'Not quite'}
                                     </Text>
                                     <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>
                                         {verdict ? RIGHT_LINES[index % RIGHT_LINES.length] : WRONG_LINES[index % WRONG_LINES.length]}
                                     </Text>
-                                </View>
-                            </Animated.View>
-                        )}
+                                </Animated.View>
+                            ) : null}
+                        </View>
                         <PressableScale
                             onPress={next}
                             disabled={!canContinue}
@@ -322,7 +325,7 @@ const LessonPlayerScreen: React.FC = () => {
                                 <View style={{ alignItems: 'center', paddingTop: 16, paddingBottom: 16 }}>
                                     <Mascot mood={scorable === 0 || right / scorable >= 0.6 ? 'celebrate' : 'happy'} size={124} />
                                     <Text style={{ ...TYPE.title, color: COLORS.text.primary, marginTop: 12, textAlign: 'center' }}>
-                                        {scorable === 0 ? 'Done' : right === scorable ? 'Perfect run!' : right / scorable >= 0.6 ? 'Nicely done' : 'Good effort'}
+                                        {scorable === 0 ? 'Done' : right === scorable ? 'Perfect run' : right / scorable >= 0.6 ? 'Nicely done' : 'Good effort'}
                                     </Text>
                                     <Text style={{ ...TYPE.body, color: COLORS.text.secondary, marginTop: 4, textAlign: 'center' }}>
                                         {plan.title}{scorable === 0 ? '' : `, ${right} of ${scorable} right`}
@@ -339,7 +342,7 @@ const LessonPlayerScreen: React.FC = () => {
 
                                 {newlyKnown.length > 0 ? (
                                     <Animated.View
-                                        entering={reduced ? FadeIn.duration(160) : ZoomIn.springify().damping(14).stiffness(220).delay(200)}
+                                        entering={reduced ? FadeIn.duration(160) : FadeInDown.delay(200).duration(260)}
                                         style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: COLORS.semantic.profitBg, marginBottom: 12 }}
                                     >
                                         <Award size={20} color={COLORS.semantic.profit} />
@@ -369,7 +372,7 @@ const LessonPlayerScreen: React.FC = () => {
                                 ) : (
                                     <View style={{ padding: 16, borderRadius: 14, backgroundColor: COLORS.semantic.profitBg, marginBottom: 16 }}>
                                         <Text style={{ ...TYPE.callout, color: COLORS.semantic.profit }}>
-                                            Clean run. These cards move out to a longer interval before they come back.
+                                            All right. You will see these less often now.
                                         </Text>
                                     </View>
                                 )}

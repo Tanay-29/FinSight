@@ -4,7 +4,7 @@
  * Learn used to be a stack of course cards, stats and a tab switcher, which
  * asked the learner to choose before they knew enough to choose. It is one
  * path now, the way Duolingo lays out a course: six units, each a winding
- * line of lesson circles, done ones gold, the next one pulsing with Sikka
+ * line of lesson circles, done ones gold, the next one pulsing with Fini
  * beside it, later ones locked. There is always exactly one obvious thing to
  * tap.
  *
@@ -78,6 +78,8 @@ export const LearnScreen: React.FC = () => {
     const cardResults = useAppSelector(selectCardResults);
 
     const [glossaryOpen, setGlossaryOpen] = useState(false);
+    // One unit open at a time: the one being worked on, unless another is tapped.
+    const [openUnit, setOpenUnit] = useState<string | null>(null);
     const [libraryOpen, setLibraryOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [lockedNote, setLockedNote] = useState(false);
@@ -215,24 +217,42 @@ export const LearnScreen: React.FC = () => {
                     {units.map((track, u) => {
                         const colour = unitColour(TRACKS.indexOf(track));
                         const doneCount = track.lessons.filter((l) => isDone(track.id, l.id)).length;
+                        const isCurrentUnit = current?.startsWith(`${track.id}/`) ?? false;
+                        const open = openUnit === null ? isCurrentUnit : openUnit === track.id;
                         return (
                             <View
                                 key={track.id}
                                 onLayout={(e: LayoutChangeEvent) => { unitTops.current[track.id] = e.nativeEvent.layout.y; }}
-                                style={{ marginTop: u === 0 ? 18 : 28 }}
+                                style={{ marginTop: u === 0 ? 18 : 10 }}
                             >
-                                {/* Unit banner */}
-                                <View
-                                    style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card, padding: 16, backgroundColor: colour }}
+                                {/* Unit banner: tap to open or fold the unit. */}
+                                <Pressable
+                                    onPress={() => { haptics.select(); setOpenUnit(open ? '' : track.id); }}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ expanded: open }}
+                                    style={{ marginHorizontal: GUTTER, borderRadius: RADIUS.card, padding: 16, backgroundColor: colour, opacity: !open && doneCount === 0 && !isCurrentUnit ? 0.78 : 1 }}
                                 >
-                                    <Text style={[TYPE.micro, { color: 'rgba(255,255,255,0.85)' }]}>
-                                        Unit {u + 1} · {doneCount}/{track.lessons.length} done
-                                    </Text>
-                                    <Text style={[TYPE.heading, { color: '#FFFFFF', marginTop: 3 }]}>{track.title}</Text>
-                                    <Text style={[TYPE.caption, { color: 'rgba(255,255,255,0.9)', marginTop: 2 }]}>{track.description}</Text>
-                                </View>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[TYPE.micro, { color: 'rgba(255,255,255,0.85)' }]}>Unit {u + 1}</Text>
+                                            <Text style={[TYPE.heading, { color: '#FFFFFF', marginTop: 2 }]}>{track.title}</Text>
+                                        </View>
+                                        {doneCount === track.lessons.length ? (
+                                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Check size={16} color="#FFFFFF" strokeWidth={3} />
+                                            </View>
+                                        ) : (
+                                            <Text style={[TYPE.amountSm, { color: '#FFFFFF' }]}>{doneCount}/{track.lessons.length}</Text>
+                                        )}
+                                        {open ? <ChevronDown size={18} color="#FFFFFF" style={{ marginLeft: 8 }} /> : <ChevronRight size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />}
+                                    </View>
+                                    <View style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 10, overflow: 'hidden' }}>
+                                        <View style={{ width: `${(doneCount / track.lessons.length) * 100}%`, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF' }} />
+                                    </View>
+                                </Pressable>
 
-                                {/* Nodes */}
+                                {/* Nodes, only for the open unit. */}
+                                {open ? (
                                 <View style={{ alignItems: 'center', paddingTop: 22 }}>
                                     {track.lessons.map((lesson) => {
                                         const state = stateOf(track.id, lesson.id);
@@ -276,6 +296,7 @@ export const LearnScreen: React.FC = () => {
                                         );
                                     })}
                                 </View>
+                                ) : null}
                             </View>
                         );
                     })}
@@ -291,50 +312,33 @@ export const LearnScreen: React.FC = () => {
                     )}
                 </View>
 
-                {/* ── More to explore ─────────────────────────── */}
-                <Text style={[TYPE.micro, { marginTop: 30, marginBottom: 10, marginHorizontal: GUTTER }]} className="text-text-tertiary">
+                {/* ── More to explore: one row of tiles, swiped sideways ── */}
+                <Text style={[TYPE.micro, { marginTop: 28, marginBottom: 10, marginHorizontal: GUTTER }]} className="text-text-tertiary">
                     More to explore
                 </Text>
-
-                {SCENARIOS.map((sim) => {
-                    const played = progress.lifeSims?.completedModules?.includes(sim.id) ?? false;
-                    return (
-                        <Row
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, gap: 10, paddingBottom: 4 }}>
+                    {SCENARIOS.map((sim) => (
+                        <Tile
                             key={sim.id}
-                            icon={<Drama size={19} color={COLORS.semantic.alertAmber} />}
-                            title={`Life sim: ${sim.title}`}
-                            body={`${sim.summary}, ${sim.minutes} min`}
-                            done={played}
+                            icon={<Drama size={20} color={COLORS.semantic.alertAmber} />}
+                            title={sim.title}
+                            caption={`Life sim · ${sim.minutes} min`}
+                            done={progress.lifeSims?.completedModules?.includes(sim.id) ?? false}
                             onPress={() => navigation.navigate('ScenarioPlayer', { scenarioId: sim.id })}
                         />
-                    );
-                })}
-                <Row
-                    icon={<TrendingUp size={19} color={COLORS.semantic.loss} />}
-                    title="Bubble Room: play with a group"
-                    body="Everyone scans a code and trades one hyped token for three minutes"
-                    onPress={() => navigation.navigate('BubbleRoom')}
-                />
-                <Row
-                    icon={<ScanLine size={19} color={COLORS.brand.link} />}
-                    title="Decode a card statement"
-                    body="Which line to pay, and what the minimum really costs"
-                    onPress={() => navigation.navigate('StatementDecoder')}
-                />
-                <Row
-                    icon={<FileText size={19} color={COLORS.brand.link} />}
-                    title="Decode a payslip"
-                    body="Every line explained, anything odd flagged"
-                    onPress={() => navigation.navigate('PayslipDecoder')}
-                />
-                {/* The longer reading modules, folded into one row until wanted. */}
-                <Row
-                    icon={<BookOpen size={19} color={COLORS.text.secondary} />}
-                    title="Reading library"
-                    body={`${libraryTotal} longer reads, with a quiz and flashcards for each${libraryDone > 0 ? `. ${libraryDone} read so far` : ''}`}
-                    open={libraryOpen}
-                    onPress={() => setLibraryOpen((v) => !v)}
-                />
+                    ))}
+                    <Tile icon={<TrendingUp size={20} color={COLORS.semantic.loss} />} title="Bubble Room" caption="Group game" onPress={() => navigation.navigate('BubbleRoom')} />
+                    <Tile icon={<ScanLine size={20} color={COLORS.brand.link} />} title="Card statement" caption="Paste and decode" onPress={() => navigation.navigate('StatementDecoder')} />
+                    <Tile icon={<FileText size={20} color={COLORS.brand.link} />} title="Payslip" caption="Paste and decode" onPress={() => navigation.navigate('PayslipDecoder')} />
+                    <Tile
+                        icon={<BookOpen size={20} color={COLORS.text.secondary} />}
+                        title="Reading library"
+                        caption={libraryDone > 0 ? `${libraryDone}/${libraryTotal} read` : `${libraryTotal} reads`}
+                        active={libraryOpen}
+                        onPress={() => setLibraryOpen((v) => !v)}
+                    />
+                </ScrollView>
+                <View style={{ height: 12 }} />
                 {libraryOpen ? classic.map((path) => {
                     const done = progress[path.id ?? '']?.completedModules?.length ?? 0;
                     const total = path.modules?.length ?? 0;
@@ -467,6 +471,29 @@ const Row: React.FC<{ icon: React.ReactNode; title: string; body: string; done?:
         {done ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} />
             : open !== undefined ? (open ? <ChevronDown size={18} color={COLORS.text.tertiary} /> : <ChevronRight size={18} color={COLORS.text.tertiary} />)
                 : <ChevronRight size={18} color={COLORS.text.tertiary} />}
+    </PressableScale>
+);
+
+/** A small square for the More to explore row. */
+const Tile: React.FC<{ icon: React.ReactNode; title: string; caption: string; done?: boolean; active?: boolean; onPress: () => void }> = ({ icon, title, caption, done, active, onPress }) => (
+    <PressableScale
+        onPress={() => { haptics.tap(); onPress(); }}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        activeScale={0.96}
+        style={{
+            width: 132, minHeight: 112, borderRadius: RADIUS.card, padding: 14, justifyContent: 'space-between',
+            backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: active ? COLORS.brand.primary : COLORS.border.default,
+        }}
+    >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ width: 36, height: 36, borderRadius: RADIUS.tile, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center' }}>{icon}</View>
+            {done ? <Check size={16} color={COLORS.semantic.profit} strokeWidth={3} /> : null}
+        </View>
+        <View style={{ marginTop: 10 }}>
+            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary" numberOfLines={2}>{title}</Text>
+            <Text style={TYPE.caption} className="text-text-tertiary mt-0.5" numberOfLines={1}>{caption}</Text>
+        </View>
     </PressableScale>
 );
 
