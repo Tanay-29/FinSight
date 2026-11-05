@@ -29,6 +29,7 @@ import { summariseSpending } from '../utils/spendSummary';
 import { detectRecurring } from '../utils/recurring';
 import { merchantKey } from '../utils/merchantRules';
 import { affordBeforePayday } from '../utils/afford';
+import { monthPace } from '../utils/pace';
 import { FinancialVitals } from '../components/FinancialVitals';
 import { TransactionRow } from '../components/TransactionRow';
 import FinSightIQCard from '../components/FinSightIQCard';
@@ -176,13 +177,15 @@ const AffordSheet: React.FC<{
     income: number;
     incomeSource: 'logged' | 'estimated' | 'unknown';
     spent: number;
+    /** Spending other than rent and bills, which is what carries forward. */
+    dayToDay: number;
     onAddIncome: () => void;
-}> = ({ visible, onClose, income, incomeSource, spent, onAddIncome }) => {
+}> = ({ visible, onClose, income, incomeSource, spent, dayToDay, onAddIncome }) => {
     const insets = useSafeAreaInsets();
     const [price, setPrice] = React.useState('');
     const amount = Number(price.replace(/[₹,\s]/g, ''));
     const result = Number.isFinite(amount) && amount > 0 && income > 0
-        ? affordBeforePayday({ income, spent, price: amount })
+        ? affordBeforePayday({ income, spent, price: amount, dayToDay })
         : null;
     const tone = result?.verdict === 'yes' ? COLORS.semantic.profit : result?.verdict === 'tight' ? COLORS.semantic.alertAmber : COLORS.semantic.loss;
     const close = () => { setPrice(''); onClose(); };
@@ -538,6 +541,7 @@ export const VitalsScreen: React.FC = () => {
                 income={income.amount}
                 incomeSource={income.source}
                 spent={totalSpent}
+                dayToDay={monthPace(transactions as any).variable}
                 onAddIncome={() => { setAffordOpen(false); navigation.navigate('AddTransaction' as never); }}
             />
             <EditBudgetModal

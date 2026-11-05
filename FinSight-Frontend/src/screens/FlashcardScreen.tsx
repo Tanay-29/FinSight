@@ -204,7 +204,7 @@ const FlipCard: React.FC<{
                         style={{
                             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                             paddingVertical: 14, borderRadius: 16, gap: 8,
-                            backgroundColor: '#FDF4F2', borderWidth: 1.5, borderColor: '#F2CFC9',
+                            backgroundColor: COLORS.semantic.lossBg, borderWidth: 1.5, borderColor: `${COLORS.semantic.loss}55`,
                         }}
                     >
                         <XIcon size={18} color={COLORS.semantic.loss} />
@@ -218,7 +218,7 @@ const FlipCard: React.FC<{
                         style={{
                             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                             paddingVertical: 14, borderRadius: 16, gap: 8,
-                            backgroundColor: '#EFF7F2', borderWidth: 1.5, borderColor: '#CDE8D9',
+                            backgroundColor: COLORS.semantic.profitBg, borderWidth: 1.5, borderColor: `${COLORS.semantic.profit}55`,
                         }}
                     >
                         <Check size={18} color={COLORS.semantic.profit} />
@@ -256,7 +256,7 @@ const ResultsScreen: React.FC<{
             <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
                 <View style={{
                     width: 140, height: 140, borderRadius: 70,
-                    backgroundColor: pct >= 80 ? '#EFF7F2' : pct >= 50 ? '#FDF7EC' : '#FDF4F2',
+                    backgroundColor: pct >= 80 ? COLORS.semantic.profitBg : pct >= 50 ? COLORS.semantic.alertBg : COLORS.semantic.lossBg,
                     borderWidth: 4,
                     borderColor: pct >= 80 ? COLORS.semantic.profit : pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss,
                     alignItems: 'center', justifyContent: 'center',
@@ -278,11 +278,11 @@ const ResultsScreen: React.FC<{
 
             {/* Stats row */}
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' }}>
-                <View style={{ flex: 1, backgroundColor: '#EFF7F2', borderRadius: 16, padding: 16, alignItems: 'center' }}>
+                <View style={{ flex: 1, backgroundColor: COLORS.semantic.profitBg, borderRadius: 16, padding: 16, alignItems: 'center' }}>
                     <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.profit }}>{gotItCount}</Text>
-                    <Text style={{ fontSize: 12, color: '#0B6A4D', fontFamily: FONTS.semibold, marginTop: 2 }}>Got It</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.semantic.profit, fontFamily: FONTS.semibold, marginTop: 2 }}>Got It</Text>
                 </View>
-                <View style={{ flex: 1, backgroundColor: '#FDF4F2', borderRadius: 16, padding: 16, alignItems: 'center' }}>
+                <View style={{ flex: 1, backgroundColor: COLORS.semantic.lossBg, borderRadius: 16, padding: 16, alignItems: 'center' }}>
                     <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.loss }}>{reviewCount}</Text>
                     <Text style={{ fontSize: 12, color: COLORS.semantic.alertCritical, fontFamily: FONTS.semibold, marginTop: 2 }}>To review</Text>
                 </View>
@@ -291,21 +291,21 @@ const ResultsScreen: React.FC<{
             {/* Review-only cards list */}
             {reviewCount > 0 && (
                 <View style={{ width: '100%', marginTop: 20 }}>
-                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 10 }}>
+                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.secondary, marginBottom: 10 }}>
                         Go over these again
                     </Text>
                     {cards.map((card, i) =>
                         statuses[i] === 'review' ? (
                             <View key={i} style={{
-                                backgroundColor: '#FDF5EC',
+                                backgroundColor: COLORS.semantic.alertBg,
                                 borderRadius: 14, padding: 14,
-                                borderWidth: 1, borderColor: '#EED9C0',
+                                borderWidth: 1, borderColor: `${COLORS.semantic.alertAmber}55`,
                                 marginBottom: 8,
                             }}>
-                                <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#7A4A08', marginBottom: 4 }}>
+                                <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.semantic.alertAmber, marginBottom: 4 }}>
                                     Q: {card.question}
                                 </Text>
-                                <Text style={{ fontSize: 12, color: '#6B3F10', lineHeight: 18 }}>
+                                <Text style={{ fontSize: 12, color: COLORS.semantic.alertAmber, lineHeight: 18 }}>
                                     A: {card.answer}
                                 </Text>
                             </View>
@@ -339,7 +339,7 @@ const ResultsScreen: React.FC<{
                     }}
                 >
                     <RefreshCw size={16} color={COLORS.text.secondary} />
-                    <Text style={{ color: '#423C35', fontFamily: FONTS.semibold, fontSize: 14 }}>Restart all cards</Text>
+                    <Text style={{ color: COLORS.text.secondary, fontFamily: FONTS.semibold, fontSize: 14 }}>Restart all cards</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={onBack}

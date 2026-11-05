@@ -13,13 +13,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarFill } from '../components/BarFill';
+import { BackButton } from '../components/BackButton';
 import { resolveMonthlyIncome, savingsRate } from '../utils/income';
 import {
-    ChevronLeft, ChevronDown, ChevronUp,
+    ChevronDown, ChevronUp,
     ShoppingCart, Home, TrendingUp, TrendingDown,
     Coffee, Zap, CheckCircle, AlertTriangle, XCircle,
 } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../store/hooks';
 import { format, parseISO } from 'date-fns';
 import { normaliseCategory, categoryLabel } from '../utils/categories';
@@ -98,26 +98,16 @@ const GaugeBar: React.FC<{
     actual: number;
     target: number;
     color: string;
-}> = ({ actual, target, color }) => {
-    const clampedActual = Math.min(actual, 100);
-    const isOver = actual > target;
-    return (
-        <View style={{ height: 10, backgroundColor: COLORS.surface.tertiary, borderRadius: 5, overflow: 'hidden', marginTop: 8, marginBottom: 4 }}>
-            {/* Target marker */}
-            <View style={{
-                position: 'absolute', left: `${target}%`, top: -2, bottom: -2,
-                width: 2, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 1, zIndex: 2,
-            }} />
-            {/* Actual bar */}
-            <View style={{
-                height: '100%',
-                width: `${clampedActual}%`,
-                backgroundColor: isOver ? COLORS.semantic.loss : color,
-                borderRadius: 5,
-            }} />
-        </View>
-    );
-};
+    delay?: number;
+    /** Savings: going past the mark is the point, so it never turns red. */
+    good?: boolean;
+}> = ({ actual, target, color, delay = 0, good = false }) => (
+    <View style={{ marginTop: 8, marginBottom: 4 }}>
+        <BarFill percent={Math.min(actual, 100)} height={10} color={actual > target ? (good ? COLORS.semantic.profit : COLORS.semantic.loss) : color} delay={delay} />
+        {/* The target, drawn over the bar so it shows on either side of the fill. */}
+        <View style={{ position: 'absolute', left: `${target}%`, top: -3, width: 2, height: 16, borderRadius: 1, backgroundColor: COLORS.text.primary, opacity: 0.5 }} />
+    </View>
+);
 
 const BucketCard: React.FC<{
     bucket: Bucket;
@@ -136,10 +126,15 @@ const BucketCard: React.FC<{
     const actualPct = basis > 0 ? (spend / basis) * 100 : 0;
     const delta = actualPct - meta.target;
     const isOver = delta > 0;
-    const isGood = Math.abs(delta) <= 5; // within 5% is fine
+    // Savings is a floor and the other two are ceilings: saving more than 20%
+    // is good, and spending less than 50% on needs is good. The old check
+    // treated every gap as a problem, so the best month looked the worst.
+    const isSavings = bucket === 'savings';
+    const isGood = isSavings ? delta >= -2 : delta <= 2;
+    const isBad = isSavings ? delta < -10 : delta > 10;
 
-    const statusColor = isGood ? COLORS.semantic.profit : isOver ? COLORS.semantic.loss : COLORS.semantic.alertAmberFill;
-    const StatusIcon = isGood ? CheckCircle : isOver ? XCircle : AlertTriangle;
+    const statusColor = isGood ? COLORS.semantic.profit : isBad ? COLORS.semantic.loss : COLORS.semantic.alertAmber;
+    const StatusIcon = isGood ? CheckCircle : isBad ? XCircle : AlertTriangle;
 
     const cats = Object.entries(categoryBreakdown)
         .filter(([, v]) => v > 0)
@@ -195,24 +190,22 @@ const BucketCard: React.FC<{
                 </View>
 
                 {/* Gauge */}
-                <GaugeBar actual={actualPct} target={meta.target} color={meta.color} />
+                <GaugeBar actual={actualPct} target={meta.target} color={meta.color} good={bucket === 'savings'} />
 
                 {/* Status pill */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <StatusIcon size={13} color={statusColor} />
                         <Text style={{ fontSize: 12, color: statusColor, fontFamily: FONTS.semibold }}>
-                            {isGood
-                                ? 'On track'
-                                : isOver
-                                ? `${delta.toFixed(1)}% over target`
-                                : `${Math.abs(delta).toFixed(1)}% under target`}
+                            {isSavings
+                                ? (isOver ? `${delta.toFixed(0)} points above the 20%` : isGood ? 'On target' : `${Math.abs(delta).toFixed(0)} points short of 20%`)
+                                : (isOver ? `${delta.toFixed(0)} points over the ${meta.target}%` : `Inside the ${meta.target}%`)}
                         </Text>
                     </View>
                     {basis > 0 && (
                         <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>
-                            ₹{Math.abs(((delta / 100) * basis)).toLocaleString('en-IN')}{' '}
-                            {isOver ? 'over' : 'under'}
+                            ₹{Math.round(Math.abs((delta / 100) * basis)).toLocaleString('en-IN')}{' '}
+                            {isSavings ? (isOver ? 'extra saved' : 'to go') : (isOver ? 'over' : 'to spare')}
                         </Text>
                     )}
                 </View>
@@ -231,7 +224,7 @@ const BucketCard: React.FC<{
                             <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                                 <View style={{ flex: 1 }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                                        <Text style={{ fontSize: 13, fontFamily: FONTS.semibold, color: '#423C35' }}>
+                                        <Text style={{ fontSize: 13, fontFamily: FONTS.semibold, color: COLORS.text.secondary }}>
                                             {categoryLabel(cat)}
                                         </Text>
                                         <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
@@ -257,7 +250,6 @@ const BucketCard: React.FC<{
 // ─── Main Screen ──────────────────────────────────────────────
 
 const MoneyManagerScreen: React.FC = () => {
-    const navigation = useNavigation();
     const transactions = useAppSelector((s) => s.transactions.items);
     const profile = useAppSelector((s) => s.auth.profile);
     const [expanded, setExpanded] = useState<Bucket | null>('wants');
@@ -348,12 +340,7 @@ const MoneyManagerScreen: React.FC = () => {
 
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                >
-                    <ChevronLeft size={20} color={COLORS.text.primary} />
-                </TouchableOpacity>
+                <View style={{ marginRight: 12 }}><BackButton /></View>
                 <View>
                     <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Money manager</Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>50 / 30 / 20 Rule · {format(new Date(), 'MMMM yyyy')}</Text>
@@ -411,12 +398,12 @@ const MoneyManagerScreen: React.FC = () => {
                 {insight && (
                     <View style={{
                         flexDirection: 'row',
-                        backgroundColor: insight.type === 'success' ? '#EFF7F2' : insight.type === 'warning' ? '#FDF5EC' : '#F2F5FD',
+                        backgroundColor: insight.type === 'success' ? COLORS.semantic.profitBg : insight.type === 'warning' ? COLORS.semantic.alertBg : COLORS.brand.soft,
                         borderRadius: 16,
                         padding: 14,
                         marginBottom: 20,
                         borderWidth: 1,
-                        borderColor: insight.type === 'success' ? '#CDE8D9' : insight.type === 'warning' ? '#EED9C0' : COLORS.brand.edge,
+                        borderColor: insight.type === 'success' ? `${COLORS.semantic.profit}55` : insight.type === 'warning' ? `${COLORS.semantic.alertAmber}55` : COLORS.brand.edge,
                         alignItems: 'flex-start',
                         gap: 10,
                     }}>
@@ -427,7 +414,7 @@ const MoneyManagerScreen: React.FC = () => {
                             : <Zap size={18} color="#1D4ED8" style={{ marginTop: 1 }} />}
                         <Text style={{
                             flex: 1, fontSize: 13, lineHeight: 19,
-                            color: insight.type === 'success' ? '#0A5C43' : insight.type === 'warning' ? '#8A4210' : '#1A3C7A',
+                            color: insight.type === 'success' ? COLORS.semantic.profit : insight.type === 'warning' ? COLORS.semantic.alertAmber : COLORS.brand.link,
                             fontFamily: FONTS.medium,
                         }}>
                             {insight.msg}
@@ -461,11 +448,11 @@ const MoneyManagerScreen: React.FC = () => {
 
                 {/* ── About the rule ──────────────────────────── */}
                 <View style={{ backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary, marginTop: 4 }}>
-                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: '#423C35', marginBottom: 8 }}>About the 50/30/20 Rule</Text>
+                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.secondary, marginBottom: 8 }}>About the 50/30/20 Rule</Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 18 }}>
                         Popularised by US Senator Elizabeth Warren, this framework splits after-tax income into three buckets:
                         {'\n\n'}
-                        <Text style={{ fontFamily: FONTS.bold, color: '#1D4ED8' }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
+                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.brand.link }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
                         <Text style={{ fontFamily: FONTS.bold, color: COLORS.brand.primaryDark }}>30% Wants</Text> - Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
                         <Text style={{ fontFamily: FONTS.bold, color: COLORS.semantic.profit }}>20% Savings</Text> - Pay yourself first: SIPs, emergency fund, goal deposits.
                     </Text>

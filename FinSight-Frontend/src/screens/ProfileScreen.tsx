@@ -5,18 +5,19 @@
  * writes an actual file, and deleting the account really deletes it.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Pressable, Switch, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, Alert, ActivityIndicator, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { BarFill } from '../components/BarFill';
 import { PressableScale } from '../components/PressableScale';
-import { COLORS, TYPE, RADIUS } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, FONTS } from '../theme/tokens';
+import { ProgressRing } from '../components/ProgressRing';
+import { inr } from '../utils/moneyMath';
 import { useScheme, type ThemePref } from '../theme/theme';
 import Constants from 'expo-constants';
 import {
-    Target, Bell, RefreshCw, Lock, Upload, Info,
-    Trash2, Flame, ChevronRight, ChevronLeft, Moon, User, ClipboardCheck,
+    Bell, RefreshCw, Lock, Upload, Info,
+    Trash2, Flame, ChevronRight, ArrowLeft, Moon, User, ClipboardCheck,
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
@@ -214,15 +215,15 @@ export const ProfileScreen: React.FC = () => {
                 contentContainerStyle={{ paddingBottom: 80 }}
             >
                 <View className="px-5 pt-4 pb-2 flex-row items-center">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => navigation.goBack()}
-                        className="mr-2 -ml-1"
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        hitSlop={10}
                         accessibilityRole="button"
-                        accessibilityLabel="Go back"
+                        accessibilityLabel="Back"
+                        style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default, marginRight: 12 }}
                     >
-                        <ChevronLeft size={26} color={COLORS.text.primary} />
-                    </TouchableOpacity>
+                        <ArrowLeft size={18} color={COLORS.text.primary} />
+                    </Pressable>
                     <Text style={TYPE.heading} className="text-text-primary">Profile</Text>
                 </View>
 
@@ -248,54 +249,31 @@ export const ProfileScreen: React.FC = () => {
                     </View>
                 </View>
 
-                {/* Primary Goal, read from the user's real goals */}
-                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4">
-                    <View className="flex-row items-center mb-3">
-                        <Target size={20} color={COLORS.brand.primary} />
-                        <Text className="text-lg font-inter-semibold text-text-primary ml-2">
-                            Primary goal
+                {/* The goal closest to done, as it looks on the Goals tab. */}
+                {primaryGoal ? (
+                    <Pressable
+                        onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Goals' })}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${primaryGoal.title}, open Goals`}
+                        className="mx-5 mt-3 bg-surface-primary border border-border p-4 flex-row items-center"
+                        style={{ borderRadius: RADIUS.card }}
+                    >
+                        <ProgressRing value={primaryGoal.targetAmount > 0 ? primaryGoal.savedAmount / primaryGoal.targetAmount : 0} size={52} stroke={5} color={primaryGoal.color}>
+                            {React.createElement(goalIcon(primaryGoal.icon), { size: 20, color: primaryGoal.color })}
+                        </ProgressRing>
+                        <View className="flex-1 ml-3.5">
+                            <Text style={TYPE.micro} className="text-text-tertiary">Closest goal</Text>
+                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary mt-0.5" numberOfLines={1}>{primaryGoal.title}</Text>
+                            <Text style={TYPE.caption} className="text-text-secondary">
+                                ₹{inr(primaryGoal.savedAmount)} of ₹{inr(primaryGoal.targetAmount)}
+                            </Text>
+                        </View>
+                        <Text style={[TYPE.amountMd, { color: primaryGoal.color }]}>
+                            {Math.round((primaryGoal.savedAmount / Math.max(1, primaryGoal.targetAmount)) * 100)}%
                         </Text>
-                    </View>
-
-                    {primaryGoal ? (
-                        <View className="bg-profit-bg rounded-xl p-4">
-                            <View className="flex-row items-center mb-1">
-                                {React.createElement(goalIcon(primaryGoal.icon), {
-                                    size: 16,
-                                    color: primaryGoal.color,
-                                })}
-                                <Text className="text-base font-inter-semibold text-text-primary ml-2">
-                                    {primaryGoal.title}
-                                </Text>
-                            </View>
-                            <Text className="text-sm text-text-secondary mb-3 font-inter">
-                                Target: ₹{primaryGoal.targetAmount.toLocaleString('en-IN')}
-                            </Text>
-                            <BarFill
-                                percent={Math.min(
-                                    (primaryGoal.savedAmount / primaryGoal.targetAmount) * 100,
-                                    100
-                                )}
-                                trackClassName="bg-surface-primary"
-                                fillClassName="bg-profit"
-                            />
-                            <Text
-                                className="text-xs text-text-tertiary mt-1 font-inter"
-                                style={{ fontVariant: ['tabular-nums'] }}
-                            >
-                                ₹{primaryGoal.savedAmount.toLocaleString('en-IN')} / ₹
-                                {primaryGoal.targetAmount.toLocaleString('en-IN')} (
-                                {Math.round((primaryGoal.savedAmount / primaryGoal.targetAmount) * 100)}%)
-                            </Text>
-                        </View>
-                    ) : (
-                        <View className="bg-surface-secondary rounded-xl p-4">
-                            <Text className="text-sm text-text-secondary font-inter">
-                                No goals yet. Create one from the Goals tab to see your progress here.
-                            </Text>
-                        </View>
-                    )}
-                </View>
+                        <ChevronRight size={16} color={COLORS.text.tertiary} style={{ marginLeft: 6 }} />
+                    </Pressable>
+                ) : null}
 
                 {/* Settings */}
                 <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl overflow-hidden">
@@ -367,7 +345,7 @@ export const ProfileScreen: React.FC = () => {
                             <Switch
                                 value={reminder.enabled}
                                 onValueChange={(v) => { haptics.select(); toggleReminder(v); }}
-                                trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
+                                trackColor={{ false: COLORS.border.default, true: COLORS.brand.primary }}
                                 thumbColor={reminder.enabled ? COLORS.brand.primary : COLORS.text.tertiary}
                             />
                         }
@@ -406,7 +384,7 @@ export const ProfileScreen: React.FC = () => {
                                         Alert.alert('Notifications are off', 'Allow notifications for FinSight in your phone settings to get budget alerts.');
                                     }
                                 }}
-                                trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
+                                trackColor={{ false: COLORS.border.default, true: COLORS.brand.primary }}
                                 thumbColor={notificationsEnabled ? COLORS.brand.primary : COLORS.text.tertiary}
                             />
                         }
@@ -419,7 +397,7 @@ export const ProfileScreen: React.FC = () => {
                             <Switch
                                 value={autoTrackingEnabled}
                                 onValueChange={(v) => setPreference({ autoTracking: v })}
-                                trackColor={{ false: COLORS.border.default, true: '#818CF8' }}
+                                trackColor={{ false: COLORS.border.default, true: COLORS.brand.primary }}
                                 thumbColor={autoTrackingEnabled ? COLORS.brand.primary : COLORS.text.tertiary}
                             />
                         }
