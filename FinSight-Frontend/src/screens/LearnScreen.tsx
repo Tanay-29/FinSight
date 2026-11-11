@@ -492,7 +492,7 @@ const Tile: React.FC<{ icon: React.ReactNode; title: string; caption: string; do
         </View>
         <View style={{ marginTop: 10 }}>
             <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary" numberOfLines={2}>{title}</Text>
-            <Text style={TYPE.caption} className="text-text-tertiary mt-0.5" numberOfLines={1}>{caption}</Text>
+            <Text style={TYPE.caption} className="text-text-tertiary mt-0.5" numberOfLines={2}>{caption}</Text>
         </View>
     </PressableScale>
 );

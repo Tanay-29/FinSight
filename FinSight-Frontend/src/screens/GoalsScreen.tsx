@@ -174,7 +174,7 @@ const Sheet: React.FC<{ visible: boolean; onClose: () => void; title: string; ch
     const reduced = useReducedMotion();
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-            <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior="padding">
                 <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,8,6,0.45)' }} onPress={onClose} accessibilityLabel="Close" />
                 <Animated.View
                     entering={reduced ? FadeIn.duration(150) : SlideInDown.duration(280)}
@@ -409,7 +409,11 @@ export const GoalsScreen: React.FC = () => {
 
     const more = (goal: FirestoreGoal) => {
         haptics.tap();
-        Alert.alert(goal.title, undefined, [
+        // Android leaves a blank block where the message would be, and the
+        // button alone did not say what deleting does.
+        Alert.alert(`Delete ${goal.title}?`, goal.savedAmount > 0
+            ? `The goal and its ${rs(goal.savedAmount)} saved so far go from FinSight. Your money stays where it is.`
+            : 'The goal goes from FinSight.', [
             { text: 'Delete goal', style: 'destructive', onPress: () => goal.id && dispatch(removeGoal(goal.id)) },
             { text: 'Cancel', style: 'cancel' },
         ]);

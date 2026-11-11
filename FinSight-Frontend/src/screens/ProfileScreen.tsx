@@ -21,6 +21,7 @@ import {
 } from 'lucide-react-native';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logOutUser, updatePreferences, deleteUserAccount } from '../store/slices/authSlice';
+import { liveStreak } from '../utils/streak';
 import { fetchGoals } from '../store/slices/goalsSlice';
 import { goalIcon } from '../theme/icons';
 import { exportUserData } from '../services/exportService';
@@ -121,7 +122,8 @@ export const ProfileScreen: React.FC = () => {
             : provider === 'password' ? 'Signed in with email and password'
                 : null;
     const initial = displayName.charAt(0).toUpperCase();
-    const streak = profile?.streak ?? 0;
+    // The same lapsed-streak rule as Today, so the two never disagree.
+    const streak = liveStreak(profile?.streak ?? 0, profile?.lastStudiedDate, profile?.streakFreezes ?? 0);
 
     // Preferences come from Firestore, defaulting to on for a fresh profile.
     const notificationsEnabled = profile?.preferences?.notifications ?? true;

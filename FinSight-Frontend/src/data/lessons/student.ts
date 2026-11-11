@@ -27,7 +27,7 @@ export const STUDENT: Track = {
                 },
                 {
                     id: 'a2', type: 'spotTrap',
-                    prompt: 'Two account options at the same bank. Tap the line that costs a student money.',
+                    prompt: 'The account the branch offers first. Tap the line that costs a student money.',
                     lines: [
                         { label: 'Account type', value: 'Regular savings' },
                         { label: 'Minimum balance', value: '10,000 or 600 a quarter penalty' },

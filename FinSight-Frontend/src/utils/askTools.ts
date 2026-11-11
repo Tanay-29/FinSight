@@ -247,9 +247,9 @@ export const ASK_TOOLS: AskTool[] = [
             const pad = (arr: number[]) => [balance, ...Array.from({ length: len }, (_, i) => arr[i] ?? 0)];
             return {
                 figures: [
-                    { label: 'Minimum only: time to clear', value: min.months, unit: 'months', tone: 'bad' },
-                    { label: 'Minimum only: interest', value: min.totalInterest, unit: 'inr', tone: 'bad' },
-                    { label: `Paying ${rs(payment)}: interest`, value: fixed.cleared ? fixed.totalInterest : NaN, unit: 'inr', tone: 'good' },
+                    { label: 'Clearing on the minimum', value: min.months, unit: 'months', tone: 'bad' },
+                    { label: 'Interest on the minimum', value: min.totalInterest, unit: 'inr', tone: 'bad' },
+                    { label: `Interest at ${rs(payment)}`, value: fixed.cleared ? fixed.totalInterest : NaN, unit: 'inr', tone: 'good' },
                 ],
                 series: [
                     { label: 'Minimum only', points: pad(min.balances), tone: 'bad' },
@@ -398,7 +398,7 @@ export const ASK_TOOLS: AskTool[] = [
             return {
                 figures: [
                     { label: 'Time to get there', value: mo, unit: 'months' },
-                    { label: 'Interest helps by', value: Math.max(0, flat - mo), unit: 'months', tone: 'good' },
+                    { label: 'Interest helps by', value: Math.max(0, flat - mo), unit: 'months', tone: flat - mo > 0 ? 'good' : 'neutral' },
                     { label: 'You put in', value: monthly * mo, unit: 'inr' },
                 ],
                 series: [{ label: 'Saved', points, tone: 'primary' }],

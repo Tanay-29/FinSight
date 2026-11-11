@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-    Modal, TextInput, KeyboardAvoidingView, Platform, Pressable,
+    Modal, TextInput, KeyboardAvoidingView, Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -192,7 +192,7 @@ const AffordSheet: React.FC<{
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+            <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
                 <View style={{ backgroundColor: COLORS.surface.primary, borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, padding: GUTTER, paddingBottom: insets.bottom + 20 }}>
                     <View className="flex-row items-center justify-between mb-1">
                         <Text style={TYPE.heading} className="text-text-primary">Can I afford it?</Text>
@@ -232,7 +232,7 @@ const AffordSheet: React.FC<{
                                         {result.verdict === 'yes' ? 'Yes, comfortably' : result.verdict === 'tight' ? 'Yes, but it is tight' : 'Not before payday'}
                                     </Text>
                                     {[
-                                        ['Came in this month', income],
+                                        [incomeSource === 'estimated' ? 'Expected this month' : 'Came in this month', income],
                                         ['Spent so far', -spent],
                                         [`Likely in the next ${result.daysLeft} days, at your pace`, -result.projectedRest],
                                         ['This purchase', -amount],
@@ -275,10 +275,10 @@ const EditBudgetModal: React.FC<{
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <KeyboardAvoidingView
                 className="flex-1 justify-center items-center bg-black/50"
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior="padding"
             >
                 <View className="bg-surface-primary w-[85%] p-6" style={{ borderRadius: RADIUS.card }}>
-                    <Text style={TYPE.heading} className="text-text-primary mb-4">Edit the {budget?.category} budget</Text>
+                    <Text style={TYPE.heading} className="text-text-primary mb-4">Edit the {budget ? categoryLabel(budget.category) : ''} budget</Text>
                     <Text className="text-sm text-text-secondary mb-2 font-inter">Monthly limit (₹)</Text>
                     <TextInput
                         className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter"
@@ -339,7 +339,7 @@ const CreateBudgetModal: React.FC<{
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <KeyboardAvoidingView
                 className="flex-1 justify-center items-center bg-black/50"
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior="padding"
             >
                 <View className="bg-surface-primary w-[85%] p-6" style={{ borderRadius: RADIUS.card }}>
                     <Text style={TYPE.heading} className="text-text-primary mb-4">New budget</Text>

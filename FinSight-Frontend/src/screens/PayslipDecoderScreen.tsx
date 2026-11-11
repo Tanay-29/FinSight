@@ -6,7 +6,7 @@
  * the things worth an email to payroll. On-device, nothing stored.
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
@@ -39,7 +39,7 @@ const PayslipDecoderScreen: React.FC = () => {
                 <Text numberOfLines={1} className="text-lg font-inter-bold text-text-primary flex-1">Decode a payslip</Text>
             </View>
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ padding: GUTTER, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                     <Text style={{ ...TYPE.body, color: COLORS.text.secondary, marginBottom: 14 }}>
                         Paste the lines from your payslip, one per line with the amount at the end. Read on your phone, not saved.

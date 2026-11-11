@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as NavigationBar from 'expo-navigation-bar';
 import { NavigationContainer, NavigationState, createNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -82,6 +84,13 @@ function openSessionFromNotification(response: Notifications.NotificationRespons
 const Root: React.FC = () => {
   const { scheme } = useScheme();
   useAuthListener();
+
+  // The Android navigation bar follows the phone's theme unless told
+  // otherwise, so the app in dark mode on a light phone had a white bar
+  // under it, and the other way round. This keeps it with the app.
+  useEffect(() => {
+    if (Platform.OS === 'android') NavigationBar.setStyle(scheme === 'dark' ? 'dark' : 'light');
+  }, [scheme]);
 
   useEffect(() => {
     // A tap while the app is running, and the tap that launched it.

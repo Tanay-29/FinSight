@@ -5,7 +5,7 @@ import {
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,
 } from 'lucide-react-native';
 import { COLORS, CATEGORY_COLORS, categoryTint, TYPE, RADIUS } from '../theme/tokens';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import type { Category } from '../utils/categories';
 import { normaliseCategory, categoryLabel, incomeLabel, isIncomeSource } from '../utils/categories';
 
@@ -60,7 +60,9 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     const tint = isDebit ? categoryTint(key) : COLORS.semantic.profitBg;
 
     const formattedAmount = `${isDebit ? '-' : '+'}₹${amount.toLocaleString('en-IN')}`;
-    const formattedTime = format(new Date(date), 'h:mm a');
+    // A time alone reads as today, so anything older says its day.
+    const when = new Date(date);
+    const formattedTime = isToday(when) ? format(when, 'h:mm a') : format(when, 'd MMM');
 
     return (
         // A full-bleed row that shrinks under the finger looks like it is
@@ -86,9 +88,9 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
             </View>
 
             <View className="flex-1">
-                <Text style={TYPE.callout} className="text-text-primary">{merchant}</Text>
+                <Text numberOfLines={1} style={TYPE.callout} className="text-text-primary">{merchant}</Text>
                 <View className="flex-row items-center">
-                    <Text style={TYPE.caption} className="text-text-tertiary">
+                    <Text numberOfLines={1} style={[TYPE.caption, { flexShrink: 1 }]} className="text-text-tertiary">
                         {label} • {formattedTime}
                     </Text>
                     {source === 'auto' && (
@@ -105,7 +107,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
             </View>
 
             <Text
-                style={TYPE.amountSm}
+                style={[TYPE.amountSm, { marginLeft: 12 }]}
                 className={isDebit ? 'text-loss' : 'text-profit'}
             >
                 {formattedAmount}

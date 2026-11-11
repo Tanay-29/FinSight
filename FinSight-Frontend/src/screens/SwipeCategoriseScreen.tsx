@@ -14,7 +14,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     View, Text, TouchableOpacity, Animated, PanResponder,
-    Dimensions, StatusBar, ScrollView,
+    Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../components/PressableScale';
@@ -186,7 +186,6 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
-            <StatusBar barStyle="dark-content" />
 
             <View className="px-5 py-3.5 bg-surface-primary border-b border-border flex-row items-center">
                 <TouchableOpacity

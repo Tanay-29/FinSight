@@ -59,16 +59,31 @@ export const Slider: React.FC<SliderProps> = ({
             const v = valueAt(x);
             if (v !== valueRef.current) { haptics.select(); onChange(v); }
         };
+        // Sliders sit in scrolling pages. Setting the value on touch-down
+        // meant a thumb that started a vertical scroll on a track moved
+        // that slider, so the value now follows the finger only once the
+        // drag is clearly sideways, or on a tap that did not move.
+        let dragging = false;
         return PanResponder.create({
             onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: (e) => {
-                setPressed(true);
+            onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > Math.abs(g.dy),
+            onPanResponderGrant: () => { dragging = false; },
+            onPanResponderMove: (e, g) => {
+                if (!dragging) {
+                    if (Math.abs(g.dx) < 6 || Math.abs(g.dx) < Math.abs(g.dy)) return;
+                    dragging = true;
+                    setPressed(true);
+                }
                 move(e.nativeEvent.locationX);
             },
-            onPanResponderMove: (e) => move(e.nativeEvent.locationX),
-            onPanResponderRelease: () => setPressed(false),
-            onPanResponderTerminate: () => setPressed(false),
+            // Once it is a sideways drag, the page does not get to take it.
+            onPanResponderTerminationRequest: () => !dragging,
+            onPanResponderRelease: (e, g) => {
+                if (!dragging && Math.abs(g.dx) < 6 && Math.abs(g.dy) < 6) move(e.nativeEvent.locationX);
+                dragging = false;
+                setPressed(false);
+            },
+            onPanResponderTerminate: () => { dragging = false; setPressed(false); },
         });
     }, [min, max, step, onChange]);
 

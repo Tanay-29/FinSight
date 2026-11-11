@@ -20,8 +20,46 @@ export interface ParsedSMS {
     category: string;
     merchant: string;
     type: 'debit' | 'credit';
+    /** The day the message names, as an ISO string, or now when it names none. */
     date: string;
+    /** True when `date` came from the message rather than the clock. */
+    dated: boolean;
 }
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * The transaction date in a bank message, if it has one: "05-Nov-26",
+ * "5 Nov 2026", "05Nov26", "05/11/26", "05-11-2026" or "2026-11-05". Indian
+ * banks write the day first. Anything that is not a real day, or is in the
+ * future, or is more than a year old, is ignored and the caller uses today.
+ */
+export const parseSmsDate = (text: string, now: Date = new Date()): Date | null => {
+    let d: number | undefined;
+    let m: number | undefined;
+    let y: number | undefined;
+    // "05 deb..." also fits the shape, so take the first whose word is a month.
+    const named = [...text.matchAll(/\b(\d{1,2})[-\s/]?([A-Za-z]{3})[a-z]*[-\s/,]*(\d{4}|\d{2})\b/g)]
+        .find((x) => MONTHS.includes(x[2].toLowerCase()));
+    const iso = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+    const numeric = text.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4}|\d{2})\b/);
+    if (named) {
+        d = Number(named[1]); m = MONTHS.indexOf(named[2].toLowerCase()); y = Number(named[3]);
+    } else if (iso) {
+        y = Number(iso[1]); m = Number(iso[2]) - 1; d = Number(iso[3]);
+    } else if (numeric) {
+        d = Number(numeric[1]); m = Number(numeric[2]) - 1; y = Number(numeric[3]);
+    }
+    if (d === undefined || m === undefined || y === undefined) return null;
+    if (y < 100) y += 2000;
+    // Midday, so a time zone shift can never move it to another day.
+    const date = new Date(y, m, d, 12);
+    if (date.getFullYear() !== y || date.getMonth() !== m || date.getDate() !== d) return null;
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    if (date > endOfToday || date < yearAgo) return null;
+    return date;
+};
 
 /**
  * Pull a transaction out of a pasted bank message.
@@ -66,11 +104,18 @@ export const parseBankSMS = (
         lowerText.includes('received') ||
         lowerText.includes('deposited');
 
+    // A message about today keeps the current time, so it sorts as the
+    // latest entry; an older one goes on the day it names.
+    const now = new Date();
+    const named = parseSmsDate(smsText, now);
+    const dated = !!named && named.toDateString() !== now.toDateString();
+
     return {
         amount,
         category,
         merchant,
         type: isCredit ? 'credit' : 'debit',
-        date: new Date().toISOString(),
+        date: (dated && named ? named : now).toISOString(),
+        dated,
     };
 };

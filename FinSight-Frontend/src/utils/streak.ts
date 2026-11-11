@@ -139,3 +139,18 @@ export function streakAtRisk(state: StreakState, today: string = toDateKey()): b
     if (!state.lastStudiedDate || state.streak === 0) return false;
     return daysBetween(state.lastStudiedDate, today) >= 1;
 }
+
+/**
+ * The streak as it stands today. The stored number is only updated on a day
+ * of study, so after a gap longer than the freezes cover it is out of date;
+ * this is zero then, and every screen that shows a streak should read it.
+ */
+export function liveStreak(
+    streak: number,
+    lastStudiedDate: string | undefined,
+    freezes: number,
+    today: string = toDateKey(),
+): number {
+    const gap = lastStudiedDate ? daysBetween(lastStudiedDate, today) : Infinity;
+    return gap <= 1 + freezes ? streak : 0;
+}

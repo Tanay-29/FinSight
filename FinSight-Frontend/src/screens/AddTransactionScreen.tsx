@@ -14,7 +14,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Pressable,
+    View, Text, TextInput, ScrollView, KeyboardAvoidingView, ActivityIndicator, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, LinearTransition, useReducedMotion } from 'react-native-reanimated';
@@ -30,6 +30,7 @@ import { CATEGORY_ICON_MAP } from '../components/TransactionRow';
 import { PressableScale } from '../components/PressableScale';
 import { AmountInput } from '../components/AmountInput';
 import { inr } from '../utils/moneyMath';
+import { format } from 'date-fns';
 import * as haptics from '../utils/haptics';
 import { COLORS, CATEGORY_COLORS, categoryTint, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
 
@@ -104,6 +105,9 @@ export default function AddTransactionScreen() {
     const [incomeSource, setIncomeSource] = useState<string>('allowance');
     const [type, setType] = useState<'debit' | 'credit'>('debit');
     const [isParsed, setIsParsed] = useState(false);
+    // The day a pasted message names, when it is not today. A message from
+    // last week used to be saved as today.
+    const [parsedDate, setParsedDate] = useState<string | null>(null);
     // What the parser guessed, kept apart from `category` so a later edit in
     // the grid does not erase the record of what was guessed.
     const [predictedCategory, setPredictedCategory] = useState<string | null>(null);
@@ -136,6 +140,7 @@ export default function AddTransactionScreen() {
         } else {
             setPredictedCategory(null);
         }
+        setParsedDate(extracted.dated ? extracted.date : null);
         setIsParsed(true);
         setPasteOpen(false);
         haptics.success();
@@ -157,7 +162,7 @@ export default function AddTransactionScreen() {
                 merchant: merchant.trim(),
                 category: isDebit ? category : incomeSource,
                 type,
-                date: new Date().toISOString(),
+                date: isParsed && parsedDate ? parsedDate : new Date().toISOString(),
                 source: isParsed ? 'auto' : 'manual',
                 ...(isDebit && predictedCategory ? { predictedCategory } : {}),
             })).unwrap();
@@ -172,7 +177,7 @@ export default function AddTransactionScreen() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                 {/* Close, and which way the money moved. */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 10, paddingBottom: 4 }}>
                     <Pressable
@@ -285,7 +290,9 @@ export default function AddTransactionScreen() {
                                     {isParsed ? 'Filled from your message' : 'Paste a bank message'}
                                 </Text>
                                 <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>
-                                    {isParsed ? 'Check the details above' : 'Fills the amount, place and category'}
+                                    {isParsed
+                                        ? parsedDate ? `Dated ${format(new Date(parsedDate), 'd MMM')}. Check the details above` : 'Check the details above'
+                                        : 'Fills the amount, place, category and date'}
                                 </Text>
                             </View>
                             <ChevronDown size={18} color={COLORS.text.tertiary} style={{ transform: [{ rotate: pasteOpen ? '180deg' : '0deg' }] }} />

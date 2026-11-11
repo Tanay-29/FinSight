@@ -35,7 +35,7 @@ import { recordCheckIn, selectTodayCheckIn } from '../store/slices/checkInsSlice
 import { Mascot, MascotMood } from '../components/mascot/Mascot';
 import { PressableScale } from '../components/PressableScale';
 import { buildAutopsy } from '../utils/autopsy';
-import { daysBetween, toDateKey } from '../utils/streak';
+import { daysBetween, liveStreak, toDateKey } from '../utils/streak';
 import { inr } from '../utils/moneyMath';
 import { QUIZ_RETAKE_AFTER_DAYS } from '../data/moneyQuiz';
 import {
@@ -117,7 +117,7 @@ export const TodayScreen: React.FC = () => {
     const gap = last ? daysBetween(last, today) : Infinity;
     // A streak whose gap is longer than the freezes can cover is already gone,
     // and showing the old number would be the app lying about it.
-    const streak = gap <= 1 + freezes ? (profile?.streak ?? 0) : 0;
+    const streak = liveStreak(profile?.streak ?? 0, last, freezes, today);
     const atRisk = streak > 0 && gap >= 1 && !sessionDone;
 
     // The reminder schedule follows the habit: rebuilt when the session gets

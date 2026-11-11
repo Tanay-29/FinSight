@@ -28,7 +28,7 @@
 import React, { useMemo, useState } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView, TextInput,
-    KeyboardAvoidingView, Platform, ActivityIndicator, ViewStyle,
+    KeyboardAvoidingView, ActivityIndicator, ViewStyle,
 } from 'react-native';
 import Animated, {
     FadeIn, FadeInDown, FadeInRight, FadeInLeft, ZoomIn, useReducedMotion,
@@ -629,7 +629,7 @@ const OnboardingScreen: React.FC = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
-            <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <KeyboardAvoidingView className="flex-1" behavior="padding">
                 {/* Progress: one segment per question, filled as each is answered. */}
                 <View className="pt-4 pb-2" style={{ paddingHorizontal: GUTTER }}>
                     <View className="flex-row items-center justify-between mb-2.5 h-5">

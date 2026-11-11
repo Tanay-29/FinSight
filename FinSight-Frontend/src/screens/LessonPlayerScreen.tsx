@@ -372,7 +372,7 @@ const LessonPlayerScreen: React.FC = () => {
                                 ) : (
                                     <View style={{ padding: 16, borderRadius: 14, backgroundColor: COLORS.semantic.profitBg, marginBottom: 16 }}>
                                         <Text style={{ ...TYPE.callout, color: COLORS.semantic.profit }}>
-                                            All right. You will see these less often now.
+                                            You got every one, so these come back less often now.
                                         </Text>
                                     </View>
                                 )}

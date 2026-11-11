@@ -11,8 +11,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    Animated, ActivityIndicator, StatusBar,
-} from 'react-native';
+    Animated, ActivityIndicator, } from 'react-native';
 import ReAnimated, { FadeIn, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../components/PressableScale';
@@ -527,7 +526,6 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
-            <StatusBar barStyle="dark-content" />
 
             {/* Header */}
             <View className="bg-surface-primary border-b border-border px-4 py-3 flex-row items-center">

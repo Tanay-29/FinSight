@@ -12,7 +12,7 @@
  * would overspend by several times their rent.
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, PixelRatio } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '../components/BackButton';
 import { Info } from 'lucide-react-native';
@@ -53,11 +53,14 @@ const BurnRateScreen: React.FC = () => {
     const hasIncome = income.amount > 0;
     const scrubbed = scrubDay !== null ? pace.cumulative[scrubDay] : null;
 
+    // Until income is logged the figure is the profile's range, so it is
+    // what is expected, not what came in.
+    const incomeWords = income.source === 'estimated' ? 'you expect this month' : 'that came in';
     const verdict = !hasIncome
         ? { text: 'Log what came in this month to see what it leaves.', color: COLORS.text.secondary }
         : left >= 0
-            ? { text: `That leaves about ${rs(left)} of the ${rs(income.amount)} that came in.`, color: COLORS.semantic.profit }
-            : { text: `That is ${rs(-left)} more than the ${rs(income.amount)} that came in.`, color: COLORS.semantic.loss };
+            ? { text: `That leaves about ${rs(left)} of the ${rs(income.amount)} ${incomeWords}.`, color: COLORS.semantic.profit }
+            : { text: `That is ${rs(-left)} more than the ${rs(income.amount)} ${incomeWords}.`, color: COLORS.semantic.loss };
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
@@ -80,7 +83,7 @@ const BurnRateScreen: React.FC = () => {
                     ) : (
                         <AnimatedNumber value={Math.round(pace.projected)} format={(v) => rs(v)} style={{ ...TYPE.amountLg, fontSize: 32, lineHeight: 38, color: COLORS.text.primary, marginTop: 4 }} />
                     )}
-                    <Text style={{ ...TYPE.caption, color: scrubbed !== null ? COLORS.text.secondary : verdict.color, marginTop: 2, minHeight: 36 }}>
+                    <Text style={{ ...TYPE.caption, color: scrubbed !== null ? COLORS.text.secondary : verdict.color, marginTop: 2, minHeight: 36 * PixelRatio.getFontScale() }}>
                         {scrubbed !== null ? 'spent so far by then' : verdict.text}
                     </Text>
 
@@ -90,7 +93,7 @@ const BurnRateScreen: React.FC = () => {
                             daysInMonth={pace.daysInMonth}
                             projected={pace.projected}
                             limit={income.amount}
-                            limitLabel={hasIncome ? `Came in ${rs(income.amount)}` : undefined}
+                            limitLabel={hasIncome ? `${income.source === 'estimated' ? 'Expected' : 'Came in'} ${rs(income.amount)}` : undefined}
                             onScrub={setScrubDay}
                         />
                     </View>

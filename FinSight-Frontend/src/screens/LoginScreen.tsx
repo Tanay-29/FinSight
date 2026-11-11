@@ -25,7 +25,6 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     KeyboardAvoidingView,
-    Platform,
     ScrollView,
     Pressable,
     LayoutChangeEvent,
@@ -253,7 +252,7 @@ const LoginScreen: React.FC = () => {
     return (
         <KeyboardAvoidingView
             className="flex-1 bg-brand-primary-dark"
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior="padding"
         >
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}

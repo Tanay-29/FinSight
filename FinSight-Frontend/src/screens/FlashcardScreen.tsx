@@ -18,8 +18,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    Animated, Dimensions, ActivityIndicator, StatusBar,
-} from 'react-native';
+    Animated, Dimensions, ActivityIndicator, } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ReAnimated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { PressableScale } from '../components/PressableScale';
@@ -491,7 +490,6 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
-            <StatusBar barStyle="dark-content" />
 
             {/* Header */}
             <View style={{

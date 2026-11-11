@@ -311,24 +311,26 @@ const MoneyManagerScreen: React.FC = () => {
             };
         }
 
+        // The profile's range is a guess at income, so say so.
+        const cameIn = income.source === 'estimated' ? 'your estimated income' : 'what came in';
         const wantsPct = (buckets.wants / income.amount) * 100;
         const rate = savingsRate(income.amount, buckets.needs + buckets.wants) ?? 0;
 
         if (rate < 0) {
             return {
                 type: 'warning',
-                msg: `You spent ₹${Math.abs(Math.round((rate / 100) * income.amount)).toLocaleString('en-IN')} more than came in this month. That gap is the first thing worth closing.`,
+                msg: `You spent ₹${Math.abs(Math.round((rate / 100) * income.amount)).toLocaleString('en-IN')} more than ${cameIn} this month. That gap is the first thing worth closing.`,
             };
         }
         if (wantsPct > 35) {
             const excess = Math.round(((wantsPct - 30) / 100) * income.amount);
-            return { type: 'warning', msg: `Wants took ${wantsPct.toFixed(0)}% of what you earned, against a 30% target. Moving ₹${excess.toLocaleString('en-IN')} of it would put you on the ratio.` };
+            return { type: 'warning', msg: `Wants took ${wantsPct.toFixed(0)}% of ${income.source === 'estimated' ? 'your estimated income' : 'what you earned'}, against a 30% target. Moving ₹${excess.toLocaleString('en-IN')} of it would put you on the ratio.` };
         }
         if (rate < 20) {
-            return { type: 'tip', msg: `You kept ${rate.toFixed(0)}% of what came in. Twenty is the number worth aiming at, and small amounts invested regularly do most of the work.` };
+            return { type: 'tip', msg: `You kept ${rate.toFixed(0)}% of ${cameIn}. Twenty is the number worth aiming at, and small amounts invested regularly do most of the work.` };
         }
-        return { type: 'success', msg: `You kept ${rate.toFixed(0)}% of what came in this month, which is at or above the 20% the rule asks for.` };
-    }, [buckets, totalSpend, income.amount]);
+        return { type: 'success', msg: `You kept ${rate.toFixed(0)}% of ${cameIn} this month, which is at or above the 20% the rule asks for.` };
+    }, [buckets, totalSpend, income.amount, income.source]);
 
     const toggle = (b: Bucket) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

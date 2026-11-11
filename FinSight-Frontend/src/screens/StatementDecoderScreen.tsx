@@ -8,7 +8,7 @@
  * is stored or sent anywhere.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
@@ -48,7 +48,7 @@ const StatementDecoderScreen: React.FC = () => {
                 <Text numberOfLines={1} className="text-lg font-inter-bold text-text-primary flex-1">Decode a statement</Text>
             </View>
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ padding: GUTTER, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                     <Text style={{ ...TYPE.body, color: COLORS.text.secondary, marginBottom: 14 }}>
                         Paste the statement SMS or the summary at the top of the email. It is read on your phone and not saved.
