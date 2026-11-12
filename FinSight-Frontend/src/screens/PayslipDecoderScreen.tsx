@@ -68,9 +68,9 @@ const PayslipDecoderScreen: React.FC = () => {
                     {parsed && found ? (
                         <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)} style={{ marginTop: 20 }}>
                             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-                                <Tile label="Earnings" value={inr(parsed.earnings)} color={COLORS.semantic.profit} />
-                                <Tile label="Deductions" value={inr(parsed.deductions)} color={COLORS.semantic.alertCritical} />
-                                <Tile label="Net" value={inr(net)} color={COLORS.text.primary} />
+                                <Tile label="Earnings" value={`₹${inr(parsed.earnings)}`} color={COLORS.semantic.profit} />
+                                <Tile label="Deductions" value={`₹${inr(parsed.deductions)}`} color={COLORS.semantic.alertCritical} />
+                                <Tile label="Net" value={`₹${inr(net)}`} color={COLORS.text.primary} />
                             </View>
 
                             {parsed.flags.length > 0 ? (
@@ -121,7 +121,7 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; lines: PayslipLi
                     <View key={`${l.label}-${i}`} style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: i < lines.length - 1 ? 1 : 0, borderBottomColor: COLORS.border.default }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text style={{ ...TYPE.callout, color: COLORS.text.primary, flex: 1, marginRight: 10 }}>{l.label}</Text>
-                            <Text style={{ ...TYPE.amountSm, color: COLORS.text.primary }}>{inr(l.amount)}</Text>
+                            <Text style={{ ...TYPE.amountSm, color: COLORS.text.primary }}>₹{inr(l.amount)}</Text>
                         </View>
                         {l.note ? <Text style={{ fontFamily: FONTS.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.secondary, marginTop: 2 }}>{l.note}</Text> : null}
                     </View>
