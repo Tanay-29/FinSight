@@ -8,20 +8,19 @@
  * is stored or sent anywhere.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, TextInput, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
-import { ArrowLeft, Check, X, CalendarDays, AlertTriangle, ScanLine } from 'lucide-react-native';
+import { Check, X, CalendarDays, AlertTriangle, ScanLine } from 'lucide-react-native';
 import { parseStatement, SAMPLE_STATEMENT, ParsedStatement } from '../utils/statementParser';
 import { minimumDuePayoff, inr, monthsInWords } from '../utils/moneyMath';
 import { CREDIT_CARD } from '../data/taxConstants';
 import { PressableScale } from '../components/PressableScale';
+import { ScreenHeader } from '../components/ScreenHeader';
 import * as haptics from '../utils/haptics';
 import { COLORS, FONTS, TYPE, GUTTER } from '../theme/tokens';
 
 const StatementDecoderScreen: React.FC = () => {
-    const navigation = useNavigation<any>();
     const reduced = useReducedMotion();
     const [text, setText] = useState('');
     const [parsed, setParsed] = useState<ParsedStatement | null>(null);
@@ -41,12 +40,7 @@ const StatementDecoderScreen: React.FC = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-            <View className="flex-row items-center px-4 py-3 border-b border-border bg-surface-primary">
-                <TouchableOpacity onPress={() => navigation.goBack()} className="w-9 h-9 items-center justify-center rounded-full bg-surface-tertiary mr-3" activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Back">
-                    <ArrowLeft color={COLORS.text.primary} size={18} />
-                </TouchableOpacity>
-                <Text numberOfLines={1} className="text-lg font-inter-bold text-text-primary flex-1">Decode a statement</Text>
-            </View>
+            <ScreenHeader title="Decode a statement" />
 
             <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ padding: GUTTER, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
