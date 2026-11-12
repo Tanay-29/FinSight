@@ -146,7 +146,10 @@ export function scorecard(state: SimState, tags: Option['tag'][]): Scorecard {
     // ended rich on paper through choices that will not survive an audit is
     // not a year to copy.
     let verdict: string;
-    if (netWorth >= 100_000 && state.debt === 0 && costly <= 1) verdict = 'A year most people do not have: money saved, nothing owed, and a credit file that opens doors.';
+    // The credit line is only true when the file is in shape; card debt
+    // carried for months leaves it bruised even after it is cleared.
+    if (netWorth >= 100_000 && state.debt === 0 && costly <= 1 && state.credit >= 50) verdict = 'A year most people do not have: money saved, nothing owed, and a credit file that opens doors.';
+    else if (netWorth >= 100_000 && state.debt === 0 && costly <= 1) verdict = 'Money saved and nothing owed. The card balance you carried for a while still shows on your credit file; a few months paid in full mends it.';
     else if (netWorth >= 40_000 && state.debt < 20_000 && costly <= 3) verdict = 'Ahead of where you started, with a few choices that cost more than they needed to.';
     else if (netWorth >= 0 && state.debt === 0 && costly >= 4) verdict = 'Money in the bank, and a year of shortcuts behind it. The costly choices below do not show in the balance; they are the ones that follow you.';
     else if (netWorth >= 0) verdict = 'You got through it, but the year worked for the lenders more than for you.';

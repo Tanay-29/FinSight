@@ -412,8 +412,8 @@ const MoneyManagerScreen: React.FC = () => {
                         {insight.type === 'success'
                             ? <CheckCircle size={18} color={COLORS.semantic.profit} style={{ marginTop: 1 }} />
                             : insight.type === 'warning'
-                            ? <TrendingDown size={18} color="#C2410C" style={{ marginTop: 1 }} />
-                            : <Zap size={18} color="#1D4ED8" style={{ marginTop: 1 }} />}
+                            ? <TrendingDown size={18} color={COLORS.semantic.alertAmber} style={{ marginTop: 1 }} />
+                            : <Zap size={18} color={COLORS.brand.link} style={{ marginTop: 1 }} />}
                         <Text style={{
                             flex: 1, fontSize: 13, lineHeight: 19,
                             color: insight.type === 'success' ? COLORS.semantic.profit : insight.type === 'warning' ? COLORS.semantic.alertAmber : COLORS.brand.link,

@@ -296,7 +296,7 @@ const BubbleRoomScreen: React.FC = () => {
                             ))}
                         </View>
                         <Text style={{ ...TYPE.caption, color: COLORS.text.tertiary, marginTop: 10 }}>
-                            Traders outside the room follow the headlines too. Join late? Scan the code at {code}.
+                            Traders outside the room follow the headlines too. Joining late? The room code is {code}.
                         </Text>
                     </View>
                 ) : null}
@@ -314,6 +314,9 @@ const BubbleRoomScreen: React.FC = () => {
                             <MarketChart history={room.history ?? []} height={170} />
                         </View>
 
+                        {/* With nobody in the room these read "0 of 0 ... Doing
+                            nothing would have beaten them", which says nothing. */}
+                        {summary.players > 0 ? (
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                             <View style={{ flex: 1, padding: 14, borderRadius: RADIUS.tile, backgroundColor: COLORS.semantic.lossBg }}>
                                 <Text style={{ ...TYPE.amountLg, color: COLORS.semantic.alertCritical }}>{summary.belowStart} of {summary.players}</Text>
@@ -324,6 +327,7 @@ const BubbleRoomScreen: React.FC = () => {
                                 <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>paid twice the real value or more</Text>
                             </View>
                         </View>
+                        ) : null}
 
                         <View style={{ marginTop: 12, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default, overflow: 'hidden' }}>
                             {ranked.slice(0, 6).map((r, i) => (

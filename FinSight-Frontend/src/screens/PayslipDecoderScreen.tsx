@@ -48,7 +48,7 @@ const PayslipDecoderScreen: React.FC = () => {
                     <TextInput
                         multiline value={text} onChangeText={setText}
                         placeholder={'Basic 20,000\nHRA 10,000\nEmployee PF 2,400 ...'}
-                        placeholderTextColor={COLORS.border.strong} textAlignVertical="top"
+                        placeholderTextColor={COLORS.text.tertiary} textAlignVertical="top"
                         style={{ minHeight: 160, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.strong, backgroundColor: COLORS.surface.primary, color: COLORS.text.primary, fontFamily: FONTS.regular, fontSize: 15, lineHeight: 22 }}
                     />
 

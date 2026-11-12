@@ -97,7 +97,7 @@ const ReadingPhase: React.FC<{
                 className="bg-brand-primary-dark rounded-pill h-[52px] justify-center flex-row items-center justify-center"
             >
                 <Star size={18} color="white" />
-                <Text className="text-white font-inter-bold text-base ml-2">Test what you got</Text>
+                <Text className="text-white font-inter-bold text-base ml-2">Test yourself</Text>
                 <ChevronRight size={18} color="white" className="ml-1" />
             </PressableScale>
             <Text className="text-center text-xs text-text-tertiary mt-2 font-inter">3 quick questions</Text>
@@ -138,9 +138,9 @@ const QuizPhase: React.FC<{
             setSelectedOption(null);
             setAnswered(false);
         } else {
-            // The score for this last answer has not landed in state yet, so
-            // count it here rather than reading a value that is one behind.
-            onFinish(isCorrect ? score + 1 : score);
+            // The last answer was counted when it was tapped, a render ago,
+            // so `score` is already complete. Adding it again here gave 4/3.
+            onFinish(score);
         }
     };
 
@@ -333,7 +333,7 @@ const DonePhase: React.FC<{
             {/* Streak badge */}
             {streak > 0 && passed && (
                 <View className="mt-5 flex-row items-center bg-alert-bg border border-alert-bg rounded-2xl px-5 py-3">
-                    <Flame size={20} color="#C2410C" />
+                    <Flame size={20} color={COLORS.semantic.alertAmber} />
                     <Text className="text-sm font-inter-bold text-alert-amber ml-2">
                         {streak}-day learning streak
                     </Text>
@@ -344,7 +344,7 @@ const DonePhase: React.FC<{
                 the mechanic is that the learner notices being rescued. */}
             {streakSaved && (
                 <View className="mt-3 flex-row items-center bg-brand-soft border border-brand-edge rounded-2xl px-5 py-3">
-                    <Snowflake size={20} color="#0E7490" />
+                    <Snowflake size={20} color={COLORS.brand.link} />
                     <Text className="text-sm font-inter-bold text-brand-link ml-2">
                         Streak freeze used. Your streak is safe.
                     </Text>
@@ -410,7 +410,7 @@ const DonePhase: React.FC<{
                     </View>
                     <View>
                         <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Revise with flashcards</Text>
-                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Five quick cards from this module</Text>
+                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Quick cards from this module</Text>
                     </View>
                     <ChevronRight size={16} color={COLORS.text.tertiary} style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>

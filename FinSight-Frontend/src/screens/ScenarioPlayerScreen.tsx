@@ -72,6 +72,8 @@ const ScenarioPlayerScreen: React.FC = () => {
     const current = opened.state;
     const options = scene ? visibleOptions(scene, current) : [];
     const afterPick = picked !== null && scene ? applyEffect(current, options[picked].effect) : null;
+    // The last scene's button leads to the year, not another month.
+    const isLast = !!scene && firstVisible(scenario.scenes, sceneIndex + 1, afterPick ?? current) === -1;
 
     const choose = (i: number) => {
         if (picked !== null) return;
@@ -139,7 +141,12 @@ const ScenarioPlayerScreen: React.FC = () => {
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                                 <Chip text={`Salary +${inr(opened.ledger.income)}`} tone="good" />
                                 <Chip text={`Living costs ${inr(-opened.ledger.fixed)}`} />
-                                {opened.ledger.commitments !== 0 ? <Chip text={`Commitments ${inr(-opened.ledger.commitments)}`} tone={opened.ledger.commitments > 0 ? 'bad' : 'good'} /> : null}
+                                {/* One chip per commitment. Netted into one, a raise
+                                    (a negative commitment) read as a green
+                                    "Commitments 4,500". */}
+                                {opened.state.commitments.filter((c) => c.amount !== 0).map((c, i) => (
+                                    <Chip key={`${c.label}-${i}`} text={`${c.label} ${c.amount < 0 ? '+' : '-'}${inr(Math.abs(c.amount))}`} tone={c.amount > 0 ? 'bad' : 'good'} />
+                                ))}
                                 {opened.ledger.invested > 0 ? <Chip text={`SIP ${inr(-opened.ledger.invested)}`} tone="good" /> : null}
                                 {opened.ledger.interest > 0 ? <Chip text={`Interest ${inr(opened.ledger.interest)}`} tone="bad" /> : null}
                             </View>
@@ -202,7 +209,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                     <View style={{ paddingHorizontal: GUTTER, paddingVertical: 8 }}>
                         <PressableScale onPress={next} disabled={picked === null} accessibilityRole="button"
                             style={{ height: 52, borderRadius: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: picked !== null ? COLORS.brand.primaryDark : COLORS.surface.tertiary }}>
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: picked !== null ? COLORS.brand.onAccent : COLORS.text.tertiary, marginRight: 6 }}>Next month</Text>
+                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: picked !== null ? COLORS.brand.onAccent : COLORS.text.tertiary, marginRight: 6 }}>{isLast ? 'See your year' : 'Next month'}</Text>
                             <ChevronRight size={18} color={picked !== null ? COLORS.brand.onAccent : COLORS.text.tertiary} />
                         </PressableScale>
                     </View>

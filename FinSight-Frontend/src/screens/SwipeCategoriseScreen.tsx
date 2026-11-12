@@ -16,6 +16,7 @@ import {
     View, Text, TouchableOpacity, Animated, PanResponder,
     Dimensions, ScrollView,
 } from 'react-native';
+import { format } from 'date-fns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../components/PressableScale';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -194,7 +195,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                     accessibilityLabel="Go back"
                     className="w-9 h-9 rounded-full bg-surface-tertiary items-center justify-center mr-3"
                 >
-                    <ArrowLeft size={18} color="#423C35" />
+                    <ArrowLeft size={18} color={COLORS.text.secondary} />
                 </TouchableOpacity>
                 <View className="flex-1">
                     <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
@@ -300,7 +301,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                             <Text className="text-base text-text-secondary mt-1.5 font-inter">
                                 {current?.merchant || 'Unknown merchant'}
                             </Text>
-                            <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{current?.date?.slice(0, 10)}</Text>
+                            <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{current?.date ? format(new Date(current.date), 'd MMM yyyy') : ''}</Text>
 
                             <View className="h-px bg-surface-tertiary w-full my-5" />
 

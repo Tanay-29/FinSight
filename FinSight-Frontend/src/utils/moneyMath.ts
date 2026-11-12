@@ -344,3 +344,13 @@ export function monthsLabel(months: number): string {
     if (m === 0) return `${y} year${y === 1 ? '' : 's'}`;
     return `${y}y ${m}m`;
 }
+
+/** The same span in words, for sentences: "10 years and 6 months". */
+export function monthsInWords(months: number): string {
+    const y = Math.floor(months / 12);
+    const m = months % 12;
+    const ys = `${y} year${y === 1 ? '' : 's'}`;
+    const ms = `${m} month${m === 1 ? '' : 's'}`;
+    if (y === 0) return ms;
+    return m === 0 ? ys : `${ys} and ${ms}`;
+}

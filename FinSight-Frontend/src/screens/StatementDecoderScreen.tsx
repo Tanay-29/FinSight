@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { ArrowLeft, Check, X, CalendarDays, AlertTriangle, ScanLine } from 'lucide-react-native';
 import { parseStatement, SAMPLE_STATEMENT, ParsedStatement } from '../utils/statementParser';
-import { minimumDuePayoff, inr, monthsLabel } from '../utils/moneyMath';
+import { minimumDuePayoff, inr, monthsInWords } from '../utils/moneyMath';
 import { CREDIT_CARD } from '../data/taxConstants';
 import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
@@ -59,7 +59,7 @@ const StatementDecoderScreen: React.FC = () => {
                         value={text}
                         onChangeText={setText}
                         placeholder="Total Amount Due: Rs. 18,450 ..."
-                        placeholderTextColor={COLORS.border.strong}
+                        placeholderTextColor={COLORS.text.tertiary}
                         textAlignVertical="top"
                         style={{
                             minHeight: 140, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.strong,
@@ -100,16 +100,16 @@ const StatementDecoderScreen: React.FC = () => {
                         <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)} style={{ marginTop: 20 }}>
                             <View style={{ borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.default, backgroundColor: COLORS.surface.primary, overflow: 'hidden' }}>
                                 {parsed.totalDue !== undefined ? (
-                                    <Line icon={<Check size={16} color={COLORS.semantic.profit} strokeWidth={3} />} label="Total amount due" value={inr(parsed.totalDue)} note="Pay this. In full, by the due date, and the card costs nothing." tone="good" />
+                                    <Line icon={<Check size={16} color={COLORS.semantic.profit} strokeWidth={3} />} label="Total amount due" value={`₹${inr(parsed.totalDue)}`} note="Pay this. In full, by the due date, and the card costs nothing." tone="good" />
                                 ) : null}
                                 {parsed.minimumDue !== undefined ? (
-                                    <Line icon={<X size={16} color={COLORS.semantic.alertCritical} strokeWidth={3} />} label="Minimum amount due" value={inr(parsed.minimumDue)} note="Not this. It keeps the account open and starts interest on everything else." tone="bad" />
+                                    <Line icon={<X size={16} color={COLORS.semantic.alertCritical} strokeWidth={3} />} label="Minimum amount due" value={`₹${inr(parsed.minimumDue)}`} note="Not this. It keeps the account open and starts interest on everything else." tone="bad" />
                                 ) : null}
                                 {parsed.dueDate ? (
                                     <Line icon={<CalendarDays size={16} color={COLORS.text.secondary} />} label="Due date" value={parsed.dueDate} note="Set auto-pay for the total, or a reminder two days before." />
                                 ) : null}
                                 {parsed.financeCharge !== undefined && parsed.financeCharge > 0 ? (
-                                    <Line icon={<AlertTriangle size={16} color={COLORS.semantic.alertAmber} />} label="Finance charges" value={inr(parsed.financeCharge)} note="Interest was charged last cycle, so a balance was carried. This is the cost of that." tone="warn" />
+                                    <Line icon={<AlertTriangle size={16} color={COLORS.semantic.alertAmber} />} label="Finance charges" value={`₹${inr(parsed.financeCharge)}`} note="Interest was charged last cycle, so a balance was carried. This is the cost of that." tone="warn" />
                                 ) : null}
                                 {utilisation !== null ? (
                                     <Line icon={<AlertTriangle size={16} color={utilisation > 0.3 ? COLORS.semantic.alertAmber : COLORS.text.secondary} />} label="Limit in use" value={`${Math.round(utilisation * 100)}%`} note={utilisation > 0.3 ? 'Above 30 percent. This is what the bureau sees on statement day.' : 'Under 30 percent, which reads as comfortable to lenders.'} tone={utilisation > 0.3 ? 'warn' : undefined} last />
@@ -120,7 +120,7 @@ const StatementDecoderScreen: React.FC = () => {
                                 <View style={{ marginTop: 14, padding: 16, borderRadius: 14, backgroundColor: COLORS.semantic.lossBg }}>
                                     <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, marginBottom: 4 }}>If you paid only the minimum from here</Text>
                                     <Text style={{ ...TYPE.body, color: COLORS.text.primary }}>
-                                        {inr(parsed.totalDue)} at {Math.round(CREDIT_CARD.aprDefault * 100)}% takes {monthsLabel(minOnly.months)}{minOnly.cleared ? '' : ' or more'} to clear and costs {inr(minOnly.totalInterest)} in interest, with no new spending at all.
+                                        ₹{inr(parsed.totalDue)} at {Math.round(CREDIT_CARD.aprDefault * 100)}% a year takes {monthsInWords(minOnly.months)}{minOnly.cleared ? '' : ' or more'} to clear and costs ₹{inr(minOnly.totalInterest)} in interest, with no new spending at all.
                                     </Text>
                                 </View>
                             ) : null}

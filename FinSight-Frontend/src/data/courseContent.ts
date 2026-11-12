@@ -425,7 +425,7 @@ export const COURSE_CONTENT: LearningPath[] = [
                     '20% for Savings & Debt (emergency fund, investments)',
                     'Adjust percentages based on your situation',
                 ],
-                content: 'If you earn ₹100,000/month: 50% (₹50k) for essentials like rent & groceries. 30% (₹30k) for fun: dining, movies, hobbies. 20% (₹20k) for savings & debt repayment. This doesn\'t have to be exact. If you live in expensive cities, rent might be 50% alone. Then 50% need, 35% want, 15% save. The point isn\'t the numbers; it\'s the principle of intentional spending.',
+                content: 'If you earn ₹1,00,000 a month: 50% (₹50k) for essentials like rent & groceries. 30% (₹30k) for fun: dining, movies, hobbies. 20% (₹20k) for savings & debt repayment. This doesn\'t have to be exact. If you live in expensive cities, rent might be 50% alone. Then 50% need, 35% want, 15% save. The point isn\'t the numbers; it\'s the principle of intentional spending.',
                 quiz: [
                     {
                         question: 'In the 50-30-20 rule, what does the "20" represent?',

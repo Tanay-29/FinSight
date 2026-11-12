@@ -158,7 +158,7 @@ const FlipCard: React.FC<{
                     <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary, textAlign: 'center', lineHeight: 26 }}>
                         {card.question}
                     </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.brand.edge, marginTop: 24, fontFamily: FONTS.medium }}>
+                    <Text style={{ fontSize: 12, color: COLORS.brand.link, marginTop: 24, fontFamily: FONTS.medium }}>
                         Tap to reveal answer
                     </Text>
                 </Animated.View>
@@ -268,11 +268,11 @@ const ResultsScreen: React.FC<{
             </Animated.View>
 
             <Text style={{ fontSize: 24, fontFamily: FONTS.bold, color: COLORS.text.primary, marginTop: 24, textAlign: 'center' }}>
-                {pct === 100 ? 'Perfect Memory!' : pct >= 80 ? 'Great Recall!' : pct >= 50 ? 'Good Progress!' : 'Keep Studying!'}
+                {pct === 100 ? 'All of them' : pct >= 50 ? 'Most of them' : 'Worth another go'}
             </Text>
             <Text style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
-                You got {gotItCount} of {cards.length} cards right
-                {reviewCount > 0 ? ` - ${reviewCount} card${reviewCount > 1 ? 's' : ''} need more review` : '!'}
+                You knew {gotItCount} of {cards.length} cards
+                {reviewCount > 0 ? `. ${reviewCount === 1 ? 'One comes' : `${reviewCount} come`} back sooner.` : '.'}
             </Text>
 
             {/* Stats row */}
@@ -502,7 +502,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => navigation.goBack()}
                     style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
                 >
-                    <ArrowLeft size={18} color="#423C35" />
+                    <ArrowLeft size={18} color={COLORS.text.secondary} />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary }} numberOfLines={1}>
