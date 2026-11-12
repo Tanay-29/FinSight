@@ -343,7 +343,7 @@ export const LearnScreen: React.FC = () => {
                     const done = progress[path.id ?? '']?.completedModules?.length ?? 0;
                     const total = path.modules?.length ?? 0;
                     return (
-                        <Animated.View key={path.id} entering={reduced ? FadeIn.duration(120) : FadeInDown.duration(200)} style={{ marginLeft: 16 }}>
+                        <Animated.View key={path.id} entering={reduced ? FadeIn.duration(120) : FadeInDown.duration(200)}>
                             <Row
                                 icon={<BookOpen size={17} color={COLORS.text.tertiary} />}
                                 title={path.title}
@@ -481,8 +481,11 @@ const Tile: React.FC<{ icon: React.ReactNode; title: string; caption: string; do
         accessibilityRole="button"
         accessibilityLabel={title}
         activeScale={0.96}
+        // Every tile in the row takes the tallest one's height, so a two-line
+        // title does not leave its neighbours short.
+        containerStyle={{ alignSelf: 'stretch' }}
         style={{
-            width: 132, minHeight: 112, borderRadius: RADIUS.card, padding: 14, justifyContent: 'space-between',
+            flex: 1, width: 132, minHeight: 112, borderRadius: RADIUS.card, padding: 14, justifyContent: 'space-between',
             backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: active ? COLORS.brand.primary : COLORS.border.default,
         }}
     >
