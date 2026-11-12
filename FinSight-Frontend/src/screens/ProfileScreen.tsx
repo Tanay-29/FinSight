@@ -230,7 +230,7 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* User Card */}
-                <View className="mx-5 mt-3 bg-surface-primary border border-border rounded-xl p-4">
+                <View className="mx-5 mt-3 bg-surface-primary border border-border rounded-2xl p-4">
                     <View className="flex-row items-center">
                         <View className="w-16 h-16 rounded-full bg-brand-primary-dark items-center justify-center mr-4">
                             <Text className="text-2xl text-white font-inter-bold">{initial}</Text>
@@ -278,7 +278,7 @@ export const ProfileScreen: React.FC = () => {
                 ) : null}
 
                 {/* Settings */}
-                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl overflow-hidden">
+                <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-2xl overflow-hidden">
                     <View className="px-4 py-3 border-b border-border">
                         <Text className="text-lg font-inter-semibold text-text-primary">Settings</Text>
                     </View>
@@ -442,7 +442,7 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 <PressableScale
-                    className="mx-5 mt-4 bg-surface-primary border border-border rounded-xl p-4 items-center"
+                    className="mx-5 mt-4 bg-surface-primary border border-border rounded-2xl p-4 items-center"
                     onPress={handleLogout}
                     accessibilityRole="button"
                 >
