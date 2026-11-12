@@ -15,10 +15,11 @@ import {
 import ReAnimated, { FadeIn, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../components/PressableScale';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { BarFill } from '../components/BarFill';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-    ArrowLeft, Clock, ChevronRight, Check, X, Lightbulb, CloudOff,
+    ChevronRight, Check, X, Lightbulb, CloudOff,
     Trophy, Flame, BookOpen, Star, RefreshCw, CheckCircle2, BrainCircuit,
     Snowflake,
 } from 'lucide-react-native';
@@ -37,19 +38,7 @@ type Props = NativeStackScreenProps<any, 'ModuleReader'>;
 
 // ─── Small components ─────────────────────────────────────────
 
-const DifficultyBadge: React.FC<{ level: string }> = ({ level }) => {
-    const cfg: Record<string, { bg: string; text: string; label: string }> = {
-        beginner: { bg: COLORS.semantic.profitBg, text: COLORS.semantic.profit, label: 'Beginner' },
-        intermediate: { bg: COLORS.semantic.alertBg, text: COLORS.semantic.alertAmber, label: 'Intermediate' },
-        advanced: { bg: COLORS.semantic.lossBg, text: COLORS.semantic.alertCritical, label: 'Advanced' },
-    };
-    const c = cfg[level] ?? cfg.beginner;
-    return (
-        <View style={{ backgroundColor: c.bg }} className="px-2 py-0.5 rounded-full">
-            <Text style={{ color: c.text }} className="text-xs font-inter-semibold">{c.label}</Text>
-        </View>
-    );
-};
+const LEVEL_LABEL: Record<string, string> = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
 
 // ─── Phase 1: Reading ──────────────────────────────────────────
 
@@ -527,44 +516,29 @@ const ModuleReaderScreen: React.FC<Props> = ({ route, navigation }) => {
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
 
-            {/* Header */}
-            <View className="bg-surface-primary border-b border-border px-4 py-3 flex-row items-center">
-                <TouchableOpacity
-                    onPress={handleBack}
-                    className="w-9 h-9 items-center justify-center rounded-full bg-surface-tertiary mr-3"
-                    activeOpacity={0.7}
-                >
-                    <ArrowLeft size={18} color={COLORS.text.primary} />
-                </TouchableOpacity>
-
-                <View className="flex-1">
-                    <Text numberOfLines={1} className="text-sm font-inter-bold text-text-primary">
-                        {module.title}
-                    </Text>
-                    <View className="flex-row items-center gap-2 mt-0.5">
-                        <Clock size={11} color={COLORS.text.tertiary} />
-                        <Text className="text-xs text-text-tertiary font-inter">{module.duration}</Text>
-                        <DifficultyBadge level={module.difficulty} />
+            <ScreenHeader
+                title={module.title}
+                subtitle={`${module.duration} · ${LEVEL_LABEL[module.difficulty] ?? 'Beginner'}`}
+                onBack={handleBack}
+                right={
+                    // Where you are: reading, quiz, done.
+                    <View className="flex-row gap-1" style={{ marginLeft: 12 }}>
+                        {(['reading', 'quiz', 'done'] as Phase[]).map((p, i) => (
+                            <View
+                                key={p}
+                                style={{
+                                    width: 24, height: 4, borderRadius: 2,
+                                    backgroundColor: phase === p
+                                        ? COLORS.brand.primary
+                                        : (['reading', 'quiz', 'done'] as Phase[]).indexOf(phase) > i
+                                            ? COLORS.brand.edge
+                                            : COLORS.border.default,
+                                }}
+                            />
+                        ))}
                     </View>
-                </View>
-
-                {/* Phase indicator */}
-                <View className="flex-row gap-1">
-                    {(['reading', 'quiz', 'done'] as Phase[]).map((p, i) => (
-                        <View
-                            key={p}
-                            style={{
-                                width: 24, height: 4, borderRadius: 2,
-                                backgroundColor: phase === p
-                                    ? COLORS.brand.primary
-                                    : (['reading', 'quiz', 'done'] as Phase[]).indexOf(phase) > i
-                                        ? COLORS.brand.edge
-                                        : COLORS.border.default,
-                            }}
-                        />
-                    ))}
-                </View>
-            </View>
+                }
+            />
 
             {/* Phase content */}
             {phase === 'reading' && (
