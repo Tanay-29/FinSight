@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { BarFill } from './BarFill';
 import { categoryLabel, normaliseCategory } from '../utils/categories';
 import { categoryTint, TYPE, RADIUS } from '../theme/tokens';
+import { getDaysInMonth } from 'date-fns';
 
 interface BudgetBarProps {
     category: string;
@@ -18,8 +19,13 @@ export const BudgetBar: React.FC<BudgetBarProps> = ({
     limit,
 }) => {
     const percentage = (spent / limit) * 100;
-    const isSafe = percentage < 80;
-    const isWarning = percentage >= 80 && percentage < 100;
+    // Judged against an even pace through the month, the same rule the
+    // Spending pace screen uses. A flat 80 percent line called 45 percent
+    // spent by the 12th "On track" here while that screen said "ahead".
+    const now = new Date();
+    const evenPace = (now.getDate() / getDaysInMonth(now)) * 100;
+    const isSafe = percentage <= evenPace;
+    const isWarning = !isSafe && percentage < 100;
 
     // The bar keeps the bright amber, which is correct: a fill carries no
     // contrast requirement. The label does not, and was reading 2.1:1.
@@ -35,7 +41,7 @@ export const BudgetBar: React.FC<BudgetBarProps> = ({
     const statusLabel = isSafe
         ? 'On track'
         : isWarning
-            ? 'Getting close'
+            ? 'Ahead of pace'
             : `Over by ₹${overBy.toLocaleString('en-IN')}`;
     const statusColor = isSafe
         ? 'text-profit'

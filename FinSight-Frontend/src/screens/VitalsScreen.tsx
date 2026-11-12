@@ -725,7 +725,7 @@ export const VitalsScreen: React.FC = () => {
                 {/* Category Spending, and the recurring charges hiding inside
                     those categories. */}
                 <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-2xl p-4">
-                    <Text className="text-lg font-inter-semibold text-text-primary mb-3">Where it went</Text>
+                    <Text style={TYPE.heading} className="text-text-primary mb-3">Where it went</Text>
                     <SpendingBarChart data={chartData} monthLabel={format(new Date(), 'MMMM')} />
                     <TouchableOpacity
                         className="flex-row items-center justify-between mt-4 pt-3 border-t border-border"
@@ -782,17 +782,18 @@ export const VitalsScreen: React.FC = () => {
                 )}
             </ScrollView>
 
-            {/* Position on the Pressable itself, not the inner view, so the
-                tap area is where the button is drawn. */}
+            {/* Same shape, place and wording style as Goals' New goal, so
+                the main action looks the same on every tab that has one. */}
             <PressableScale
-                containerStyle={{ position: 'absolute', bottom: 24, right: 24 }}
-                className="bg-brand-primary-dark w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                containerStyle={{ position: 'absolute', right: GUTTER, bottom: 24 }}
+                style={{ height: 52, paddingHorizontal: 20, borderRadius: 26, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.brand.primaryDark, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
                 onPress={() => navigation.navigate('AddTransaction' as never)}
                 activeScale={0.92}
                 accessibilityRole="button"
                 accessibilityLabel="Add a transaction"
             >
-                <Plus color="white" size={24} />
+                <Plus color={COLORS.brand.onAccent} size={18} strokeWidth={2.6} />
+                <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent, marginLeft: 6 }}>Add</Text>
             </PressableScale>
         </SafeAreaView>
     );
