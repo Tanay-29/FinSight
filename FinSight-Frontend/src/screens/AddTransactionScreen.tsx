@@ -185,9 +185,9 @@ export default function AddTransactionScreen() {
                         hitSlop={10}
                         accessibilityRole="button"
                         accessibilityLabel="Close"
-                        style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}
+                        style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}
                     >
-                        <X size={18} color={COLORS.text.secondary} />
+                        <X size={18} color={COLORS.text.primary} />
                     </Pressable>
                     <View style={{ flex: 1, alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', padding: 3, borderRadius: 20, backgroundColor: COLORS.surface.tertiary }}>
