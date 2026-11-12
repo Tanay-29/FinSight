@@ -298,7 +298,11 @@ export const TodayScreen: React.FC = () => {
                             <ArrowUp size={16} color={COLORS.brand.onAccent} strokeWidth={2.5} />
                         </View>
                     </PressableScale>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ gap: 8 }}>
+                    {/* Runs to the card's edges and starts on the card's own
+                        padding, so the first chip lines up with the field above
+                        and a scrolled chip slides under the edge instead of
+                        being cut inside the card. */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, marginHorizontal: -14 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 14 }}>
                         {ASK_SUGGESTIONS.slice(0, 4).map((q) => (
                             <PressableScale
                                 key={q}
