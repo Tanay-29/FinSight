@@ -22,9 +22,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ReAnimated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { PressableScale } from '../components/PressableScale';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-    ArrowLeft, Check, X as XIcon,
+    Check, X as XIcon,
     BrainCircuit, ChevronLeft,
     Lightbulb, RefreshCw, Trophy,
 } from 'lucide-react-native';
@@ -492,27 +493,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
 
             {/* Header */}
-            <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                paddingHorizontal: 20, paddingVertical: 14,
-                backgroundColor: COLORS.surface.primary,
-                borderBottomWidth: 1, borderBottomColor: COLORS.surface.tertiary,
-            }}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface.tertiary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                >
-                    <ArrowLeft size={18} color={COLORS.text.secondary} />
-                </TouchableOpacity>
-                <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary }} numberOfLines={1}>
-                        Flashcards
-                    </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.text.tertiary }} numberOfLines={1}>
-                        {moduleTitle}
-                    </Text>
-                </View>
-            </View>
+            <ScreenHeader title="Flashcards" subtitle={moduleTitle} />
 
             {/* Content */}
             {loading ? (

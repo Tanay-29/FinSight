@@ -19,9 +19,10 @@ import {
 import { format } from 'date-fns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../components/PressableScale';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-    ArrowLeft, Check, X as XIcon, Sparkles, Utensils, ShoppingBag,
+    Check, X as XIcon, Sparkles, Utensils, ShoppingBag,
     Car, ShoppingCart, Zap, Clapperboard, HeartPulse, Home,
     TrendingUp, GraduationCap, Package,
 } from 'lucide-react-native';
@@ -188,22 +189,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'bottom']}>
 
-            <View className="px-5 py-3.5 bg-surface-primary border-b border-border flex-row items-center">
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back"
-                    className="w-9 h-9 rounded-full bg-surface-tertiary items-center justify-center mr-3"
-                >
-                    <ArrowLeft size={18} color={COLORS.text.secondary} />
-                </TouchableOpacity>
-                <View className="flex-1">
-                    <Text className="text-base font-inter-bold text-text-primary">Tidy Up</Text>
-                    <Text className="text-xs text-text-tertiary font-inter">
-                        {done ? 'All done' : `${deck.length - index} left to check`}
-                    </Text>
-                </View>
-            </View>
+            <ScreenHeader title="Fix categories" subtitle={done ? 'All done' : `${deck.length - index} left to check`} />
 
             {deck.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-10">
