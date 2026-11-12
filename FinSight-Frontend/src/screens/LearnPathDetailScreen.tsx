@@ -10,9 +10,10 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ReAnimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { BarFill } from '../components/BarFill';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
-    ArrowLeft, BookOpen, Layers, Clock, Check, Trophy,
+    BookOpen, Layers, Clock, Check, Trophy,
     ChevronRight, Lock, Play,
 } from 'lucide-react-native';
 import { LearningPath } from '../data/courseContent';
@@ -65,19 +66,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-            {/* Header */}
-            <View className="flex-row items-center px-4 py-3 border-b border-border bg-surface-primary">
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    className="w-9 h-9 items-center justify-center rounded-full bg-surface-tertiary mr-3"
-                    activeOpacity={0.7}
-                >
-                    <ArrowLeft color={COLORS.text.primary} size={18} />
-                </TouchableOpacity>
-                <Text numberOfLines={1} className="text-lg font-inter-bold text-text-primary flex-1">
-                    {path.title}
-                </Text>
-            </View>
+            <ScreenHeader title={path.title} />
 
             <ScrollView
                 className="flex-1"
@@ -234,7 +223,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                 {isCurrent && (
                                     <View className="bg-brand-primary-dark px-4 py-1.5 flex-row items-center justify-center">
                                         <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
-                                        <Text className="text-white text-xs font-inter-semibold ml-1.5">Continue here</Text>
+                                        <Text className="text-white text-xs font-inter-semibold ml-1.5">{completedCount === 0 ? 'Start here' : 'Continue here'}</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>
