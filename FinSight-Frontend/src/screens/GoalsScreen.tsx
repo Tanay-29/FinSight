@@ -2,7 +2,7 @@
  * GoalsScreen: what you are saving for, and how close each one is.
  *
  * One summary at the top (everything saved, as a ring and as a bar split by
- * goal), then a card per active goal: its own ring with its icon, what it
+ * goal), then a card per active goal: its icon and full name, a bar, what it
  * takes a month to make the date, and one main action, Add money. "How
  * fast?" opens the time-to-goal calculator on Ask with this goal's numbers.
  * Goals already reached fold into a short list at the end.
@@ -13,21 +13,22 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    View, Text, ScrollView, Modal, TextInput, Alert, Platform, KeyboardAvoidingView, Pressable,
+    View, Text, ScrollView, Modal, TextInput, Platform, KeyboardAvoidingView, Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeIn, FadeInDown, SlideInDown, useReducedMotion } from 'react-native-reanimated';
-import { Plus, PiggyBank, CalendarDays, Zap, CloudOff, X, Check, MoreHorizontal, Trophy } from 'lucide-react-native';
+import { Plus, PiggyBank, Zap, CloudOff, X, Check, MoreHorizontal, Trophy, Pencil, Trash2, ChevronRight } from 'lucide-react-native';
 import { addMonths, differenceInCalendarMonths, differenceInDays, format, parseISO } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
 import { GOAL_ICONS, GOAL_ICON_KEYS, DEFAULT_GOAL_ICON_KEY, goalIcon } from '../theme/icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchGoals, createGoal, depositToGoal, removeGoal } from '../store/slices/goalsSlice';
+import { fetchGoals, createGoal, depositToGoal, removeGoal, editGoal } from '../store/slices/goalsSlice';
 import { FirestoreGoal } from '../services/firestoreService';
 import { EmptyState } from '../components/EmptyState';
 import { PressableScale } from '../components/PressableScale';
 import { ProgressRing } from '../components/ProgressRing';
+import { BarFill } from '../components/BarFill';
 import { AmountInput } from '../components/AmountInput';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { Confetti } from '../components/Confetti';
@@ -85,6 +86,12 @@ const Summary: React.FC<{ goals: FirestoreGoal[] }> = ({ goals }) => {
 
 // ─── Goal card ───────────────────────────────────────────────
 
+/**
+ * One goal. The name comes first and in full (two lines before it would ever
+ * cut off), then where it stands as one line and one bar, then what it takes,
+ * then the two things to do. The ring, the big percentage and the dots used
+ * to share the name's line, which cut "Annapurna Base Camp" to "Annapurna Base ..".
+ */
 const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () => void }> = ({ goal, onAdd, onMore }) => {
     const navigation = useNavigation<any>();
     const pct = goal.targetAmount > 0 ? goal.savedAmount / goal.targetAmount : 0;
@@ -96,29 +103,34 @@ const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () =>
     return (
         <View style={{ marginHorizontal: GUTTER, marginBottom: 12, borderRadius: RADIUS.card, padding: 16, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <ProgressRing value={pct} size={58} stroke={5} color={goal.color}>
-                    <GoalGlyph icon={goal.icon} size={22} color={goal.color} />
-                </ProgressRing>
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text numberOfLines={1} style={{ ...TYPE.heading, fontSize: 17, color: COLORS.text.primary }}>{goal.title}</Text>
-                    <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
-                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.text.primary }}>{rs(goal.savedAmount)}</Text> of {rs(goal.targetAmount)}
-                    </Text>
+                <View style={{ width: 44, height: 44, borderRadius: RADIUS.tile, alignItems: 'center', justifyContent: 'center', backgroundColor: `${goal.color}1F` }}>
+                    <GoalGlyph icon={goal.icon} size={20} color={goal.color} />
                 </View>
-                <Text style={{ ...TYPE.amountMd, color: goal.color }}>{Math.round(pct * 100)}%</Text>
-                <Pressable onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More for ${goal.title}`} style={{ marginLeft: 8, padding: 2 }}>
-                    <MoreHorizontal size={18} color={COLORS.text.tertiary} />
+                <Text numberOfLines={2} style={{ ...TYPE.heading, fontSize: 17, lineHeight: 22, color: COLORS.text.primary, flex: 1, marginLeft: 12 }}>{goal.title}</Text>
+                <Pressable
+                    onPress={onMore}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit or delete ${goal.title}`}
+                    style={({ pressed }) => ({ width: 36, height: 36, borderRadius: 18, marginLeft: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? COLORS.surface.tertiary : 'transparent' })}
+                >
+                    <MoreHorizontal size={20} color={COLORS.text.secondary} />
                 </Pressable>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
-                <CalendarDays size={14} color={late ? COLORS.semantic.alertCritical : COLORS.text.tertiary} />
-                <Text style={{ ...TYPE.caption, marginLeft: 6, flex: 1, color: late ? COLORS.semantic.alertCritical : COLORS.text.secondary }}>
-                    {late
-                        ? `Past ${format(parseISO(goal.deadline), 'd MMM')}, ${rs(remaining)} to go`
-                        : `${rs(need)} a month to make it by ${format(parseISO(goal.deadline), 'd MMM yyyy')}`}
-                </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 16 }}>
+                <Text style={{ ...TYPE.amountSm, color: COLORS.text.primary }}>{rs(goal.savedAmount)}</Text>
+                <Text style={{ ...TYPE.caption, color: COLORS.text.tertiary, marginLeft: 4, flex: 1 }}>of {rs(goal.targetAmount)}</Text>
+                <Text style={{ ...TYPE.amountSm, color: goal.color }}>{Math.round(pct * 100)}%</Text>
             </View>
+            <View style={{ marginTop: 8 }}>
+                <BarFill percent={Math.min(100, pct * 100)} color={goal.color} height={6} />
+            </View>
+            <Text style={{ ...TYPE.caption, marginTop: 8, color: late ? COLORS.semantic.alertCritical : COLORS.text.secondary }}>
+                {late
+                    ? `Past ${format(parseISO(goal.deadline), 'd MMM')}, ${rs(remaining)} to go`
+                    : `${rs(need)} a month to make ${format(parseISO(goal.deadline), 'd MMM yyyy')}`}
+            </Text>
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
                 <PressableScale
@@ -126,7 +138,7 @@ const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () =>
                     accessibilityRole="button"
                     accessibilityLabel={`Add money to ${goal.title}`}
                     containerStyle={{ flex: 1 }}
-                    style={{ height: 44, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: goal.color }}
+                    style={{ height: 42, borderRadius: 21, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: goal.color }}
                 >
                     <Plus size={16} color="#FFFFFF" strokeWidth={2.6} />
                     <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: '#FFFFFF', marginLeft: 6 }}>Add money</Text>
@@ -139,7 +151,7 @@ const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () =>
                     })}
                     accessibilityRole="button"
                     accessibilityLabel={`How fast can I reach ${goal.title}`}
-                    style={{ height: 44, paddingHorizontal: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}
+                    style={{ height: 42, paddingHorizontal: 16, borderRadius: 21, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}
                 >
                     <Zap size={15} color={COLORS.text.primary} />
                     <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 6 }}>How fast?</Text>
@@ -160,8 +172,9 @@ const ReachedRow: React.FC<{ goal: FirestoreGoal; last: boolean; onMore: () => v
             <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.semantic.profit, marginLeft: 10 }}>
                 <Check size={13} color="#FFFFFF" strokeWidth={3} />
             </View>
-            <Pressable onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More for ${goal.title}`} style={{ marginLeft: 8 }}>
-                <MoreHorizontal size={18} color={COLORS.text.tertiary} />
+            <Pressable onPress={onMore} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Edit or delete ${goal.title}`}
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, marginLeft: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? COLORS.surface.tertiary : 'transparent' })}>
+                <MoreHorizontal size={18} color={COLORS.text.secondary} />
             </Pressable>
         </View>
     );
@@ -261,32 +274,91 @@ const AddMoneySheet: React.FC<{
     );
 };
 
-// ─── New goal ────────────────────────────────────────────────
+// ─── Goal menu ───────────────────────────────────────────────
+
+const MenuRow: React.FC<{ icon: React.ReactNode; label: string; hint?: string; danger?: boolean; onPress: () => void }> = ({ icon, label, hint, danger, onPress }) => (
+    <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: RADIUS.control, backgroundColor: pressed ? COLORS.surface.secondary : 'transparent' })}
+    >
+        <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: danger ? COLORS.semantic.lossBg : COLORS.surface.tertiary }}>
+            {icon}
+        </View>
+        <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: danger ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{label}</Text>
+            {hint ? <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>{hint}</Text> : null}
+        </View>
+        <ChevronRight size={18} color={COLORS.text.tertiary} />
+    </Pressable>
+);
+
+/**
+ * What the dots open: edit or delete. It was a system alert with a title and
+ * no body, which on Android is a blank box with one button in it. Deleting
+ * asks once more, here in the sheet, and says what goes.
+ */
+const GoalMenuSheet: React.FC<{
+    goal: FirestoreGoal | null; error: string | null; onClose: () => void; onEdit: () => void; onDelete: () => void;
+}> = ({ goal, error, onClose, onEdit, onDelete }) => {
+    const [confirming, setConfirming] = useState(false);
+    if (!goal) return null;
+    return (
+        <Sheet visible onClose={onClose} title={confirming ? `Delete ${goal.title}?` : goal.title}>
+            {confirming ? (
+                <>
+                    <Text style={{ ...TYPE.body, color: COLORS.text.secondary }}>
+                        {goal.savedAmount > 0
+                            ? `The goal and the ${rs(goal.savedAmount)} you have put towards it go from FinSight. Your money stays where it is.`
+                            : 'The goal goes from FinSight. This cannot be undone.'}
+                    </Text>
+                    {error ? <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, marginTop: 12 }}>{error}</Text> : null}
+                    <PrimaryButton label="Delete goal" color={DELETE_RED} onPress={() => { haptics.commit(); onDelete(); }} />
+                    <Pressable onPress={() => setConfirming(false)} accessibilityRole="button" style={{ height: 48, alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+                        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.secondary }}>Keep it</Text>
+                    </Pressable>
+                </>
+            ) : (
+                <View style={{ paddingBottom: 6 }}>
+                    <MenuRow icon={<Pencil size={18} color={COLORS.text.primary} />} label="Edit goal" hint="Name, target, date, icon and colour" onPress={() => { haptics.tap(); onEdit(); }} />
+                    <MenuRow icon={<Trash2 size={18} color={COLORS.semantic.alertCritical} />} label="Delete goal" danger onPress={() => { haptics.warn(); setConfirming(true); }} />
+                </View>
+            )}
+        </Sheet>
+    );
+};
+
+// ─── New goal, and editing one ───────────────────────────────
+
 
 /** Literal on purpose: a goal's colour is saved and must mean the same in both themes. */
 const GOAL_COLORS = ['#6366F1', '#0F766E', '#047857', '#B45309', '#C0392F', '#BE185D', '#6D28D9', '#1D4ED8'];
+/** The delete button's fill, from the same set so white reads on it in both themes. */
+const DELETE_RED = '#C0392F';
 
 const WHEN: { label: string; months: number }[] = [
     { label: '3 months', months: 3 }, { label: '6 months', months: 6 }, { label: '1 year', months: 12 }, { label: '2 years', months: 24 },
 ];
 
+/** Creates a goal, or with `goal` set, edits that one: same fields, filled in. */
 const NewGoalSheet: React.FC<{
-    visible: boolean; error: string | null; onClose: () => void; onSave: (g: Omit<FirestoreGoal, 'id'>) => void;
-}> = ({ visible, error, onClose, onSave }) => {
-    const [title, setTitle] = useState('');
-    const [target, setTarget] = useState('');
-    const [deadline, setDeadline] = useState(() => addMonths(new Date(), 6));
-    const [preset, setPreset] = useState<number | null>(6);
+    visible: boolean; error: string | null; onClose: () => void; onSave: (g: Omit<FirestoreGoal, 'id'>) => void; goal?: FirestoreGoal;
+}> = ({ visible, error, onClose, onSave, goal }) => {
+    const [title, setTitle] = useState(goal?.title ?? '');
+    const [target, setTarget] = useState(goal ? String(goal.targetAmount) : '');
+    const [deadline, setDeadline] = useState(() => (goal ? parseISO(goal.deadline) : addMonths(new Date(), 6)));
+    const [preset, setPreset] = useState<number | null>(goal ? null : 6);
     const [pickerOpen, setPickerOpen] = useState(false);
-    const [icon, setIcon] = useState<string>(DEFAULT_GOAL_ICON_KEY);
-    const [color, setColor] = useState(GOAL_COLORS[0]);
+    const [icon, setIcon] = useState<string>(goal?.icon ?? DEFAULT_GOAL_ICON_KEY);
+    const [color, setColor] = useState(goal?.color ?? GOAL_COLORS[0]);
 
     const amount = toAmount(target);
+    const saved = goal?.savedAmount ?? 0;
     const months = Math.max(1, differenceInCalendarMonths(deadline, new Date()));
     const ready = title.trim().length > 0 && amount > 0;
 
     return (
-        <Sheet visible={visible} onClose={onClose} title="New goal">
+        <Sheet visible={visible} onClose={onClose} title={goal ? 'Edit goal' : 'New goal'}>
             {/* What it will look like, before it exists. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.secondary }}>
                 <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: `${color}22` }}>
@@ -295,7 +367,7 @@ const NewGoalSheet: React.FC<{
                 <View style={{ marginLeft: 14, flex: 1 }}>
                     <Text numberOfLines={1} style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: title ? COLORS.text.primary : COLORS.text.tertiary }}>{title || 'Your goal'}</Text>
                     <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
-                        {amount > 0 ? `${rs(Math.ceil(amount / months))} a month, by ${format(deadline, 'MMM yyyy')}` : `By ${format(deadline, 'd MMM yyyy')}`}
+                        {amount > saved ? `${rs(Math.ceil((amount - saved) / months))} a month, by ${format(deadline, 'MMM yyyy')}` : `By ${format(deadline, 'd MMM yyyy')}`}
                     </Text>
                 </View>
             </View>
@@ -358,14 +430,14 @@ const NewGoalSheet: React.FC<{
 
             {error ? <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, marginTop: 12 }}>{error}</Text> : null}
             <PrimaryButton
-                label={ready ? 'Create goal' : !title.trim() ? 'Name your goal' : 'Enter a target'}
+                label={ready ? (goal ? 'Save changes' : 'Create goal') : !title.trim() ? 'Name your goal' : 'Enter a target'}
                 color={color}
                 disabled={!ready}
                 onPress={() => {
                     haptics.commit();
                     onSave({
-                        title: title.trim(), icon, targetAmount: amount, savedAmount: 0,
-                        deadline: format(deadline, 'yyyy-MM-dd'), color, createdAt: new Date().toISOString(),
+                        title: title.trim(), icon, targetAmount: amount, savedAmount: saved,
+                        deadline: format(deadline, 'yyyy-MM-dd'), color, createdAt: goal?.createdAt ?? new Date().toISOString(),
                     });
                 }}
             />
@@ -386,6 +458,8 @@ export const GoalsScreen: React.FC = () => {
     const [newOpen, setNewOpen] = useState(false);
     const [depositGoal, setDepositGoal] = useState<FirestoreGoal | null>(null);
     const [celebrate, setCelebrate] = useState(false);
+    const [menuGoal, setMenuGoal] = useState<FirestoreGoal | null>(null);
+    const [editing, setEditing] = useState<FirestoreGoal | null>(null);
 
     useEffect(() => { dispatch(fetchGoals()); }, [dispatch]);
 
@@ -409,14 +483,20 @@ export const GoalsScreen: React.FC = () => {
 
     const more = (goal: FirestoreGoal) => {
         haptics.tap();
-        // Android leaves a blank block where the message would be, and the
-        // button alone did not say what deleting does.
-        Alert.alert(`Delete ${goal.title}?`, goal.savedAmount > 0
-            ? `The goal and its ${rs(goal.savedAmount)} saved so far go from FinSight. Your money stays where it is.`
-            : 'The goal goes from FinSight.', [
-            { text: 'Delete goal', style: 'destructive', onPress: () => goal.id && dispatch(removeGoal(goal.id)) },
-            { text: 'Cancel', style: 'cancel' },
-        ]);
+        setMenuGoal(goal);
+    };
+
+    const saveEdit = async (g: Omit<FirestoreGoal, 'id'>) => {
+        if (!editing?.id) return;
+        const { title, icon, targetAmount, deadline, color } = g;
+        const result = await dispatch(editGoal({ goalId: editing.id, fields: { title, icon, targetAmount, deadline, color } }));
+        if (editGoal.fulfilled.match(result)) setEditing(null);
+    };
+
+    const remove = async () => {
+        if (!menuGoal?.id) return;
+        const result = await dispatch(removeGoal(menuGoal.id));
+        if (removeGoal.fulfilled.match(result)) setMenuGoal(null);
     };
 
     const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
@@ -425,6 +505,15 @@ export const GoalsScreen: React.FC = () => {
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top']}>
             <NewGoalSheet key={newOpen ? 'open' : 'closed'} visible={newOpen} error={newOpen ? error : null} onClose={() => setNewOpen(false)} onSave={create} />
             <AddMoneySheet key={depositGoal?.id ?? 'none'} goal={depositGoal} error={depositGoal ? error : null} onClose={() => setDepositGoal(null)} onConfirm={deposit} />
+            <GoalMenuSheet
+                key={menuGoal?.id ?? 'no-menu'}
+                goal={menuGoal}
+                error={menuGoal ? error : null}
+                onClose={() => setMenuGoal(null)}
+                onEdit={() => { const g = menuGoal; setMenuGoal(null); setEditing(g); }}
+                onDelete={remove}
+            />
+            <NewGoalSheet key={editing?.id ?? 'no-edit'} visible={!!editing} goal={editing ?? undefined} error={editing ? error : null} onClose={() => setEditing(null)} onSave={saveEdit} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
                 <View style={{ paddingHorizontal: GUTTER, paddingTop: 12, flexDirection: 'row', alignItems: 'center' }}>
@@ -440,7 +529,7 @@ export const GoalsScreen: React.FC = () => {
                     </PressableScale>
                 </View>
 
-                {error && !newOpen && !depositGoal ? (
+                {error && !newOpen && !depositGoal && !menuGoal && !editing ? (
                     <Animated.View entering={FadeIn.duration(200)} style={{ marginHorizontal: GUTTER, marginTop: 10, padding: 12, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.control, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
                         <CloudOff size={14} color={COLORS.text.secondary} />
                         <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginLeft: 8, flex: 1 }}>{error}</Text>

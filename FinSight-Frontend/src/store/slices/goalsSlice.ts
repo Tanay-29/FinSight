@@ -6,7 +6,9 @@ import {
     addGoal,
     getGoals,
     updateGoalSaved,
+    updateGoal,
     deleteGoal,
+    GoalEdit,
 } from '../../services/firestoreService';
 import { RootState } from '../store';
 import { friendlyError } from '../../utils/errors';
@@ -81,6 +83,21 @@ export const depositToGoal = createAsyncThunk(
     }
 );
 
+export const editGoal = createAsyncThunk(
+    'goals/edit',
+    async ({ goalId, fields }: { goalId: string; fields: GoalEdit }, { rejectWithValue, getState }) => {
+        try {
+            const state = getState() as RootState;
+            const userId = state.auth.user?.uid;
+            if (!userId) throw new Error('User not authenticated');
+            await updateGoal(userId, goalId, fields);
+            return { goalId, fields };
+        } catch (error: any) {
+            return rejectWithValue(friendlyError(error, 'Could not save those changes.'));
+        }
+    }
+);
+
 export const removeGoal = createAsyncThunk(
     'goals/remove',
     async (goalId: string, { rejectWithValue, getState }) => {
@@ -151,6 +168,18 @@ const goalsSlice = createSlice({
                 }
             })
             .addCase(depositToGoal.rejected, (state, action) => {
+                state.error = action.payload as string;
+            });
+
+        builder
+            .addCase(editGoal.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(editGoal.fulfilled, (state, action) => {
+                const idx = state.items.findIndex((g) => g.id === action.payload.goalId);
+                if (idx !== -1) state.items[idx] = { ...state.items[idx], ...action.payload.fields };
+            })
+            .addCase(editGoal.rejected, (state, action) => {
                 state.error = action.payload as string;
             });
 

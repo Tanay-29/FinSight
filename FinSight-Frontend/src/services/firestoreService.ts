@@ -588,6 +588,17 @@ export async function updateGoalSaved(
     );
 }
 
+/** Change what a goal is: its name, target, date, icon or colour. */
+export type GoalEdit = Pick<FirestoreGoal, 'title' | 'icon' | 'targetAmount' | 'deadline' | 'color'>;
+
+export async function updateGoal(
+    userId: string,
+    goalId: string,
+    fields: GoalEdit
+): Promise<void> {
+    await updateDoc(doc(db, 'users', userId, 'goals', goalId), fields);
+}
+
 /** Delete a goal */
 export async function deleteGoal(
     userId: string,

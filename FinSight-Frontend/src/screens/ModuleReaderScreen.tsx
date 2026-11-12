@@ -27,7 +27,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { completeModule } from '../store/slices/learningSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-import { FONTS, COLORS, TYPE } from '../theme/tokens';
+import { FONTS, COLORS, TYPE, RADIUS } from '../theme/tokens';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -392,27 +392,27 @@ const DonePhase: React.FC<{
 
             {/* Actions */}
             <View className="w-full px-4 mt-8 gap-3">
-                {/* AI Flashcards CTA */}
+                {/* Flashcards. It had no side padding, so the icon sat on the
+                    card's edge while the chevron floated at the other end. */}
                 <TouchableOpacity
                     onPress={onFlashcards}
                     activeOpacity={0.85}
+                    accessibilityRole="button"
                     style={{
                         backgroundColor: COLORS.surface.primary,
-                        borderRadius: 18, paddingVertical: 16,
-                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                        borderWidth: 1.5, borderColor: COLORS.brand.soft,
-                        shadowColor: COLORS.brand.primary, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
-                        gap: 10,
+                        borderRadius: RADIUS.card, paddingVertical: 14, paddingHorizontal: 14,
+                        flexDirection: 'row', alignItems: 'center',
+                        borderWidth: 1, borderColor: COLORS.brand.edge,
                     }}
                 >
-                    <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center' }}>
-                        <BrainCircuit size={18} color={COLORS.brand.primary} />
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center' }}>
+                        <BrainCircuit size={20} color={COLORS.brand.link} />
                     </View>
-                    <View>
-                        <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Revise with flashcards</Text>
-                        <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Quick cards from this module</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>Revise with flashcards</Text>
+                        <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>Quick cards from this module</Text>
                     </View>
-                    <ChevronRight size={16} color={COLORS.text.tertiary} style={{ marginLeft: 'auto' }} />
+                    <ChevronRight size={18} color={COLORS.text.tertiary} />
                 </TouchableOpacity>
 
                 <PressableScale
@@ -420,16 +420,16 @@ const DonePhase: React.FC<{
                     className="bg-brand-primary-dark rounded-pill h-[52px] justify-center flex-row items-center justify-center"
                 >
                     <CheckCircle2 size={18} color="white" />
-                    <Text className="text-white font-inter-bold text-base ml-2">Back to Course</Text>
+                    <Text className="text-white font-inter-bold text-base ml-2">Back to course</Text>
                 </PressableScale>
 
                 <TouchableOpacity
                     onPress={onRetake}
                     activeOpacity={0.7}
-                    className="border border-border-strong rounded-2xl py-3.5 flex-row items-center justify-center"
+                    className="border border-border-strong rounded-pill h-[52px] flex-row items-center justify-center"
                 >
                     <RefreshCw size={16} color={COLORS.text.secondary} />
-                    <Text className="text-text-secondary font-inter-semibold text-sm ml-2">Retake Quiz</Text>
+                    <Text className="text-text-secondary font-inter-semibold text-sm ml-2">Retake quiz</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>
