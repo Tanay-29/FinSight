@@ -34,7 +34,7 @@ import { RecurringCharge, detectRecurring } from '../utils/recurring';
 import { normaliseCategory, Category } from '../utils/categories';
 import { inr, inrShort } from '../utils/moneyMath';
 import { AnimatedNumber } from '../components/AnimatedNumber';
-import { COLORS, CATEGORY_COLORS, categoryTint, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, categoryTint, TYPE, GUTTER, RADIUS, FACE } from '../theme/tokens';
 
 const rs = (n: number) => `₹${inr(n)}`;
 const BILLS: Category[] = ['housing', 'utilities', 'education'];
@@ -76,7 +76,7 @@ const Row: React.FC<{ c: RecurringCharge; last: boolean; right?: React.ReactNode
                 {React.createElement(Icon, { size: 18, color: CATEGORY_COLORS[key], strokeWidth: 1.9 })}
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text numberOfLines={1} style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>{c.merchant}</Text>
+                <Text numberOfLines={1} style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary }}>{c.merchant}</Text>
                 <Text numberOfLines={1} style={{ ...TYPE.caption, fontSize: 12, color: note ? COLORS.semantic.alertAmber : COLORS.text.tertiary, marginTop: 1 }}>
                     {note ?? `${cadence(c.avgIntervalDays)}, ${c.totalCount} times in 90 days`}
                 </Text>
@@ -94,7 +94,7 @@ const Section: React.FC<{ title: string; total: number; hint: string; children: 
     <View style={{ marginTop: 22 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginHorizontal: GUTTER, marginBottom: 2 }}>
             <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, flex: 1 }}>{title}</Text>
-            <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: COLORS.text.secondary }}>{rs(total)} a month</Text>
+            <Text style={{ ...TYPE.caption, ...FACE.semibold, color: COLORS.text.secondary }}>{rs(total)} a month</Text>
         </View>
         <Text style={{ ...TYPE.caption, fontSize: 12, color: COLORS.text.tertiary, marginHorizontal: GUTTER, marginBottom: 8 }}>{hint}</Text>
         <View style={{ marginHorizontal: GUTTER, paddingHorizontal: 14, borderRadius: RADIUS.card, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
@@ -168,7 +168,7 @@ const SubscriptionTrackerScreen: React.FC = () => {
                                 <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)', flexDirection: 'row', alignItems: 'center' }}>
                                     <TrendingUp size={15} color={COLORS.semantic.profitOnBrand} />
                                     <Text style={{ ...TYPE.caption, color: '#FFFFFF', marginLeft: 8, flex: 1 }}>
-                                        Put in a SIP instead, about <Text style={{ fontFamily: FONTS.bold, color: COLORS.semantic.profitOnBrand }}>₹{inrShort(sip)}</Text> in {SIP_YEARS} years at {SIP_RATE}% a year.
+                                        Put in a SIP instead, about <Text style={{ ...FACE.bold, color: COLORS.semantic.profitOnBrand }}>₹{inrShort(sip)}</Text> in {SIP_YEARS} years at {SIP_RATE}% a year.
                                     </Text>
                                 </View>
                             ) : null}

@@ -23,7 +23,7 @@ import {
 import { useAppSelector } from '../store/hooks';
 import { format, parseISO } from 'date-fns';
 import { normaliseCategory, categoryLabel } from '../utils/categories';
-import { FONTS, COLORS } from '../theme/tokens';
+import { COLORS, FACE } from '../theme/tokens';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -171,14 +171,14 @@ const BucketCard: React.FC<{
                             {meta.icon}
                         </View>
                         <View>
-                            <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: COLORS.text.primary }}>{meta.label}</Text>
+                            <Text style={{ fontSize: 16, ...FACE.bold, color: COLORS.text.primary }}>{meta.label}</Text>
                             <Text style={{ fontSize: 11, color: COLORS.text.tertiary }}>Target: {meta.target}%</Text>
                         </View>
                     </View>
 
                     <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8, alignSelf: 'center' }}>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
+                            <Text style={{ fontSize: 18, ...FACE.bold, color: COLORS.text.primary }}>
                                 {actualPct.toFixed(1)}%
                             </Text>
                             <Text style={{ fontSize: 12, color: COLORS.text.secondary }}>
@@ -196,7 +196,7 @@ const BucketCard: React.FC<{
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <StatusIcon size={13} color={statusColor} />
-                        <Text style={{ fontSize: 12, color: statusColor, fontFamily: FONTS.semibold }}>
+                        <Text style={{ fontSize: 12, color: statusColor, ...FACE.semibold }}>
                             {isSavings
                                 ? (isOver ? `${delta.toFixed(0)} points above the 20%` : isGood ? 'On target' : `${Math.abs(delta).toFixed(0)} points short of 20%`)
                                 : (isOver ? `${delta.toFixed(0)} points over the ${meta.target}%` : `Inside the ${meta.target}%`)}
@@ -215,7 +215,7 @@ const BucketCard: React.FC<{
             {expanded && cats.length > 0 && (
                 <View style={{ paddingHorizontal: 18, paddingBottom: 16 }}>
                     <View style={{ height: 1, backgroundColor: COLORS.surface.tertiary, marginBottom: 12 }} />
-                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 11, ...FACE.bold, color: COLORS.text.tertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
                         Breakdown
                     </Text>
                     {cats.map(([cat, amt], i) => {
@@ -224,10 +224,10 @@ const BucketCard: React.FC<{
                             <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                                 <View style={{ flex: 1 }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                                        <Text style={{ fontSize: 13, fontFamily: FONTS.semibold, color: COLORS.text.secondary }}>
+                                        <Text style={{ fontSize: 13, ...FACE.semibold, color: COLORS.text.secondary }}>
                                             {categoryLabel(cat)}
                                         </Text>
-                                        <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
+                                        <Text style={{ fontSize: 13, ...FACE.bold, color: COLORS.text.primary }}>
                                             ₹{amt.toLocaleString('en-IN')}
                                         </Text>
                                     </View>
@@ -344,7 +344,7 @@ const MoneyManagerScreen: React.FC = () => {
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
                 <View style={{ marginRight: 12 }}><BackButton /></View>
                 <View>
-                    <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Money manager</Text>
+                    <Text style={{ fontSize: 18, ...FACE.bold, color: COLORS.text.primary }}>Money manager</Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>50 / 30 / 20 Rule · {format(new Date(), 'MMMM yyyy')}</Text>
                 </View>
             </View>
@@ -360,10 +360,10 @@ const MoneyManagerScreen: React.FC = () => {
                     padding: 20,
                     marginBottom: 20,
                 }}>
-                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: FONTS.semibold, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', ...FACE.semibold, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         Spent this month
                     </Text>
-                    <Text style={{ fontSize: 36, fontFamily: FONTS.bold, color: '#FFFFFF', letterSpacing: -1, marginTop: 4 }}>
+                    <Text style={{ fontSize: 36, ...FACE.bold, color: '#FFFFFF', letterSpacing: -1, marginTop: 4 }}>
                         ₹{totalSpend.toLocaleString('en-IN')}
                     </Text>
 
@@ -382,7 +382,7 @@ const MoneyManagerScreen: React.FC = () => {
                                 const pct = ((buckets[b] / income.amount) * 100).toFixed(0);
                                 return (
                                     <View key={b} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 10, alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: '#FFFFFF' }}>{pct}%</Text>
+                                        <Text style={{ fontSize: 18, ...FACE.bold, color: '#FFFFFF' }}>{pct}%</Text>
                                         <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
                                             {bucketMeta()[b].label}
                                         </Text>
@@ -417,7 +417,7 @@ const MoneyManagerScreen: React.FC = () => {
                         <Text style={{
                             flex: 1, fontSize: 13, lineHeight: 19,
                             color: insight.type === 'success' ? COLORS.semantic.profit : insight.type === 'warning' ? COLORS.semantic.alertAmber : COLORS.brand.link,
-                            fontFamily: FONTS.medium,
+                            ...FACE.medium,
                         }}>
                             {insight.msg}
                         </Text>
@@ -428,7 +428,7 @@ const MoneyManagerScreen: React.FC = () => {
                 {totalSpend === 0 ? (
                     <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                         <ShoppingCart size={48} color={COLORS.border.default} />
-                        <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: COLORS.text.tertiary, marginTop: 16 }}>No transactions this month</Text>
+                        <Text style={{ fontSize: 16, ...FACE.bold, color: COLORS.text.tertiary, marginTop: 16 }}>No transactions this month</Text>
                         <Text style={{ fontSize: 13, color: COLORS.border.strong, marginTop: 6, textAlign: 'center' }}>
                             Add some transactions and your 50/30/20 breakdown will appear here.
                         </Text>
@@ -450,13 +450,13 @@ const MoneyManagerScreen: React.FC = () => {
 
                 {/* ── About the rule ──────────────────────────── */}
                 <View style={{ backgroundColor: COLORS.surface.primary, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.surface.tertiary, marginTop: 4 }}>
-                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.secondary, marginBottom: 8 }}>About the 50/30/20 Rule</Text>
+                    <Text style={{ fontSize: 13, ...FACE.bold, color: COLORS.text.secondary, marginBottom: 8 }}>About the 50/30/20 Rule</Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 18 }}>
                         Popularised by US Senator Elizabeth Warren, this framework splits after-tax income into three buckets:
                         {'\n\n'}
-                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.brand.link }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
-                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.brand.primaryDark }}>30% Wants</Text> - Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
-                        <Text style={{ fontFamily: FONTS.bold, color: COLORS.semantic.profit }}>20% Savings</Text> - Pay yourself first: SIPs, emergency fund, goal deposits.
+                        <Text style={{ ...FACE.bold, color: COLORS.brand.link }}>50% Needs</Text> - Everything non-negotiable: rent, food, medicine, travel to work.{'\n'}
+                        <Text style={{ ...FACE.bold, color: COLORS.brand.primaryDark }}>30% Wants</Text> - Lifestyle spending you choose: dining out, streaming, gadgets.{'\n'}
+                        <Text style={{ ...FACE.bold, color: COLORS.semantic.profit }}>20% Savings</Text> - Pay yourself first: SIPs, emergency fund, goal deposits.
                     </Text>
                 </View>
             </ScrollView>

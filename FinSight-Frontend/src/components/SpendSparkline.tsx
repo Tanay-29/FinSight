@@ -24,7 +24,7 @@ import { smoothPath, areaPath, nearestIndex, softMax, niceCeil } from './charts/
 import { ScrubOverlay } from './charts/ScrubOverlay';
 import { inrShort } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS } from '../theme/tokens';
+import { COLORS, FACE } from '../theme/tokens';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -167,7 +167,7 @@ export const SpendSparkline: React.FC<Props> = ({ days, height = 132, onScrub })
 
             {/* Gridline amounts, on the right edge. */}
             {model && !empty ? [1, 0.5].map((f) => (
-                <Text key={f} style={{ position: 'absolute', right: 0, width: PAD_RIGHT - 4, top: baseline - f * (baseline - PAD_TOP) - 7, textAlign: 'right', fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary, fontVariant: ['tabular-nums'] }}>
+                <Text key={f} style={{ position: 'absolute', right: 0, width: PAD_RIGHT - 4, top: baseline - f * (baseline - PAD_TOP) - 7, textAlign: 'right', ...FACE.medium, fontSize: 10, color: COLORS.text.tertiary, fontVariant: ['tabular-nums'] }}>
                     {inrShort(model.top * f)}
                 </Text>
             )) : null}
@@ -181,7 +181,7 @@ export const SpendSparkline: React.FC<Props> = ({ days, height = 132, onScrub })
                         left: Math.min(Math.max(0, model.pts[model.peak].x - 50), width - PAD_RIGHT - 100),
                         width: 100,
                         textAlign: model.pts[model.peak].x > width - 80 ? 'right' : model.pts[model.peak].x < 50 ? 'left' : 'center',
-                        fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.brand.link, fontVariant: ['tabular-nums'],
+                        ...FACE.semibold, fontSize: 11, color: COLORS.brand.link, fontVariant: ['tabular-nums'],
                     }}
                 >
                     {dayLabel(days[model.peak].key)} {'·'} ₹{inrShort(days[model.peak].amount)}
@@ -189,14 +189,14 @@ export const SpendSparkline: React.FC<Props> = ({ days, height = 132, onScrub })
             ) : null}
 
             {empty && width > 0 ? (
-                <Text style={{ position: 'absolute', top: PAD_TOP + 14, left: 0, right: 0, textAlign: 'center', fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.tertiary }}>
+                <Text style={{ position: 'absolute', top: PAD_TOP + 14, left: 0, right: 0, textAlign: 'center', ...FACE.regular, fontSize: 12, color: COLORS.text.tertiary }}>
                     Nothing logged in the last 30 days
                 </Text>
             ) : null}
 
             <View pointerEvents="none" style={{ position: 'absolute', bottom: 0, left: PAD_X, right: PAD_RIGHT, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>{days.length > 0 ? dayLabel(days[0].key) : ''}</Text>
-                <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>Today</Text>
+                <Text style={{ ...FACE.medium, fontSize: 10, color: COLORS.text.tertiary }}>{days.length > 0 ? dayLabel(days[0].key) : ''}</Text>
+                <Text style={{ ...FACE.medium, fontSize: 10, color: COLORS.text.tertiary }}>Today</Text>
             </View>
 
             {!empty ? <ScrubOverlay onScrub={scrub} onEnd={end} label="Daily spending chart. Press and slide to read a day." /> : null}

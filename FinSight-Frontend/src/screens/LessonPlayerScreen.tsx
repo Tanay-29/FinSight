@@ -40,7 +40,7 @@ import { PressableScale } from '../components/PressableScale';
 import { Confetti } from '../components/Confetti';
 import { Mascot, MascotMood } from '../components/mascot/Mascot';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER, MOTION } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, MOTION, FACE } from '../theme/tokens';
 
 type Params =
     | { mode: 'lesson'; trackId: string; lessonId: string }
@@ -302,7 +302,7 @@ const LessonPlayerScreen: React.FC = () => {
                                     : verdict === true ? COLORS.semantic.profit : verdict === false ? COLORS.semantic.alertAmber : COLORS.brand.primaryDark,
                             }}
                         >
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: canContinue ? (verdict === undefined ? COLORS.brand.onAccent : COLORS.surface.primary) : COLORS.text.tertiary, marginRight: 6 }}>
+                            <Text style={{ ...TYPE.callout, ...FACE.bold, color: canContinue ? (verdict === undefined ? COLORS.brand.onAccent : COLORS.surface.primary) : COLORS.text.tertiary, marginRight: 6 }}>
                                 {index + 1 < cards.length ? 'Continue' : 'Finish'}
                             </Text>
                             <ChevronRight size={18} color={canContinue ? (verdict === undefined ? COLORS.brand.onAccent : COLORS.surface.primary) : COLORS.text.tertiary} />
@@ -333,7 +333,7 @@ const LessonPlayerScreen: React.FC = () => {
                                     {(profile?.streak ?? 0) > 0 && (
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.semantic.alertBg }}>
                                             <Flame size={15} color={COLORS.semantic.alertAmberFill} fill={COLORS.semantic.alertAmberFill} />
-                                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.semantic.alertAmber, marginLeft: 6 }}>
+                                            <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.semantic.alertAmber, marginLeft: 6 }}>
                                                 {profile?.streak}-day streak
                                             </Text>
                                         </View>
@@ -346,7 +346,7 @@ const LessonPlayerScreen: React.FC = () => {
                                         style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: COLORS.semantic.profitBg, marginBottom: 12 }}
                                     >
                                         <Award size={20} color={COLORS.semantic.profit} />
-                                        <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.semantic.profit, marginLeft: 10, flex: 1 }}>
+                                        <Text style={{ ...TYPE.callout, ...FACE.bold, color: COLORS.semantic.profit, marginLeft: 10, flex: 1 }}>
                                             {newlyKnown.length === 1 ? 'One concept is now known' : `${newlyKnown.length} concepts are now known`}
                                         </Text>
                                     </Animated.View>
@@ -393,7 +393,7 @@ const LessonPlayerScreen: React.FC = () => {
                                 style={{ height: 48, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border.strong, backgroundColor: COLORS.surface.primary, marginBottom: 12 }}
                             >
                                 <RotateCcw size={16} color={COLORS.text.primary} />
-                                <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 8 }}>
+                                <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary, marginLeft: 8 }}>
                                     Retry the {missed.length === 1 ? 'one' : missed.length} I missed
                                 </Text>
                             </PressableScale>
@@ -407,8 +407,8 @@ const LessonPlayerScreen: React.FC = () => {
                             >
                                 <Bell size={18} color={COLORS.brand.primary} />
                                 <View style={{ flex: 1, marginLeft: 12 }}>
-                                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.text.primary }}>Remind me tomorrow</Text>
-                                    <Text style={{ fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.secondary, marginTop: 2 }}>
+                                    <Text style={{ ...TYPE.callout, ...FACE.bold, color: COLORS.text.primary }}>Remind me tomorrow</Text>
+                                    <Text style={{ ...FACE.regular, fontSize: 12, color: COLORS.text.secondary, marginTop: 2 }}>
                                         A reminder at {formatReminderTime(DEFAULT_REMINDER.hour, DEFAULT_REMINDER.minute)}. Change the time in Profile, or turn it off there.
                                     </Text>
                                 </View>
@@ -432,7 +432,7 @@ const LessonPlayerScreen: React.FC = () => {
                             accessibilityRole="button"
                             style={{ height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}
                         >
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.brand.onAccent }}>Done</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.bold, color: COLORS.brand.onAccent }}>Done</Text>
                         </PressableScale>
                     </Animated.View>
                 </ScrollView>

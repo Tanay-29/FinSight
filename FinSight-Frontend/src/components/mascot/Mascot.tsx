@@ -31,7 +31,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 import * as haptics from '../../utils/haptics';
-import { FONTS } from '../../theme/tokens';
+import { FACE } from '../../theme/tokens';
 
 export type MascotMood = 'idle' | 'happy' | 'celebrate' | 'thinking' | 'sleepy' | 'concerned';
 
@@ -339,7 +339,7 @@ const SleepyZ: React.FC<{ size: number; reduced: boolean }> = ({ size, reduced }
             pointerEvents="none"
             style={[{
                 position: 'absolute', right: size * 0.06, top: size * 0.12,
-                fontSize: size * 0.14, fontFamily: FONTS.bold, color: '#7C83FF',
+                fontSize: size * 0.14, ...FACE.bold, color: '#7C83FF',
             }, style]}
         >
             z

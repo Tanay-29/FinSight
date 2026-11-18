@@ -48,7 +48,7 @@ import { Confetti } from '../components/Confetti';
 import { incomeFromBand } from '../utils/income';
 import { inr } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, GUTTER, FONTS, MOTION } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, GUTTER, MOTION, FACE } from '../theme/tokens';
 
 const QUESTION_STEPS = 4;
 const SUMMARY_STEP = QUESTION_STEPS + 1;
@@ -218,7 +218,7 @@ const SelectCard: React.FC<{
             </View>
         )}
         <View className="flex-1">
-            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: selected ? COLORS.brand.link : COLORS.text.primary }]}>
+            <Text style={[TYPE.callout, { ...FACE.semibold, color: selected ? COLORS.brand.link : COLORS.text.primary }]}>
                 {title}
             </Text>
             {subtitle && <Text style={TYPE.caption} className="text-text-tertiary mt-0.5">{subtitle}</Text>}
@@ -284,7 +284,7 @@ const StepYou: React.FC<StepProps> = ({ data, onChange, reduced }) => {
 
             <Text style={TYPE.micro} className="text-text-tertiary mb-2">Your name</Text>
             <TextInput
-                className="bg-surface-primary rounded-control px-4 h-[56px] text-lg text-text-primary font-inter-semibold"
+                className="bg-surface-primary rounded-control px-4 h-[56px] text-lg text-text-primary font-inter-semibold ios:font-system ios:font-semibold"
                 style={{ borderWidth: 1, borderColor: focused ? COLORS.brand.primary : COLORS.border.default }}
                 placeholder="e.g. Priya Sharma"
                 placeholderTextColor={COLORS.text.tertiary}
@@ -326,7 +326,7 @@ const StepYou: React.FC<StepProps> = ({ data, onChange, reduced }) => {
                 <Text style={TYPE.micro} className="text-brand-edge">Why age matters</Text>
                 <Text style={TYPE.callout} className="text-white mt-1.5">
                     ₹100 a day, invested {growth.horizon}, could grow to{' '}
-                    <Text style={{ fontFamily: FONTS.bold }}>₹{lakhOrCrore(growth.amount)}</Text>.
+                    <Text style={{ ...FACE.bold }}>₹{lakhOrCrore(growth.amount)}</Text>.
                 </Text>
                 <Text style={TYPE.caption} className="text-brand-on-dark mt-1.5">
                     An illustration at 12% a year, not a promise. Tips are pitched at your age too.
@@ -520,7 +520,7 @@ const Summary: React.FC<{ data: OnboardingData; reduced: boolean; editing: boole
                         <row.Icon size={19} color={COLORS.brand.link} strokeWidth={1.8} />
                     </View>
                     <View className="flex-1">
-                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">{row.title}</Text>
+                        <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">{row.title}</Text>
                         <Text style={TYPE.caption} className="text-text-secondary mt-0.5">{row.body}</Text>
                     </View>
                 </Animated.View>
@@ -726,7 +726,7 @@ const OnboardingScreen: React.FC = () => {
                             <ActivityIndicator color={COLORS.brand.onAccent} />
                         ) : (
                             <>
-                                <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]} className="mr-2">
+                                <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.onAccent }]} className="mr-2">
                                     {onSummary
                                         ? editing ? 'Save changes' : 'Take me to FinSight'
                                         : hint ?? (step === QUESTION_STEPS ? 'See my plan' : 'Continue')}

@@ -18,6 +18,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTabBarClearance } from '../navigation/tabBarMetrics';
 import Animated, {
     FadeIn, FadeInDown, FadeOut, useReducedMotion,
     useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing, cancelAnimation,
@@ -39,7 +40,7 @@ import { SCENARIOS } from '../data/scenarios';
 import { PressableScale } from '../components/PressableScale';
 import { Mascot } from '../components/mascot/Mascot';
 import * as haptics from '../utils/haptics';
-import { COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, GUTTER, FACE } from '../theme/tokens';
 import { PALETTE } from '../theme/palette';
 
 /** What each onboarding goal moves to the front of the path. */
@@ -66,6 +67,7 @@ const NODE = 70;
 type NodeState = 'done' | 'current' | 'locked';
 
 export const LearnScreen: React.FC = () => {
+    const tabClearance = useTabBarClearance();
     const navigation = useNavigation<any>();
     const dispatch = useAppDispatch();
     const reduced = useReducedMotion();
@@ -177,10 +179,10 @@ export const LearnScreen: React.FC = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-            <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 + tabClearance }}>
                 {/* Header: one number, the one that measures knowing things. */}
                 <View className="flex-row items-end justify-between pt-3" style={{ paddingHorizontal: GUTTER }}>
-                    <Text style={TYPE.title} className="text-text-primary">Learn</Text>
+                    <Text accessibilityRole="header" style={TYPE.largeTitle} className="text-text-primary">Learn</Text>
                     <View
                         className="flex-row items-center px-3 h-9"
                         style={{ borderRadius: RADIUS.pill, backgroundColor: COLORS.semantic.profitBg }}
@@ -203,7 +205,7 @@ export const LearnScreen: React.FC = () => {
                     >
                         <BrainCircuit size={20} color={COLORS.brand.link} />
                         <View className="flex-1 ml-3">
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">
+                            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">
                                 {dueCount} card{dueCount === 1 ? '' : 's'} to review
                             </Text>
                             <Text style={TYPE.caption} className="text-text-secondary">{masteredCount} of {trackedCount} mastered</Text>
@@ -363,7 +365,7 @@ export const LearnScreen: React.FC = () => {
                     style={{ marginHorizontal: GUTTER, marginTop: 4, paddingVertical: 14, flexDirection: 'row', alignItems: 'center' }}
                 >
                     <Search size={18} color={COLORS.text.secondary} />
-                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary ml-3 flex-1">
+                    <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary ml-3 flex-1">
                         Glossary, {displayGlossary.length} terms
                     </Text>
                     {glossaryOpen ? <ChevronDown size={18} color={COLORS.text.tertiary} /> : <ChevronRight size={18} color={COLORS.text.tertiary} />}
@@ -371,7 +373,7 @@ export const LearnScreen: React.FC = () => {
                 {glossaryOpen && (
                     <Animated.View entering={reduced ? undefined : FadeInDown.duration(200)} exiting={reduced ? undefined : FadeOut.duration(120)} style={{ marginHorizontal: GUTTER }}>
                         <TextInput
-                            className="bg-surface-primary border border-border rounded-control px-4 h-[46px] text-sm text-text-primary font-inter mb-3"
+                            className="bg-surface-primary border border-border rounded-control px-4 h-[46px] text-sm text-text-primary font-inter ios:font-system mb-3"
                             placeholder="Search a term, like SIP or CIBIL"
                             placeholderTextColor={COLORS.text.tertiary}
                             value={searchQuery}
@@ -381,7 +383,7 @@ export const LearnScreen: React.FC = () => {
                             <Text style={TYPE.caption} className="text-text-tertiary text-center py-4">No terms match "{searchQuery}"</Text>
                         ) : filteredGlossary.map((term, idx) => (
                             <View key={term.term + idx} className="bg-surface-primary border border-border px-4 py-3 mb-2" style={{ borderRadius: RADIUS.control }}>
-                                <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-brand-link">{term.term}</Text>
+                                <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-brand-link">{term.term}</Text>
                                 <Text style={TYPE.caption} className="text-text-secondary mt-0.5">{term.definition}</Text>
                             </View>
                         ))}
@@ -394,7 +396,7 @@ export const LearnScreen: React.FC = () => {
                     entering={FadeInDown.duration(180)}
                     exiting={FadeOut.duration(160)}
                     pointerEvents="none"
-                    style={{ position: 'absolute', left: GUTTER, right: GUTTER, bottom: 16, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.text.primary }}
+                    style={{ position: 'absolute', left: GUTTER, right: GUTTER, bottom: 16 + tabClearance, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.text.primary }}
                 >
                     <Text style={[TYPE.callout, { color: COLORS.surface.primary, textAlign: 'center' }]}>
                         Finish the lesson before this one first.
@@ -465,7 +467,7 @@ const Row: React.FC<{ icon: React.ReactNode; title: string; body: string; done?:
             {icon}
         </View>
         <View className="flex-1">
-            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">{title}</Text>
+            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">{title}</Text>
             <Text style={TYPE.caption} className="text-text-secondary mt-0.5" numberOfLines={2}>{body}</Text>
         </View>
         {done ? <Check size={18} color={COLORS.semantic.profit} strokeWidth={3} />
@@ -494,7 +496,7 @@ const Tile: React.FC<{ icon: React.ReactNode; title: string; caption: string; do
             {done ? <Check size={16} color={COLORS.semantic.profit} strokeWidth={3} /> : null}
         </View>
         <View style={{ marginTop: 10 }}>
-            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary" numberOfLines={2}>{title}</Text>
+            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary" numberOfLines={2}>{title}</Text>
             <Text style={TYPE.caption} className="text-text-tertiary mt-0.5" numberOfLines={2}>{caption}</Text>
         </View>
     </PressableScale>

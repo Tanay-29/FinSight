@@ -29,7 +29,7 @@ import {
 import { PressableScale } from '../components/PressableScale';
 import { inr } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, RADIUS, FACE } from '../theme/tokens';
 
 const rs = (n: number) => `₹${inr(n)}`;
 const clock = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
@@ -56,7 +56,7 @@ const MarketChart: React.FC<{ history: number[]; height?: number }> = ({ history
                 </Svg>
             ) : null}
             {width > 0 ? (
-                <Text style={{ position: 'absolute', right: PAD, top: y(TOKEN_VALUE) + 4, fontFamily: FONTS.bold, fontSize: 11, color: COLORS.semantic.profit }}>
+                <Text style={{ position: 'absolute', right: PAD, top: y(TOKEN_VALUE) + 4, ...FACE.bold, fontSize: 11, color: COLORS.semantic.profit }}>
                     Real value {rs(TOKEN_VALUE)}
                 </Text>
             ) : null}
@@ -210,7 +210,7 @@ const BubbleRoomScreen: React.FC = () => {
                     <View style={{ padding: 16, borderRadius: RADIUS.card, backgroundColor: COLORS.semantic.lossBg, marginBottom: 12 }}>
                         <Text style={{ ...TYPE.callout, color: COLORS.semantic.alertCritical }}>{error}</Text>
                         <PressableScale onPress={open} accessibilityRole="button" style={{ marginTop: 10 }}>
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.link }}>Try again</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.brand.link }}>Try again</Text>
                         </PressableScale>
                     </View>
                 ) : null}
@@ -231,8 +231,8 @@ const BubbleRoomScreen: React.FC = () => {
                         </Text>
                         <View style={{ alignItems: 'center', padding: 22, marginTop: 16, borderRadius: RADIUS.card, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.border.default }}>
                             <QRCode value={joinUrl(code)} size={220} color="#1A1613" backgroundColor="#FFFFFF" />
-                            <Text style={{ fontFamily: FONTS.bold, fontSize: 40, letterSpacing: 8, color: '#1A1613', marginTop: 16 }}>{code}</Text>
-                            <Text style={{ fontFamily: FONTS.medium, fontSize: 12, color: '#756C62', marginTop: 2 }}>Room code</Text>
+                            <Text style={{ ...FACE.bold, fontSize: 40, letterSpacing: 8, color: '#1A1613', marginTop: 16 }}>{code}</Text>
+                            <Text style={{ ...FACE.medium, fontSize: 12, color: '#756C62', marginTop: 2 }}>Room code</Text>
                         </View>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14, minHeight: 32 }}>
                             {count === 0 ? (
@@ -240,14 +240,14 @@ const BubbleRoomScreen: React.FC = () => {
                             ) : Object.entries(players).map(([pid, p]) => (
                                 <Animated.View key={pid} entering={reduced ? FadeIn.duration(120) : FadeInDown.duration(220)}
                                     style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.brand.soft }}>
-                                    <Text style={{ fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.brand.link }}>{p.name}</Text>
+                                    <Text style={{ ...FACE.semibold, fontSize: 13, color: COLORS.brand.link }}>{p.name}</Text>
                                 </Animated.View>
                             ))}
                         </View>
                         <PressableScale onPress={start} accessibilityRole="button" containerStyle={{ marginTop: 18 }}
                             style={{ height: 56, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}>
                             <Play size={18} color={COLORS.brand.onAccent} fill={COLORS.brand.onAccent} />
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent, marginLeft: 8 }}>
+                            <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.brand.onAccent, marginLeft: 8 }}>
                                 {count === 0 ? 'Start anyway' : `Open the market for ${count}`}
                             </Text>
                         </PressableScale>
@@ -290,7 +290,7 @@ const BubbleRoomScreen: React.FC = () => {
                                 { label: 'Peak so far', value: rs(Math.max(...(room.history ?? [TOKEN_VALUE]))) },
                             ].map((s) => (
                                 <View key={s.label} style={{ flex: 1, padding: 12, borderRadius: RADIUS.tile, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
-                                    <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary }}>{s.label}</Text>
+                                    <Text style={{ ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary }}>{s.label}</Text>
                                     <Text style={{ ...TYPE.amountMd, color: COLORS.text.primary, marginTop: 2 }}>{s.value}</Text>
                                 </View>
                             ))}
@@ -358,7 +358,7 @@ const BubbleRoomScreen: React.FC = () => {
                         <PressableScale onPress={() => { haptics.tap(); open(); }} accessibilityRole="button" containerStyle={{ marginTop: 16 }}
                             style={{ height: 52, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}>
                             <RotateCcw size={16} color={COLORS.brand.onAccent} />
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent, marginLeft: 8 }}>Play again</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.brand.onAccent, marginLeft: 8 }}>Play again</Text>
                         </PressableScale>
                     </Animated.View>
                 ) : null}

@@ -24,7 +24,7 @@ import { LinesChart, BarsChart } from '../components/ask/ToolChart';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, RADIUS, FACE } from '../theme/tokens';
 
 export const ASK_SUGGESTIONS = [
     'Should I buy an iPhone on no-cost EMI?',
@@ -50,7 +50,7 @@ const Figure: React.FC<{ f: ToolFigure; big?: boolean }> = ({ f, big }) => {
     const colour = f.tone === 'bad' ? COLORS.semantic.alertCritical : f.tone === 'good' ? COLORS.semantic.profit : COLORS.text.primary;
     return (
         <View style={{ flex: 1, padding: 12, borderRadius: RADIUS.tile, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
-            <Text numberOfLines={2} style={{ fontFamily: FONTS.medium, fontSize: 11, lineHeight: 14, color: COLORS.text.tertiary, minHeight: 28 }}>{f.label}</Text>
+            <Text numberOfLines={2} style={{ ...FACE.medium, fontSize: 11, lineHeight: 14, color: COLORS.text.tertiary, minHeight: 28 }}>{f.label}</Text>
             {Number.isFinite(f.value) ? (
                 <AnimatedNumber
                     value={f.value}
@@ -273,7 +273,7 @@ const AskScreen: React.FC = () => {
                                 {tool.assumes ? (
                                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
                                         <Info size={13} color={COLORS.text.tertiary} style={{ marginTop: 2 }} />
-                                        <Text style={{ fontFamily: FONTS.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.tertiary, marginLeft: 6, flex: 1 }}>{tool.assumes}</Text>
+                                        <Text style={{ ...FACE.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.tertiary, marginLeft: 6, flex: 1 }}>{tool.assumes}</Text>
                                     </View>
                                 ) : null}
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -284,7 +284,7 @@ const AskScreen: React.FC = () => {
                                         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}
                                     >
                                         <RotateCcw size={13} color={COLORS.brand.link} />
-                                        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: COLORS.brand.link, marginLeft: 5 }}>Ask another</Text>
+                                        <Text style={{ ...TYPE.caption, ...FACE.semibold, color: COLORS.brand.link, marginLeft: 5 }}>Ask another</Text>
                                     </PressableScale>
                                 </View>
                             </Animated.View>

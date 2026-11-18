@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Check, X, ExternalLink } from 'lucide-react-native';
 import { PressableScale } from '../PressableScale';
-import { COLORS, FONTS, TYPE, MOTION } from '../../theme/tokens';
+import { COLORS, TYPE, MOTION, FACE } from '../../theme/tokens';
 
 export const Prompt: React.FC<{ children: string; small?: boolean }> = ({ children, small }) => (
     <Text style={{ ...(small ? TYPE.callout : TYPE.heading), color: COLORS.text.primary, marginBottom: 16 }}>
@@ -92,7 +92,7 @@ export const OptionRow: React.FC<{
                 }}>
                     {state === 'correct' ? <Check size={14} color={COLORS.brand.onAccent} strokeWidth={3} />
                         : state === 'wrong' ? <X size={14} color={COLORS.brand.onAccent} strokeWidth={3} />
-                            : <Text style={{ fontFamily: FONTS.bold, fontSize: 12, color: COLORS.text.secondary }}>{'ABCD'[index]}</Text>}
+                            : <Text style={{ ...FACE.bold, fontSize: 12, color: COLORS.text.secondary }}>{'ABCD'[index]}</Text>}
                 </View>
             ) : null}
             <Text style={{ ...TYPE.body, fontSize: 15, lineHeight: 21, color: text, flex: 1 }}>{label}</Text>
@@ -118,7 +118,7 @@ export const Brief: React.FC<{ text: string; style: TextStyle; linkColor?: strin
         <View>
             <Text style={style}>{open ? text : first}</Text>
             <Pressable onPress={() => setOpen((v) => !v)} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 4 }}>
-                <Text style={{ fontFamily: FONTS.semibold, fontSize: 13, color: linkColor ?? COLORS.brand.link }}>{open ? 'Less' : 'More'}</Text>
+                <Text style={{ ...FACE.semibold, fontSize: 13, color: linkColor ?? COLORS.brand.link }}>{open ? 'Less' : 'More'}</Text>
             </Pressable>
         </View>
     );
@@ -140,7 +140,7 @@ export const Feedback: React.FC<{ correct: boolean; explain: string; source?: st
         >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                 {correct ? <Check size={14} color={tone} strokeWidth={3} /> : <X size={14} color={tone} strokeWidth={3} />}
-                <Text style={{ ...TYPE.caption, fontFamily: FONTS.bold, color: tone, marginLeft: 6 }}>
+                <Text style={{ ...TYPE.caption, ...FACE.bold, color: tone, marginLeft: 6 }}>
                     {correct ? 'Right' : 'Not quite'}
                 </Text>
             </View>
@@ -148,7 +148,7 @@ export const Feedback: React.FC<{ correct: boolean; explain: string; source?: st
             {source ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
                     <ExternalLink size={11} color={COLORS.text.tertiary} />
-                    <Text numberOfLines={1} style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4, flex: 1 }}>{source}</Text>
+                    <Text numberOfLines={1} style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4, flex: 1 }}>{source}</Text>
                 </View>
             ) : null}
         </Animated.View>
@@ -170,7 +170,7 @@ export const CheckButton: React.FC<{ label?: string; disabled?: boolean; onPress
             backgroundColor: disabled ? COLORS.surface.tertiary : COLORS.brand.primaryDark,
         }}
     >
-        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: disabled ? COLORS.text.tertiary : COLORS.brand.onAccent }}>
+        <Text style={{ ...TYPE.callout, ...FACE.semibold, color: disabled ? COLORS.text.tertiary : COLORS.brand.onAccent }}>
             {label}
         </Text>
     </PressableScale>
@@ -179,7 +179,7 @@ export const CheckButton: React.FC<{ label?: string; disabled?: boolean; onPress
 /** A small labelled figure, for the explorables' readouts. */
 export const Readout: React.FC<{ label: string; value: string; tone?: 'neutral' | 'good' | 'bad'; big?: boolean }> = ({ label, value, tone = 'neutral', big }) => (
     <View style={{ flex: 1 }}>
-        <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary, marginBottom: 2 }}>{label}</Text>
+        <Text style={{ ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary, marginBottom: 2 }}>{label}</Text>
         <Text style={{
             ...(big ? TYPE.amountLg : TYPE.amountMd),
             color: tone === 'good' ? COLORS.semantic.profit : tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.primary,

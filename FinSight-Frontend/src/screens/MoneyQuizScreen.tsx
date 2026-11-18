@@ -23,7 +23,7 @@ import { Mascot } from '../components/mascot/Mascot';
 import { PressableScale } from '../components/PressableScale';
 import { Confetti } from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-import { COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, GUTTER, FACE } from '../theme/tokens';
 
 const MoneyQuizScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -86,7 +86,7 @@ const MoneyQuizScreen: React.FC = () => {
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={[TYPE.callout, { color: COLORS.text.primary }]}>{item.prompt}</Text>
-                                        <Text style={[TYPE.caption, { color: COLORS.semantic.profit, marginTop: 4, fontFamily: FONTS.semibold }]}>{item.options[item.answer]}</Text>
+                                        <Text style={[TYPE.caption, { color: COLORS.semantic.profit, marginTop: 4, ...FACE.semibold }]}>{item.options[item.answer]}</Text>
                                         <Text style={[TYPE.caption, { color: COLORS.text.secondary, marginTop: 2 }]}>{item.explain}</Text>
                                     </View>
                                 </View>
@@ -100,7 +100,7 @@ const MoneyQuizScreen: React.FC = () => {
                         containerStyle={{ marginTop: 8 }}
                         style={{ height: 52, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.primaryDark, alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]}>Done</Text>
+                        <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.onAccent }]}>Done</Text>
                     </PressableScale>
                 </ScrollView>
                 <Confetti active={!reduced && (gain === null || gain > 0)} count={36} />
@@ -149,7 +149,7 @@ const MoneyQuizScreen: React.FC = () => {
                                     backgroundColor: selected ? COLORS.brand.soft : COLORS.surface.primary,
                                 }}
                             >
-                                <Text style={[TYPE.callout, { color: selected ? COLORS.brand.link : COLORS.text.primary, fontFamily: selected ? FONTS.semibold : FONTS.medium }]}>
+                                <Text style={[TYPE.callout, { color: selected ? COLORS.brand.link : COLORS.text.primary, ...(selected ? FACE.semibold : FACE.medium) }]}>
                                     {option}
                                 </Text>
                             </PressableScale>
@@ -168,7 +168,7 @@ const MoneyQuizScreen: React.FC = () => {
                         backgroundColor: picked === undefined ? COLORS.surface.tertiary : COLORS.brand.primaryDark,
                     }}
                 >
-                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: picked === undefined ? COLORS.text.tertiary : COLORS.brand.onAccent, marginRight: 6 }]}>
+                    <Text style={[TYPE.callout, { ...FACE.semibold, color: picked === undefined ? COLORS.text.tertiary : COLORS.brand.onAccent, marginRight: 6 }]}>
                         {index + 1 < MONEY_QUIZ.length ? 'Next' : 'See my score'}
                     </Text>
                     <ChevronRight size={18} color={picked === undefined ? COLORS.text.tertiary : COLORS.brand.onAccent} />

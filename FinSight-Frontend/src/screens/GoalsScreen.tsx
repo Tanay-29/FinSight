@@ -27,6 +27,8 @@ import { fetchGoals, createGoal, depositToGoal, removeGoal, editGoal } from '../
 import { FirestoreGoal } from '../services/firestoreService';
 import { EmptyState } from '../components/EmptyState';
 import { PressableScale } from '../components/PressableScale';
+import { FloatingAction } from '../components/FloatingAction';
+import { useTabBarClearance } from '../navigation/tabBarMetrics';
 import { ProgressRing } from '../components/ProgressRing';
 import { BarFill } from '../components/BarFill';
 import { AmountInput } from '../components/AmountInput';
@@ -34,7 +36,8 @@ import { AnimatedNumber } from '../components/AnimatedNumber';
 import { Confetti } from '../components/Confetti';
 import { inr } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, RADIUS, FACE, IS_IOS } from '../theme/tokens';
+import { IOSSheet } from '../components/IOSSheet';
 
 const rs = (n: number) => `₹${inr(n)}`;
 const toAmount = (raw: string): number => {
@@ -141,7 +144,7 @@ const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () =>
                     style={{ height: 42, borderRadius: 21, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: goal.color }}
                 >
                     <Plus size={16} color="#FFFFFF" strokeWidth={2.6} />
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: '#FFFFFF', marginLeft: 6 }}>Add money</Text>
+                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: '#FFFFFF', marginLeft: 6 }}>Add money</Text>
                 </PressableScale>
                 <PressableScale
                     onPress={() => navigation.navigate('Ask', {
@@ -154,7 +157,7 @@ const GoalCard: React.FC<{ goal: FirestoreGoal; onAdd: () => void; onMore: () =>
                     style={{ height: 42, paddingHorizontal: 16, borderRadius: 21, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.tertiary }}
                 >
                     <Zap size={15} color={COLORS.text.primary} />
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 6 }}>How fast?</Text>
+                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary, marginLeft: 6 }}>How fast?</Text>
                 </PressableScale>
             </View>
         </View>
@@ -167,7 +170,7 @@ const ReachedRow: React.FC<{ goal: FirestoreGoal; last: boolean; onMore: () => v
             <View style={{ width: 36, height: 36, borderRadius: RADIUS.tile, alignItems: 'center', justifyContent: 'center', backgroundColor: `${goal.color}22` }}>
                 <GoalGlyph icon={goal.icon} size={18} color={goal.color} />
             </View>
-            <Text numberOfLines={1} style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginLeft: 12, flex: 1 }}>{goal.title}</Text>
+            <Text numberOfLines={1} style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary, marginLeft: 12, flex: 1 }}>{goal.title}</Text>
             <Text style={{ ...TYPE.amountSm, color: COLORS.text.secondary }}>{rs(goal.targetAmount)}</Text>
             <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.semantic.profit, marginLeft: 10 }}>
                 <Check size={13} color="#FFFFFF" strokeWidth={3} />
@@ -185,6 +188,11 @@ const ReachedRow: React.FC<{ goal: FirestoreGoal; last: boolean; onMore: () => v
 const Sheet: React.FC<{ visible: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ visible, onClose, title, children }) => {
     const insets = useSafeAreaInsets();
     const reduced = useReducedMotion();
+    // iPhone gets the system page sheet: it recedes the screen behind it and
+    // closes on a swipe down, with motion UIKit draws itself.
+    if (IS_IOS) {
+        return <IOSSheet visible={visible} onClose={onClose} title={title}>{children}</IOSSheet>;
+    }
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
             <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior="padding">
@@ -220,7 +228,7 @@ const Chip: React.FC<{ label: string; active: boolean; color: string; onPress: (
         accessibilityState={{ selected: active }}
         style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: active ? color : COLORS.border.default, backgroundColor: active ? `${color}1F` : COLORS.surface.primary }}
     >
-        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: active ? color : COLORS.text.secondary }}>{label}</Text>
+        <Text style={{ ...TYPE.caption, ...FACE.semibold, color: active ? color : COLORS.text.secondary }}>{label}</Text>
     </PressableScale>
 );
 
@@ -231,7 +239,7 @@ const PrimaryButton: React.FC<{ label: string; color: string; disabled?: boolean
         accessibilityRole="button"
         style={{ height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: disabled ? COLORS.surface.tertiary : color, marginTop: 18 }}
     >
-        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: disabled ? COLORS.text.tertiary : '#FFFFFF' }}>{label}</Text>
+        <Text style={{ ...TYPE.callout, ...FACE.semibold, color: disabled ? COLORS.text.tertiary : '#FFFFFF' }}>{label}</Text>
     </PressableScale>
 );
 
@@ -253,7 +261,7 @@ const AddMoneySheet: React.FC<{
                     <GoalGlyph icon={goal.icon} size={20} color={goal.color} />
                 </ProgressRing>
                 <View style={{ marginLeft: 14, flex: 1 }}>
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>
+                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary }}>
                         {value > 0 ? (after >= goal.targetAmount ? 'This reaches the goal' : `${Math.round((after / goal.targetAmount) * 100)}% after this`) : `${Math.round((goal.savedAmount / goal.targetAmount) * 100)}% saved`}
                     </Text>
                     <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
@@ -286,7 +294,7 @@ const MenuRow: React.FC<{ icon: React.ReactNode; label: string; hint?: string; d
             {icon}
         </View>
         <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: danger ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{label}</Text>
+            <Text style={{ ...TYPE.callout, ...FACE.semibold, color: danger ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{label}</Text>
             {hint ? <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>{hint}</Text> : null}
         </View>
         <ChevronRight size={18} color={COLORS.text.tertiary} />
@@ -315,7 +323,7 @@ const GoalMenuSheet: React.FC<{
                     {error ? <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertCritical, marginTop: 12 }}>{error}</Text> : null}
                     <PrimaryButton label="Delete goal" color={DELETE_RED} onPress={() => { haptics.commit(); onDelete(); }} />
                     <Pressable onPress={() => setConfirming(false)} accessibilityRole="button" style={{ height: 48, alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
-                        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.secondary }}>Keep it</Text>
+                        <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.secondary }}>Keep it</Text>
                     </Pressable>
                 </>
             ) : (
@@ -365,7 +373,7 @@ const NewGoalSheet: React.FC<{
                     <GoalGlyph icon={icon} size={22} color={color} />
                 </View>
                 <View style={{ marginLeft: 14, flex: 1 }}>
-                    <Text numberOfLines={1} style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: title ? COLORS.text.primary : COLORS.text.tertiary }}>{title || 'Your goal'}</Text>
+                    <Text numberOfLines={1} style={{ ...TYPE.callout, ...FACE.semibold, color: title ? COLORS.text.primary : COLORS.text.tertiary }}>{title || 'Your goal'}</Text>
                     <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
                         {amount > saved ? `${rs(Math.ceil((amount - saved) / months))} a month, by ${format(deadline, 'MMM yyyy')}` : `By ${format(deadline, 'd MMM yyyy')}`}
                     </Text>
@@ -448,6 +456,7 @@ const NewGoalSheet: React.FC<{
 // ─── Screen ──────────────────────────────────────────────────
 
 export const GoalsScreen: React.FC = () => {
+    const tabClearance = useTabBarClearance();
     const dispatch = useAppDispatch();
     const navigation = useNavigation<any>();
     const reduced = useReducedMotion();
@@ -515,17 +524,17 @@ export const GoalsScreen: React.FC = () => {
             />
             <NewGoalSheet key={editing?.id ?? 'no-edit'} visible={!!editing} goal={editing ?? undefined} error={editing ? error : null} onClose={() => setEditing(null)} onSave={saveEdit} />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 + tabClearance }}>
                 <View style={{ paddingHorizontal: GUTTER, paddingTop: 12, flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ ...TYPE.title, color: COLORS.text.primary }}>Goals</Text>
+                        <Text accessibilityRole="header" style={{ ...TYPE.largeTitle, color: COLORS.text.primary }}>Goals</Text>
                         <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 2 }}>
                             {goals.length === 0 ? 'Save towards something' : `${rs(totalSaved)} saved across ${goals.length} goal${goals.length === 1 ? '' : 's'}`}
                         </Text>
                     </View>
                     <PressableScale onPress={() => navigation.navigate('Profile')} activeScale={0.92} accessibilityRole="button" accessibilityLabel="Your profile"
                         style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}>
-                        <Text style={{ fontFamily: FONTS.bold, fontSize: 16, color: COLORS.brand.onAccent }}>{userInitial}</Text>
+                        <Text style={{ ...FACE.bold, fontSize: 16, color: COLORS.brand.onAccent }}>{userInitial}</Text>
                     </PressableScale>
                 </View>
 
@@ -572,17 +581,7 @@ export const GoalsScreen: React.FC = () => {
             </ScrollView>
 
             {goals.length > 0 ? (
-                <PressableScale
-                    onPress={() => { haptics.tap(); setNewOpen(true); }}
-                    activeScale={0.92}
-                    accessibilityRole="button"
-                    accessibilityLabel="New goal"
-                    containerStyle={{ position: 'absolute', right: GUTTER, bottom: 24 }}
-                    style={{ height: 52, paddingHorizontal: 20, borderRadius: 26, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.brand.primaryDark, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
-                >
-                    <Plus size={18} color={COLORS.brand.onAccent} strokeWidth={2.6} />
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent, marginLeft: 6 }}>New goal</Text>
-                </PressableScale>
+                <FloatingAction label="New goal" accessibilityLabel="New goal" onPress={() => { haptics.tap(); setNewOpen(true); }} />
             ) : null}
 
             <Confetti active={celebrate} onDone={() => setCelebrate(false)} />

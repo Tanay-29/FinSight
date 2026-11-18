@@ -25,7 +25,7 @@ import { inr } from '../utils/moneyMath';
 import { PaceChart } from '../components/charts/PaceChart';
 import { BarFill } from '../components/BarFill';
 import { AnimatedNumber } from '../components/AnimatedNumber';
-import { COLORS, CATEGORY_COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, TYPE, GUTTER, RADIUS, FACE } from '../theme/tokens';
 
 const rs = (n: number) => `₹${inr(n)}`;
 
@@ -136,8 +136,8 @@ const BurnRateScreen: React.FC = () => {
                         return (
                             <View key={b.id ?? key} style={{ paddingVertical: 14, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: COLORS.border.default }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, flex: 1 }}>{categoryLabel(key)}</Text>
-                                    <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: status.color }}>{status.text}</Text>
+                                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary, flex: 1 }}>{categoryLabel(key)}</Text>
+                                    <Text style={{ ...TYPE.caption, ...FACE.semibold, color: status.color }}>{status.text}</Text>
                                 </View>
                                 <View style={{ marginTop: 8 }}>
                                     <BarFill percent={Math.min(100, limit > 0 ? (spent / limit) * 100 : 0)} color={remaining < 0 ? COLORS.semantic.loss : CATEGORY_COLORS[key]} height={8} delay={i * 70} />

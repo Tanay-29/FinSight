@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming, cancelAnimation } from 'react-native-reanimated';
 import { inr } from '../utils/moneyMath';
-import { COLORS, FONTS } from '../theme/tokens';
+import { COLORS, FACE } from '../theme/tokens';
 
 interface Props {
     /** Raw digits (and at most one dot when `decimals`). */
@@ -66,10 +66,10 @@ export const AmountInput: React.FC<Props> = ({ value, onChange, color, prefix = 
     return (
         <Pressable onPress={() => input.current?.focus()} accessible={false} style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 6 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', height: size * 1.2 }}>
-                <Text style={{ fontFamily: FONTS.semibold, fontSize: fontSize * 0.62, lineHeight: fontSize * 1.1, color: empty ? COLORS.text.muted : color, marginRight: 4, marginTop: fontSize * 0.08 }}>
+                <Text style={{ ...FACE.semibold, fontSize: fontSize * 0.62, lineHeight: fontSize * 1.1, color: empty ? COLORS.text.muted : color, marginRight: 4, marginTop: fontSize * 0.08 }}>
                     {prefix}
                 </Text>
-                <Text style={{ fontFamily: FONTS.bold, fontSize, lineHeight: fontSize * 1.15, letterSpacing: -fontSize * 0.02, fontVariant: ['tabular-nums'], color: empty ? COLORS.text.muted : color }}>
+                <Text style={{ ...FACE.bold, fontSize, lineHeight: fontSize * 1.15, letterSpacing: -fontSize * 0.02, fontVariant: ['tabular-nums'], color: empty ? COLORS.text.muted : color }}>
                     {text}
                 </Text>
                 <Animated.View style={[{ width: 2.5, height: fontSize * 0.86, borderRadius: 2, marginLeft: 3, backgroundColor: COLORS.brand.primary }, caret]} />

@@ -39,11 +39,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             {icon}
         </View>
 
-        <Text className="text-xl font-inter-bold text-text-primary mb-2 text-center">
+        <Text className="text-xl font-inter-bold ios:font-system ios:font-bold text-text-primary mb-2 text-center">
             {title}
         </Text>
 
-        <Text className="text-sm text-text-secondary text-center leading-5 mb-6 font-inter">
+        <Text className="text-sm text-text-secondary text-center leading-5 mb-6 font-inter ios:font-system">
             {body}
         </Text>
 
@@ -53,12 +53,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
                 onPress={onAction}
                 accessibilityRole="button"
             >
-                <Text className="text-white font-inter-bold">{actionLabel}</Text>
+                <Text className="text-white font-inter-bold ios:font-system ios:font-bold">{actionLabel}</Text>
             </PressableScale>
         )}
 
         {hint && (
-            <Text className="text-xs text-text-tertiary text-center leading-4 mt-4 font-inter">
+            <Text className="text-xs text-text-tertiary text-center leading-4 mt-4 font-inter ios:font-system">
                 {hint}
             </Text>
         )}

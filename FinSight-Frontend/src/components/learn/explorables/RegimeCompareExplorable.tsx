@@ -14,7 +14,7 @@ import { Slider } from '../Slider';
 import { PressableScale } from '../../PressableScale';
 import { compareRegimes, inr, inrShort, OldRegimeDeductions } from '../../../utils/moneyMath';
 import { CURRENT_FY } from '../../../data/taxConstants';
-import { COLORS, FONTS, TYPE } from '../../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../../theme/tokens';
 
 interface Toggle { key: keyof OldRegimeDeductions; label: string; amount: number }
 
@@ -40,7 +40,7 @@ const Column: React.FC<{ title: string; total: number; maxTax: number; winner: b
         <View style={{ height: 6, borderRadius: 3, backgroundColor: COLORS.surface.tertiary, marginTop: 8, overflow: 'hidden' }}>
             <View style={{ width: `${(total / maxTax) * 100}%`, height: 6, backgroundColor: winner ? COLORS.semantic.profit : COLORS.text.tertiary }} />
         </View>
-        <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>{note}</Text>
+        <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>{note}</Text>
     </View>
 );
 
@@ -125,7 +125,7 @@ export const RegimeCompareExplorable: React.FC<{ initialIncome?: number }> = ({ 
                         ? `New regime saves ${inr(cmp.newRegimeSaves)} a year at this income.`
                         : `Old regime saves ${inr(-cmp.newRegimeSaves)} a year, but only with every one of those deductions actually made.`}
             </Text>
-            <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>
+            <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>
                 FY {CURRENT_FY.fy} slabs, salaried, under 60, including 4% cess. Source: incometax.gov.in
             </Text>
         </View>

@@ -12,7 +12,7 @@ import { Readout } from '../CardChrome';
 import { useAppSelector } from '../../../store/hooks';
 import { essentialMonthlySpend } from '../../../utils/runway';
 import { inr, inrShort } from '../../../utils/moneyMath';
-import { COLORS, FONTS, TYPE } from '../../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../../theme/tokens';
 
 export const RunwayExplorable: React.FC = () => {
     const transactions = useAppSelector((s) => s.transactions.items);
@@ -30,7 +30,7 @@ export const RunwayExplorable: React.FC = () => {
             <View style={{ flexDirection: 'row', marginBottom: 14 }}>
                 <Readout label={essentials.source === 'logged' ? 'Your essentials, per month' : 'Essentials, assumed'} value={inr(essentials.monthly)} />
             </View>
-            <Text style={{ fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.tertiary, marginBottom: 12 }}>
+            <Text style={{ ...FACE.regular, fontSize: 12, color: COLORS.text.tertiary, marginBottom: 12 }}>
                 {essentials.source === 'logged'
                     ? `Rent, groceries, utilities, transport and health from your last 90 days (${essentials.count} entries).`
                     : 'Log a few rent, grocery or utility payments and this becomes your own number.'}
@@ -47,12 +47,12 @@ export const RunwayExplorable: React.FC = () => {
                 <View style={{ position: 'absolute', left: '50%', top: 0, width: 2, height: 14, backgroundColor: COLORS.surface.primary }} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>0</Text>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>3 months: {inrShort(target3)}</Text>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>6 months: {inrShort(target6)}</Text>
+                <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>0</Text>
+                <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>3 months: {inrShort(target3)}</Text>
+                <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>6 months: {inrShort(target6)}</Text>
             </View>
 
-            <Text style={{ ...TYPE.caption, fontFamily: FONTS.regular, color: COLORS.text.secondary }}>
+            <Text style={{ ...TYPE.caption, ...FACE.regular, color: COLORS.text.secondary }}>
                 {months >= 6
                     ? 'Six months of essentials. Anything above this can go to work in investments.'
                     : months >= 3

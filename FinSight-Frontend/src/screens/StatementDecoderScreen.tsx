@@ -18,7 +18,7 @@ import { CREDIT_CARD } from '../data/taxConstants';
 import { PressableScale } from '../components/PressableScale';
 import { ScreenHeader } from '../components/ScreenHeader';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, FACE } from '../theme/tokens';
 
 const StatementDecoderScreen: React.FC = () => {
     const reduced = useReducedMotion();
@@ -57,7 +57,7 @@ const StatementDecoderScreen: React.FC = () => {
                         textAlignVertical="top"
                         style={{
                             minHeight: 140, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.strong,
-                            backgroundColor: COLORS.surface.primary, color: COLORS.text.primary, fontFamily: FONTS.regular, fontSize: 15, lineHeight: 22,
+                            backgroundColor: COLORS.surface.primary, color: COLORS.text.primary, ...FACE.regular, fontSize: 15, lineHeight: 22,
                         }}
                     />
 
@@ -70,7 +70,7 @@ const StatementDecoderScreen: React.FC = () => {
                             style={{ height: 48, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: text.trim().length < 8 ? COLORS.surface.tertiary : COLORS.brand.primaryDark }}
                         >
                             <ScanLine size={16} color={text.trim().length < 8 ? COLORS.text.tertiary : COLORS.brand.onAccent} />
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: text.trim().length < 8 ? COLORS.text.tertiary : COLORS.brand.onAccent, marginLeft: 8 }}>Decode</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.bold, color: text.trim().length < 8 ? COLORS.text.tertiary : COLORS.brand.onAccent, marginLeft: 8 }}>Decode</Text>
                         </PressableScale>
                         <PressableScale
                             onPress={() => { haptics.tap(); setText(SAMPLE_STATEMENT); decode(SAMPLE_STATEMENT); }}
@@ -84,7 +84,7 @@ const StatementDecoderScreen: React.FC = () => {
                     {parsed && !found ? (
                         <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(240)} style={{ marginTop: 20, padding: 14, borderRadius: 14, backgroundColor: COLORS.semantic.alertBg }}>
                             <Text style={{ ...TYPE.callout, color: COLORS.semantic.alertAmber }}>Could not find a total or minimum due in that text.</Text>
-                            <Text style={{ fontFamily: FONTS.regular, fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>
+                            <Text style={{ ...FACE.regular, fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>
                                 Look for lines like "Total Amount Due" or "Minimum Amount Due" and paste those.
                             </Text>
                         </Animated.View>
@@ -121,7 +121,7 @@ const StatementDecoderScreen: React.FC = () => {
 
                             <Text style={{ ...TYPE.micro, color: COLORS.text.tertiary, marginTop: 18, marginBottom: 6 }}>What was read</Text>
                             {parsed.evidence.map((e) => (
-                                <Text key={e.field} numberOfLines={1} style={{ fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.tertiary, marginBottom: 2 }}>
+                                <Text key={e.field} numberOfLines={1} style={{ ...FACE.regular, fontSize: 12, color: COLORS.text.tertiary, marginBottom: 2 }}>
                                     {e.line}
                                 </Text>
                             ))}
@@ -146,7 +146,7 @@ const Line: React.FC<{ icon: React.ReactNode; label: string; value: string; note
             </View>
             <Text style={{ ...TYPE.amountMd, color: tone === 'good' ? COLORS.semantic.profit : tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{value}</Text>
         </View>
-        <Text style={{ fontFamily: FONTS.regular, fontSize: 13, lineHeight: 18, color: COLORS.text.secondary, marginTop: 4 }}>{note}</Text>
+        <Text style={{ ...FACE.regular, fontSize: 13, lineHeight: 18, color: COLORS.text.secondary, marginTop: 4 }}>{note}</Text>
     </View>
 );
 

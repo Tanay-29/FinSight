@@ -194,10 +194,10 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
             {deck.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-10">
                     <Sparkles size={36} color={COLORS.border.strong} />
-                    <Text className="text-base font-inter-bold text-text-primary mt-4 text-center">
+                    <Text className="text-base font-inter-bold ios:font-system ios:font-bold text-text-primary mt-4 text-center">
                         Nothing to tidy
                     </Text>
-                    <Text className="text-sm text-text-secondary mt-2 text-center leading-5 font-inter">
+                    <Text className="text-sm text-text-secondary mt-2 text-center leading-5 font-inter ios:font-system">
                         Every transaction already has a category you chose. Come back after
                         importing a few more.
                     </Text>
@@ -208,7 +208,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         <Check size={38} color={COLORS.semantic.profit} />
                     </View>
                     <Text style={TYPE.title} className="text-text-primary text-center">Deck cleared</Text>
-                    <Text className="text-sm text-text-secondary mt-2 text-center leading-5 font-inter">
+                    <Text className="text-sm text-text-secondary mt-2 text-center leading-5 font-inter ios:font-system">
                         {confirmed} confirmed, {corrected} corrected. Your spending charts just
                         got more accurate.
                     </Text>
@@ -217,15 +217,15 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         accessibilityRole="button"
                         className="bg-brand-primary-dark rounded-pill h-[52px] justify-center px-10 mt-8"
                     >
-                        <Text className="text-white font-inter-bold text-base">Done</Text>
+                        <Text className="text-white font-inter-bold ios:font-system ios:font-bold text-base">Done</Text>
                     </PressableScale>
                 </View>
             ) : picking ? (
                 <ScrollView contentContainerStyle={{ padding: 20 }}>
-                    <Text className="text-lg font-inter-bold text-text-primary mb-1">
+                    <Text className="text-lg font-inter-bold ios:font-system ios:font-bold text-text-primary mb-1">
                         Where does this belong?
                     </Text>
-                    <Text className="text-sm text-text-secondary mb-5 font-inter">
+                    <Text className="text-sm text-text-secondary mb-5 font-inter ios:font-system">
                         {current?.merchant || 'Unknown merchant'}, ₹{(current?.amount ?? 0).toLocaleString('en-IN')}
                     </Text>
                     <View className="flex-row flex-wrap gap-2.5">
@@ -241,7 +241,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                                     className="bg-surface-primary border border-border-strong rounded-2xl px-4 py-3 flex-row items-center"
                                 >
                                     <CIcon size={16} color={CATEGORY_COLORS[c.key as Category]} strokeWidth={1.8} />
-                                    <Text className="text-sm font-inter-semibold text-text-secondary ml-2">{c.label}</Text>
+                                    <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-text-secondary ml-2">{c.label}</Text>
                                 </TouchableOpacity>
                             );
                         })}
@@ -251,7 +251,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         accessibilityRole="button"
                         className="mt-6 items-center py-3"
                     >
-                        <Text className="text-sm text-text-tertiary font-inter">Cancel</Text>
+                        <Text className="text-sm text-text-tertiary font-inter ios:font-system">Cancel</Text>
                     </TouchableOpacity>
                 </ScrollView>
             ) : (
@@ -271,27 +271,27 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         {/* Swipe hints */}
                         <Animated.View style={{ opacity: acceptOpacity }} className="absolute top-5 left-5 z-10">
                             <View className="border-2 border-profit rounded-xl px-3 py-1">
-                                <Text className="text-profit font-inter-bold text-sm">CORRECT</Text>
+                                <Text className="text-profit font-inter-bold ios:font-system ios:font-bold text-sm">CORRECT</Text>
                             </View>
                         </Animated.View>
                         <Animated.View style={{ opacity: rejectOpacity }} className="absolute top-5 right-5 z-10">
                             <View className="border-2 border-loss rounded-xl px-3 py-1">
-                                <Text className="text-loss font-inter-bold text-sm">CHANGE</Text>
+                                <Text className="text-loss font-inter-bold ios:font-system ios:font-bold text-sm">CHANGE</Text>
                             </View>
                         </Animated.View>
 
                         <View className="items-center pt-6">
-                            <Text className="text-3xl font-inter-bold text-text-primary">
+                            <Text className="text-3xl font-inter-bold ios:font-system ios:font-bold text-text-primary">
                                 ₹{(current?.amount ?? 0).toLocaleString('en-IN')}
                             </Text>
-                            <Text className="text-base text-text-secondary mt-1.5 font-inter">
+                            <Text className="text-base text-text-secondary mt-1.5 font-inter ios:font-system">
                                 {current?.merchant || 'Unknown merchant'}
                             </Text>
-                            <Text className="text-xs text-text-tertiary mt-0.5 font-inter">{current?.date ? format(new Date(current.date), 'd MMM yyyy') : ''}</Text>
+                            <Text className="text-xs text-text-tertiary mt-0.5 font-inter ios:font-system">{current?.date ? format(new Date(current.date), 'd MMM yyyy') : ''}</Text>
 
                             <View className="h-px bg-surface-tertiary w-full my-5" />
 
-                            <Text className="text-xs text-text-tertiary uppercase tracking-widest mb-2 font-inter">
+                            <Text className="text-xs text-text-tertiary uppercase tracking-widest mb-2 font-inter ios:font-system">
                                 We think this is
                             </Text>
                             <View
@@ -299,7 +299,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                                 style={{ backgroundColor: meta ? categoryTint(meta.key as Category) : COLORS.surface.tertiary }}
                             >
                                 <Icon size={18} color={meta ? CATEGORY_COLORS[meta.key as Category] : COLORS.text.tertiary} strokeWidth={1.8} />
-                                <Text className="text-base font-inter-bold ml-2" style={{ color: meta ? CATEGORY_COLORS[meta.key as Category] : COLORS.text.tertiary }}>
+                                <Text className="text-base font-inter-bold ios:font-system ios:font-bold ml-2" style={{ color: meta ? CATEGORY_COLORS[meta.key as Category] : COLORS.text.tertiary }}>
                                     {meta?.label}
                                 </Text>
                             </View>
@@ -327,7 +327,7 @@ const SwipeCategoriseScreen: React.FC<Props> = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <Text className="text-xs text-text-tertiary mt-5 text-center font-inter">
+                    <Text className="text-xs text-text-tertiary mt-5 text-center font-inter ios:font-system">
                         Swipe right if it is right, left to change it
                     </Text>
                 </View>

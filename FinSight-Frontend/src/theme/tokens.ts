@@ -9,7 +9,7 @@
 // The one thing that DOES capture a value is a constant evaluated at module
 // scope, because that runs once before any theme is chosen. Those are written
 // as functions instead, and there is a note on each.
-import type { TextStyle } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 import { PALETTE, PALETTE_DARK } from './palette';
 import type { Category } from '../utils/categories';
 
@@ -101,29 +101,56 @@ export const CATEGORY_COLORS = Object.keys(PALETTE.category).reduce((out, key) =
 export const categoryTint = (category: Category): string =>
     `${CATEGORY_COLORS[category]}1F`;
 
+/** iPhone gets the platform's own type and controls; Android keeps the custom design. */
+export const IS_IOS = Platform.OS === 'ios';
+
 /**
  * The registered font family names, one per weight.
  *
- * Weight is carried by the FAMILY, never by `fontWeight`, and this is the
- * whole reason the group exists. Android does not synthesise weights for a
- * custom font: `fontFamily: 'Inter'` with `fontWeight: '700'` silently renders
- * regular. iOS would tolerate the other spelling, so naming the face on both
- * platforms is correct everywhere and needs no Platform.select.
+ * Weight is carried by the FAMILY on Android, never by `fontWeight`, and this
+ * is the whole reason the group exists. Android does not synthesise weights
+ * for a custom font: `fontFamily: 'Inter'` with `fontWeight: '700'` silently
+ * renders regular.
  *
- * The corollary is that nothing in TYPE sets `fontWeight`. Adding one back
- * would reintroduce exactly the bug this avoids.
+ * iOS uses the system face (SF Pro) instead of Inter, the way a native app
+ * does: it ships optical sizes and tracking tables Inter does not have. The
+ * system face takes its weight from `fontWeight`, so on iOS every family
+ * below is 'System' and the weight lives in FACE. Instrument Serif stays on
+ * both platforms for the few editorial display moments.
+ *
+ * Set a weight with `...FACE.semibold`, not `fontFamily: FONTS.semibold`, so
+ * both platforms get the right thing.
  */
 export const FONTS = {
-    regular: 'Inter_400Regular',
-    medium: 'Inter_500Medium',
-    semibold: 'Inter_600SemiBold',
-    bold: 'Inter_700Bold',
+    regular: IS_IOS ? 'System' : 'Inter_400Regular',
+    medium: IS_IOS ? 'System' : 'Inter_500Medium',
+    semibold: IS_IOS ? 'System' : 'Inter_600SemiBold',
+    bold: IS_IOS ? 'System' : 'Inter_700Bold',
     display: 'InstrumentSerif',
+} as const;
+
+const face = (family: string, weight: TextStyle['fontWeight']): TextStyle =>
+    IS_IOS ? { fontFamily: family, fontWeight: weight } : { fontFamily: family };
+
+/** Family plus weight, as a style to spread. On Android this is only the family. */
+export const FACE = {
+    regular: face(FONTS.regular, '400'),
+    medium: face(FONTS.medium, '500'),
+    semibold: face(FONTS.semibold, '600'),
+    bold: face(FONTS.bold, '700'),
 } as const;
 
 export const TYPOGRAPHY = { fontFamily: FONTS } as const;
 
 export const TYPE = {
+    /**
+     * The title at the top of a tab. On iOS this is the system large title,
+     * 34 point bold, the size every native app uses there. Android keeps the
+     * serif title it always had.
+     */
+    largeTitle: IS_IOS
+        ? { ...FACE.bold, fontSize: 34, lineHeight: 41, letterSpacing: 0.37 }
+        : { fontFamily: FONTS.display, fontSize: 30, lineHeight: 34, letterSpacing: -0.15 },
     display: {
         fontFamily: FONTS.display,
         fontSize: 42,
@@ -137,16 +164,16 @@ export const TYPE = {
         letterSpacing: -0.15,
     },
     heading: {
-        fontFamily: FONTS.semibold,
+        ...FACE.semibold,
         fontSize: 19,
         lineHeight: 25,
         letterSpacing: -0.19,
     },
-    body: { fontFamily: FONTS.regular, fontSize: 16, lineHeight: 24 },
-    callout: { fontFamily: FONTS.medium, fontSize: 15, lineHeight: 21 },
-    caption: { fontFamily: FONTS.medium, fontSize: 13, lineHeight: 18 },
+    body: { ...FACE.regular, fontSize: 16, lineHeight: 24 },
+    callout: { ...FACE.medium, fontSize: 15, lineHeight: 21 },
+    caption: { ...FACE.medium, fontSize: 13, lineHeight: 18 },
     micro: {
-        fontFamily: FONTS.semibold,
+        ...FACE.semibold,
         fontSize: 11,
         lineHeight: 14,
         letterSpacing: 0.66,
@@ -154,19 +181,19 @@ export const TYPE = {
     },
     /** Money. Tabular figures so columns of amounts line up and do not jitter. */
     amountLg: {
-        fontFamily: FONTS.bold,
+        ...FACE.bold,
         fontSize: 28,
         lineHeight: 32,
         fontVariant: ['tabular-nums'],
     },
     amountMd: {
-        fontFamily: FONTS.bold,
+        ...FACE.bold,
         fontSize: 20,
         lineHeight: 26,
         fontVariant: ['tabular-nums'],
     },
     amountSm: {
-        fontFamily: FONTS.semibold,
+        ...FACE.semibold,
         fontSize: 15,
         lineHeight: 20,
         fontVariant: ['tabular-nums'],

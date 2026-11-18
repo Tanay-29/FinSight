@@ -42,7 +42,7 @@ import { PressableScale } from '../components/PressableScale';
 import { GoogleLogo } from '../components/auth/GoogleLogo';
 import * as haptics from '../utils/haptics';
 import type { RootState, AppDispatch } from '../store/store';
-import { COLORS, TYPE, RADIUS, GUTTER, FONTS, MOTION } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, GUTTER, MOTION, FACE } from '../theme/tokens';
 
 type Mode = 'signin' | 'signup';
 
@@ -103,7 +103,7 @@ const ModeSwitch: React.FC<{ mode: Mode; onChange: (m: Mode) => void }> = ({ mod
                         accessibilityState={{ selected: active }}
                     >
                         <Text
-                            style={[TYPE.callout, { fontFamily: active ? FONTS.semibold : FONTS.medium }]}
+                            style={[TYPE.callout, { ...(active ? FACE.semibold : FACE.medium) }]}
                             className={active ? 'text-text-primary' : 'text-text-tertiary'}
                         >
                             {m === 'signin' ? 'Sign in' : 'Create account'}
@@ -144,7 +144,7 @@ const ProviderButton: React.FC<{
         {busy ? <ActivityIndicator color={COLORS.brand.primary} /> : (
             <>
                 {icon}
-                <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary ml-2.5">
+                <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary ml-2.5">
                     {label}
                 </Text>
             </>
@@ -321,7 +321,7 @@ const LoginScreen: React.FC = () => {
                                     style={{ marginBottom: 12 }}
                                 >
                                     <TextInput
-                                        className={fieldClass('name') + ' text-base text-text-primary font-inter'}
+                                        className={fieldClass('name') + ' text-base text-text-primary font-inter ios:font-system'}
                                         placeholder="Your name"
                                         placeholderTextColor={COLORS.text.tertiary}
                                         value={name}
@@ -340,7 +340,7 @@ const LoginScreen: React.FC = () => {
                             <View className="mb-3">
                                 <TextInput
                                     ref={emailRef}
-                                    className={fieldClass('email') + ' text-base text-text-primary font-inter'}
+                                    className={fieldClass('email') + ' text-base text-text-primary font-inter ios:font-system'}
                                     placeholder="Email"
                                     placeholderTextColor={COLORS.text.tertiary}
                                     value={email}
@@ -360,7 +360,7 @@ const LoginScreen: React.FC = () => {
                             <View className="relative justify-center">
                                 <TextInput
                                     ref={passwordRef}
-                                    className={fieldClass('password') + ' text-base text-text-primary pr-12 font-inter'}
+                                    className={fieldClass('password') + ' text-base text-text-primary pr-12 font-inter ios:font-system'}
                                     placeholder={isSignUp ? 'Create a password' : 'Password'}
                                     placeholderTextColor={COLORS.text.tertiary}
                                     value={password}
@@ -463,7 +463,7 @@ const LoginScreen: React.FC = () => {
                                 {busy && pending === 'email' ? (
                                     <ActivityIndicator color={COLORS.brand.onAccent} />
                                 ) : (
-                                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]}>
+                                    <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.onAccent }]}>
                                         {isSignUp ? 'Create account' : 'Sign in'}
                                     </Text>
                                 )}

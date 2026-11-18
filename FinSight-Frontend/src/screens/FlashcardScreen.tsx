@@ -36,7 +36,7 @@ import * as haptics from '../utils/haptics';
 import { generateFlashcards } from '../services/aiService';
 import { COURSE_CONTENT } from '../data/courseContent';
 import { friendlyError } from '../utils/errors';
-import { FONTS, COLORS } from '../theme/tokens';
+import { COLORS, FACE } from '../theme/tokens';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -123,7 +123,7 @@ const FlipCard: React.FC<{
             </View>
 
             {/* Card counter */}
-            <Text style={{ fontSize: 12, color: COLORS.text.tertiary, fontFamily: FONTS.semibold, marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, color: COLORS.text.tertiary, ...FACE.semibold, marginBottom: 16 }}>
                 Card {index + 1} of {total}
             </Text>
 
@@ -153,13 +153,13 @@ const FlipCard: React.FC<{
                     <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
                         <Lightbulb size={24} color={COLORS.brand.primary} />
                     </View>
-                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 11, ...FACE.bold, color: COLORS.text.tertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                         Question
                     </Text>
-                    <Text style={{ fontSize: 18, fontFamily: FONTS.bold, color: COLORS.text.primary, textAlign: 'center', lineHeight: 26 }}>
+                    <Text style={{ fontSize: 18, ...FACE.bold, color: COLORS.text.primary, textAlign: 'center', lineHeight: 26 }}>
                         {card.question}
                     </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.brand.link, marginTop: 24, fontFamily: FONTS.medium }}>
+                    <Text style={{ fontSize: 12, color: COLORS.brand.link, marginTop: 24, ...FACE.medium }}>
                         Tap to reveal answer
                     </Text>
                 </Animated.View>
@@ -179,10 +179,10 @@ const FlipCard: React.FC<{
                     shadowRadius: 20,
                     elevation: 6,
                 }}>
-                    <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 11, ...FACE.bold, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                         Answer
                     </Text>
-                    <Text style={{ fontSize: 16, fontFamily: FONTS.semibold, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 }}>
+                    <Text style={{ fontSize: 16, ...FACE.semibold, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 }}>
                         {card.answer}
                     </Text>
                     <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 20 }}>
@@ -208,7 +208,7 @@ const FlipCard: React.FC<{
                         }}
                     >
                         <XIcon size={18} color={COLORS.semantic.loss} />
-                        <Text style={{ color: COLORS.semantic.loss, fontFamily: FONTS.bold, fontSize: 14 }}>Show me again</Text>
+                        <Text style={{ color: COLORS.semantic.loss, ...FACE.bold, fontSize: 14 }}>Show me again</Text>
                     </PressableScale>
 
                     <PressableScale
@@ -222,7 +222,7 @@ const FlipCard: React.FC<{
                         }}
                     >
                         <Check size={18} color={COLORS.semantic.profit} />
-                        <Text style={{ color: COLORS.semantic.profit, fontFamily: FONTS.bold, fontSize: 14 }}>Got it</Text>
+                        <Text style={{ color: COLORS.semantic.profit, ...FACE.bold, fontSize: 14 }}>Got it</Text>
                     </PressableScale>
                 </ReAnimated.View>
             )}
@@ -262,13 +262,13 @@ const ResultsScreen: React.FC<{
                     alignItems: 'center', justifyContent: 'center',
                 }}>
                     {pct >= 80 ? <Trophy size={40} color={COLORS.semantic.profit} /> : <BrainCircuit size={40} color={pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss} />}
-                    <Text style={{ fontSize: 22, fontFamily: FONTS.bold, color: pct >= 80 ? COLORS.semantic.profit : pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss, marginTop: 4 }}>
+                    <Text style={{ fontSize: 22, ...FACE.bold, color: pct >= 80 ? COLORS.semantic.profit : pct >= 50 ? COLORS.semantic.alertAmberFill : COLORS.semantic.loss, marginTop: 4 }}>
                         {pct}%
                     </Text>
                 </View>
             </Animated.View>
 
-            <Text style={{ fontSize: 24, fontFamily: FONTS.bold, color: COLORS.text.primary, marginTop: 24, textAlign: 'center' }}>
+            <Text style={{ fontSize: 24, ...FACE.bold, color: COLORS.text.primary, marginTop: 24, textAlign: 'center' }}>
                 {pct === 100 ? 'All of them' : pct >= 50 ? 'Most of them' : 'Worth another go'}
             </Text>
             <Text style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
@@ -279,19 +279,19 @@ const ResultsScreen: React.FC<{
             {/* Stats row */}
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' }}>
                 <View style={{ flex: 1, backgroundColor: COLORS.semantic.profitBg, borderRadius: 16, padding: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.profit }}>{gotItCount}</Text>
-                    <Text style={{ fontSize: 12, color: COLORS.semantic.profit, fontFamily: FONTS.semibold, marginTop: 2 }}>Got It</Text>
+                    <Text style={{ fontSize: 28, ...FACE.bold, color: COLORS.semantic.profit }}>{gotItCount}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.semantic.profit, ...FACE.semibold, marginTop: 2 }}>Got It</Text>
                 </View>
                 <View style={{ flex: 1, backgroundColor: COLORS.semantic.lossBg, borderRadius: 16, padding: 16, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 28, fontFamily: FONTS.bold, color: COLORS.semantic.loss }}>{reviewCount}</Text>
-                    <Text style={{ fontSize: 12, color: COLORS.semantic.alertCritical, fontFamily: FONTS.semibold, marginTop: 2 }}>To review</Text>
+                    <Text style={{ fontSize: 28, ...FACE.bold, color: COLORS.semantic.loss }}>{reviewCount}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.semantic.alertCritical, ...FACE.semibold, marginTop: 2 }}>To review</Text>
                 </View>
             </View>
 
             {/* Review-only cards list */}
             {reviewCount > 0 && (
                 <View style={{ width: '100%', marginTop: 20 }}>
-                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.secondary, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 13, ...FACE.bold, color: COLORS.text.secondary, marginBottom: 10 }}>
                         Go over these again
                     </Text>
                     {cards.map((card, i) =>
@@ -302,7 +302,7 @@ const ResultsScreen: React.FC<{
                                 borderWidth: 1, borderColor: `${COLORS.semantic.alertAmber}55`,
                                 marginBottom: 8,
                             }}>
-                                <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.semantic.alertAmber, marginBottom: 4 }}>
+                                <Text style={{ fontSize: 13, ...FACE.bold, color: COLORS.semantic.alertAmber, marginBottom: 4 }}>
                                     Q: {card.question}
                                 </Text>
                                 <Text style={{ fontSize: 12, color: COLORS.semantic.alertAmber, lineHeight: 18 }}>
@@ -324,7 +324,7 @@ const ResultsScreen: React.FC<{
                             paddingVertical: 16, alignItems: 'center',
                         }}
                     >
-                        <Text style={{ color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 15 }}>
+                        <Text style={{ color: '#FFFFFF', ...FACE.bold, fontSize: 15 }}>
                             Practise {reviewCount} weak card{reviewCount > 1 ? 's' : ''}
                         </Text>
                     </PressableScale>
@@ -339,14 +339,14 @@ const ResultsScreen: React.FC<{
                     }}
                 >
                     <RefreshCw size={16} color={COLORS.text.secondary} />
-                    <Text style={{ color: COLORS.text.secondary, fontFamily: FONTS.semibold, fontSize: 14 }}>Restart all cards</Text>
+                    <Text style={{ color: COLORS.text.secondary, ...FACE.semibold, fontSize: 14 }}>Restart all cards</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={onBack}
                     style={{ paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 2 }}
                 >
                     <ChevronLeft size={15} color={COLORS.text.tertiary} />
-                    <Text style={{ color: COLORS.text.tertiary, fontFamily: FONTS.medium, fontSize: 14 }}>Back to the module</Text>
+                    <Text style={{ color: COLORS.text.tertiary, ...FACE.medium, fontSize: 14 }}>Back to the module</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>
@@ -502,7 +502,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                         <BrainCircuit size={32} color={COLORS.brand.primary} />
                     </View>
                     <ActivityIndicator size="large" color={COLORS.brand.primary} />
-                    <Text style={{ fontSize: 14, color: COLORS.text.secondary, fontFamily: FONTS.medium }}>
+                    <Text style={{ fontSize: 14, color: COLORS.text.secondary, ...FACE.medium }}>
                         Making your cards
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.text.tertiary }}>
@@ -511,7 +511,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                 </View>
             ) : error ? (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-                    <Text style={{ fontSize: 16, fontFamily: FONTS.bold, color: COLORS.semantic.loss, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 16, ...FACE.bold, color: COLORS.semantic.loss, marginBottom: 8 }}>
                         Could not load flashcards
                     </Text>
                     <Text style={{ fontSize: 13, color: COLORS.text.secondary, textAlign: 'center', marginBottom: 24 }}>
@@ -522,7 +522,7 @@ const FlashcardScreen: React.FC<Props> = ({ route, navigation }) => {
                         style={{ backgroundColor: COLORS.brand.primary, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                     >
                         <RefreshCw size={16} color="white" />
-                        <Text style={{ color: 'white', fontFamily: FONTS.bold }}>Try Again</Text>
+                        <Text style={{ color: 'white', ...FACE.bold }}>Try Again</Text>
                     </PressableScale>
                 </View>
             ) : phase === 'cards' && cards.length > 0 && activeDeck.length > 0 ? (

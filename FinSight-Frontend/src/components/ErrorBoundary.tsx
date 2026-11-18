@@ -11,7 +11,7 @@
 import React from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, FONTS, TYPE } from '../theme/tokens';
+import { COLORS, TYPE, FACE } from '../theme/tokens';
 
 const LAST_CRASH_KEY = 'finsight:last-crash';
 
@@ -71,7 +71,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
                 <Text style={{ ...TYPE.body, fontSize: 15, color: COLORS.text.secondary, textAlign: 'center', marginTop: 6 }}>
                     Your progress is saved. Tap below to carry on.
                 </Text>
-                <Text selectable style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, textAlign: 'center', marginTop: 14 }} numberOfLines={4}>
+                <Text selectable style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, textAlign: 'center', marginTop: 14 }} numberOfLines={4}>
                     {describe(this.state.error)}
                 </Text>
                 <Pressable
@@ -79,7 +79,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
                     accessibilityRole="button"
                     style={{ marginTop: 22, height: 48, paddingHorizontal: 28, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark }}
                 >
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }}>Try again</Text>
+                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.brand.onAccent }}>Try again</Text>
                 </Pressable>
             </View>
         );

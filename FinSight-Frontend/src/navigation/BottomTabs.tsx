@@ -46,7 +46,9 @@ import { TodayScreen } from '../screens/TodayScreen';
 import { VitalsScreen } from '../screens/VitalsScreen';
 import { LearnScreen } from '../screens/LearnScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
-import { FONTS, COLORS, TYPE, MOTION, ELEVATION } from '../theme/tokens';
+import { COLORS, TYPE, MOTION, ELEVATION, FACE, IS_IOS } from '../theme/tokens';
+import { GlassSurface } from '../components/GlassSurface';
+import { IOS_TAB_BAR_HEIGHT, iosTabBarBottom } from './tabBarMetrics';
 import * as haptics from '../utils/haptics';
 import { useAppSelector } from '../store/hooks';
 import { checkBudgetAlerts } from '../services/budgetAlertService';
@@ -167,7 +169,7 @@ const TabItem: React.FC<{
                     // not section headings, and "FEED" shouts.
                     textTransform: 'none',
                     letterSpacing: 0,
-                    fontFamily: focused ? FONTS.semibold : FONTS.medium,
+                    ...(focused ? FACE.semibold : FACE.medium),
                     color: colour,
                     marginTop: 3,
                 }}
@@ -247,6 +249,116 @@ const FinSightTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
     );
 };
 
+// ─── iPhone ──────────────────────────────────────────────────
+
+/** Inner padding between the glass capsule and the selection lens. */
+const IOS_LENS_INSET = 4;
+
+/**
+ * The iPhone tab bar: a floating capsule of glass that content scrolls under,
+ * the way the system bar looks on iOS 26.
+ *
+ * The selected tab is a soft lens of the label colour rather than a solid
+ * brand pill, and the selected icon and label take the tint. Unselected tabs
+ * use the primary label colour at full strength, as the system bar does.
+ *
+ * The lens moves on a critically damped spring: a tap carries no momentum,
+ * so nothing should overshoot. A new tap retargets it from wherever it is.
+ * Tab changes give no haptic, which matches the system tab bar.
+ */
+const IOSTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
+    const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const reduced = useReducedMotion();
+    const inner = width - BAR_INSET * 2 - IOS_LENS_INSET * 2;
+    const tabWidth = inner / state.routes.length;
+    const x = useSharedValue(state.index * tabWidth);
+
+    useEffect(() => {
+        const target = state.index * tabWidth;
+        x.set(reduced ? target : withSpring(target, { duration: 350, dampingRatio: 1 }));
+    }, [state.index, tabWidth, reduced, x]);
+
+    const lensStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
+
+    return (
+        <View
+            pointerEvents="box-none"
+            style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                paddingHorizontal: BAR_INSET,
+                paddingBottom: iosTabBarBottom(insets.bottom),
+            }}
+        >
+            <GlassSurface
+                radius={IOS_TAB_BAR_HEIGHT / 2}
+                style={{ height: IOS_TAB_BAR_HEIGHT, flexDirection: 'row', paddingHorizontal: IOS_LENS_INSET }}
+            >
+                <View accessibilityRole="tablist" style={{ flex: 1, flexDirection: 'row' }}>
+                    <Animated.View
+                        pointerEvents="none"
+                        style={[
+                            {
+                                position: 'absolute',
+                                top: IOS_LENS_INSET,
+                                left: 0,
+                                width: tabWidth,
+                                height: IOS_TAB_BAR_HEIGHT - IOS_LENS_INSET * 2,
+                                borderRadius: (IOS_TAB_BAR_HEIGHT - IOS_LENS_INSET * 2) / 2,
+                                // The label colour at a low alpha, so the lens
+                                // reads in both themes without a literal.
+                                backgroundColor: `${COLORS.text.primary}17`,
+                            },
+                            lensStyle,
+                        ]}
+                    />
+                    {state.routes.map((route, i) => {
+                        const focused = state.index === i;
+                        const Icon = ICONS[route.name] ?? Sun;
+                        const colour = focused ? COLORS.brand.link : COLORS.text.primary;
+                        return (
+                            <Pressable
+                                key={route.key}
+                                onPress={() => {
+                                    const event = navigation.emit({
+                                        type: 'tabPress',
+                                        target: route.key,
+                                        canPreventDefault: true,
+                                    });
+                                    if (!focused && !event.defaultPrevented) {
+                                        navigation.navigate(route.name);
+                                    }
+                                }}
+                                onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+                                accessibilityRole="tab"
+                                accessibilityState={{ selected: focused }}
+                                accessibilityLabel={route.name}
+                                style={{ width: tabWidth, height: IOS_TAB_BAR_HEIGHT, alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <Icon size={23} color={colour} strokeWidth={focused ? 2.2 : 1.9} />
+                                <Text
+                                    style={{
+                                        ...FACE.semibold,
+                                        fontSize: 11,
+                                        lineHeight: 13,
+                                        color: colour,
+                                        marginTop: 3,
+                                    }}
+                                >
+                                    {route.name}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </View>
+            </GlassSurface>
+        </View>
+    );
+};
+
 /**
  * Budget alerts fire from here because the tabs are mounted for the whole
  * signed-in session, and budgets change in Redux after every logged
@@ -265,7 +377,7 @@ export const BottomTabs: React.FC = () => {
     return (
     <Tab.Navigator
         screenOptions={{ headerShown: false }}
-        tabBar={(props) => <FinSightTabBar {...props} />}
+        tabBar={(props) => (IS_IOS ? <IOSTabBar {...props} /> : <FinSightTabBar {...props} />)}
     >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Learn" component={LearnScreen} />

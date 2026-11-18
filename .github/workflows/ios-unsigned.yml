@@ -42,6 +42,15 @@ jobs:
             exit 1
           fi
 
+      # Liquid Glass (the iOS 26 tab bar and buttons) only renders in an app
+      # built with the iOS 26 SDK. Use Xcode 26 when the runner has it;
+      # otherwise the app builds as before and falls back to a blur.
+      - name: Select Xcode 26 when available
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
+
       - run: npm ci
 
       - name: Generate the iOS project

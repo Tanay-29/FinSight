@@ -22,8 +22,11 @@ import { CATEGORIES as CATEGORY_OPTIONS, normaliseCategory, categoryLabel } from
 import { ShareBar } from '../components/charts/ShareBar';
 import { inr } from '../utils/moneyMath';
 import * as haptics from '../utils/haptics';
-import { COLORS, CATEGORY_COLORS, categoryTint, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, categoryTint, TYPE, RADIUS, GUTTER, FACE, IS_IOS } from '../theme/tokens';
+import { IOSSheet } from '../components/IOSSheet';
 import { PressableScale } from '../components/PressableScale';
+import { FloatingAction } from '../components/FloatingAction';
+import { useTabBarClearance } from '../navigation/tabBarMetrics';
 import { resolveMonthlyIncome, savingsRate, savingsRateVerdict } from '../utils/income';
 import { summariseSpending } from '../utils/spendSummary';
 import { detectRecurring } from '../utils/recurring';
@@ -119,7 +122,7 @@ const SpendingBarChart: React.FC<{
                             </View>
                             <View style={{ flex: 1, marginLeft: 12 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                                    <Text numberOfLines={1} style={[TYPE.callout, { fontFamily: FONTS.semibold, flex: 1 }]} className="text-text-primary">{item.label}</Text>
+                                    <Text numberOfLines={1} style={[TYPE.callout, { ...FACE.semibold, flex: 1 }]} className="text-text-primary">{item.label}</Text>
                                     <Text style={[TYPE.amountSm]} className="text-text-primary">₹{inr(item.amount)}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
@@ -154,14 +157,14 @@ const Glance: React.FC<{
     >
         {icon}
         <Text
-            className="text-xl font-inter-bold mt-1.5"
+            className="text-xl font-inter-bold ios:font-system ios:font-bold mt-1.5"
             style={{ color: valueColor ?? COLORS.text.primary, fontVariant: ['tabular-nums'] }}
             numberOfLines={1}
             adjustsFontSizeToFit
         >
             {value}
         </Text>
-        <Text className="text-xs text-text-secondary mt-0.5 font-inter" numberOfLines={2}>{label}</Text>
+        <Text className="text-xs text-text-secondary mt-0.5 font-inter ios:font-system" numberOfLines={2}>{label}</Text>
     </TouchableOpacity>
 );
 
@@ -190,6 +193,67 @@ const AffordSheet: React.FC<{
     const tone = result?.verdict === 'yes' ? COLORS.semantic.profit : result?.verdict === 'tight' ? COLORS.semantic.alertAmber : COLORS.semantic.loss;
     const close = () => { setPrice(''); onClose(); };
 
+    const body = (
+        income <= 0 ? (
+            <>
+                <Text style={TYPE.body} className="text-text-secondary mt-2">
+                    This needs to know what came in this month. Log your allowance, stipend or salary as income first.
+                </Text>
+                <PressableScale onPress={onAddIncome} accessibilityRole="button" containerStyle={{ marginTop: 16 }} style={{ height: 50, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.primaryDark, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.onAccent }]}>Add income</Text>
+                </PressableScale>
+            </>
+        ) : (
+            <>
+                <Text style={TYPE.caption} className="text-text-secondary mb-4">
+                    {incomeSource === 'estimated'
+                        ? 'Using the income range from your profile until you log real income.'
+                        : 'Using the income you logged this month.'} Payday is taken as the 1st.
+                </Text>
+                <TextInput
+                    className="bg-surface-secondary rounded-control px-4 h-[56px] text-2xl text-text-primary font-inter-bold ios:font-system ios:font-bold"
+                    style={{ borderWidth: 1, borderColor: COLORS.border.default }}
+                    placeholder="₹ price"
+                    placeholderTextColor={COLORS.text.tertiary}
+                    keyboardType="decimal-pad"
+                    value={price}
+                    onChangeText={setPrice}
+                    autoFocus
+                />
+                {result && (
+                    <View style={{ marginTop: 16 }}>
+                        <Text style={[TYPE.title, { color: tone }]}>
+                            {result.verdict === 'yes' ? 'Yes, comfortably' : result.verdict === 'tight' ? 'Yes, but it is tight' : 'Not before payday'}
+                        </Text>
+                        {[
+                            [incomeSource === 'estimated' ? 'Expected this month' : 'Came in this month', income],
+                            ['Spent so far', -spent],
+                            [`Likely in the next ${result.daysLeft} days, at your pace`, -result.projectedRest],
+                            ['This purchase', -amount],
+                        ].map(([label, value]) => (
+                            <View key={label as string} className="flex-row justify-between mt-2">
+                                <Text style={TYPE.caption} className="text-text-secondary flex-1 mr-3">{label}</Text>
+                                <Text style={[TYPE.amountSm, { color: COLORS.text.primary }]}>
+                                    {(value as number) < 0 ? '-' : ''}₹{Math.round(Math.abs(value as number)).toLocaleString('en-IN')}
+                                </Text>
+                            </View>
+                        ))}
+                        <View className="flex-row justify-between mt-3 pt-3 border-t border-border">
+                            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">Left on the 1st</Text>
+                            <Text style={[TYPE.amountSm, { color: tone }]}>
+                                {result.leftAfter < 0 ? '-' : ''}₹{Math.round(Math.abs(result.leftAfter)).toLocaleString('en-IN')}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+            </>
+        )
+    );
+
+    if (IS_IOS) {
+        return <IOSSheet visible={visible} onClose={close} title="Can I afford it?">{body}</IOSSheet>;
+    }
+
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
             <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
@@ -197,63 +261,10 @@ const AffordSheet: React.FC<{
                     <View className="flex-row items-center justify-between mb-1">
                         <Text style={TYPE.heading} className="text-text-primary">Can I afford it?</Text>
                         <TouchableOpacity onPress={close} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button">
-                            <Text className="text-brand-link font-inter-semibold">Close</Text>
+                            <Text className="text-brand-link font-inter-semibold ios:font-system ios:font-semibold">Close</Text>
                         </TouchableOpacity>
                     </View>
-                    {income <= 0 ? (
-                        <>
-                            <Text style={TYPE.body} className="text-text-secondary mt-2">
-                                This needs to know what came in this month. Log your allowance, stipend or salary as income first.
-                            </Text>
-                            <PressableScale onPress={onAddIncome} accessibilityRole="button" containerStyle={{ marginTop: 16 }} style={{ height: 50, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.primaryDark, alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]}>Add income</Text>
-                            </PressableScale>
-                        </>
-                    ) : (
-                        <>
-                            <Text style={TYPE.caption} className="text-text-secondary mb-4">
-                                {incomeSource === 'estimated'
-                                    ? 'Using the income range from your profile until you log real income.'
-                                    : 'Using the income you logged this month.'} Payday is taken as the 1st.
-                            </Text>
-                            <TextInput
-                                className="bg-surface-secondary rounded-control px-4 h-[56px] text-2xl text-text-primary font-inter-bold"
-                                style={{ borderWidth: 1, borderColor: COLORS.border.default }}
-                                placeholder="₹ price"
-                                placeholderTextColor={COLORS.text.tertiary}
-                                keyboardType="decimal-pad"
-                                value={price}
-                                onChangeText={setPrice}
-                                autoFocus
-                            />
-                            {result && (
-                                <View style={{ marginTop: 16 }}>
-                                    <Text style={[TYPE.title, { color: tone }]}>
-                                        {result.verdict === 'yes' ? 'Yes, comfortably' : result.verdict === 'tight' ? 'Yes, but it is tight' : 'Not before payday'}
-                                    </Text>
-                                    {[
-                                        [incomeSource === 'estimated' ? 'Expected this month' : 'Came in this month', income],
-                                        ['Spent so far', -spent],
-                                        [`Likely in the next ${result.daysLeft} days, at your pace`, -result.projectedRest],
-                                        ['This purchase', -amount],
-                                    ].map(([label, value]) => (
-                                        <View key={label as string} className="flex-row justify-between mt-2">
-                                            <Text style={TYPE.caption} className="text-text-secondary flex-1 mr-3">{label}</Text>
-                                            <Text style={[TYPE.amountSm, { color: COLORS.text.primary }]}>
-                                                {(value as number) < 0 ? '-' : ''}₹{Math.round(Math.abs(value as number)).toLocaleString('en-IN')}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                    <View className="flex-row justify-between mt-3 pt-3 border-t border-border">
-                                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Left on the 1st</Text>
-                                        <Text style={[TYPE.amountSm, { color: tone }]}>
-                                            {result.leftAfter < 0 ? '-' : ''}₹{Math.round(Math.abs(result.leftAfter)).toLocaleString('en-IN')}
-                                        </Text>
-                                    </View>
-                                </View>
-                            )}
-                        </>
-                    )}
+                    {body}
                 </View>
             </KeyboardAvoidingView>
         </Modal>
@@ -271,6 +282,35 @@ const EditBudgetModal: React.FC<{
 }> = ({ visible, budget, error, onClose, onSave }) => {
     const [limit, setLimit] = React.useState('');
     React.useEffect(() => { if (budget) setLimit(budget.monthlyLimit.toString()); }, [budget]);
+    const amount = parseFloat(limit);
+    const valid = !isNaN(amount) && amount > 0;
+    const save = () => { if (valid) onSave(amount); };
+    if (IS_IOS) {
+        return (
+            <IOSSheet
+                visible={visible}
+                onClose={onClose}
+                title={budget ? `${categoryLabel(budget.category)} budget` : 'Budget'}
+                leading={{ label: 'Cancel', onPress: onClose }}
+                trailing={{ label: 'Save', onPress: save, disabled: !valid }}
+            >
+                <Text style={TYPE.caption} className="text-text-secondary mb-2">Monthly limit (₹)</Text>
+                <TextInput
+                    className="bg-surface-secondary rounded-control px-4 h-[52px] text-lg text-text-primary"
+                    style={FACE.regular}
+                    value={limit}
+                    onChangeText={setLimit}
+                    keyboardType="numeric"
+                    placeholder="Enter amount"
+                    placeholderTextColor={COLORS.text.tertiary}
+                    autoFocus
+                    returnKeyType="done"
+                    onSubmitEditing={save}
+                />
+                {error ? <Text style={TYPE.caption} className="text-loss mt-3">{error}</Text> : null}
+            </IOSSheet>
+        );
+    }
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <KeyboardAvoidingView
@@ -279,21 +319,21 @@ const EditBudgetModal: React.FC<{
             >
                 <View className="bg-surface-primary w-[85%] p-6" style={{ borderRadius: RADIUS.card }}>
                     <Text style={TYPE.heading} className="text-text-primary mb-4">Edit the {budget ? categoryLabel(budget.category) : ''} budget</Text>
-                    <Text className="text-sm text-text-secondary mb-2 font-inter">Monthly limit (₹)</Text>
+                    <Text className="text-sm text-text-secondary mb-2 font-inter ios:font-system">Monthly limit (₹)</Text>
                     <TextInput
-                        className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter"
+                        className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter ios:font-system"
                         value={limit}
                         onChangeText={setLimit}
                         keyboardType="numeric"
                         placeholder="Enter amount"
                     />
                     {error && (
-                        <Text className="text-loss text-sm mb-4 -mt-3 font-inter">{error}</Text>
+                        <Text className="text-loss text-sm mb-4 -mt-3 font-inter ios:font-system">{error}</Text>
                     )}
 
                     <View className="flex-row justify-end gap-3">
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
-                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
+                            <Text className="text-text-secondary font-inter-semibold ios:font-system ios:font-semibold">Cancel</Text>
                         </TouchableOpacity>
                         <PressableScale
                             onPress={() => {
@@ -303,7 +343,7 @@ const EditBudgetModal: React.FC<{
                             accessibilityRole="button"
                             className="bg-brand-primary-dark px-6 py-2.5 rounded-control"
                         >
-                            <Text className="text-white font-inter-semibold">Save</Text>
+                            <Text className="text-white font-inter-semibold ios:font-system ios:font-semibold">Save</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -335,6 +375,56 @@ const CreateBudgetModal: React.FC<{
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visible]);
 
+    if (IS_IOS) {
+        const amount = parseFloat(limit);
+        const valid = !!selectedCategoryId && !isNaN(amount) && amount > 0;
+        const save = () => { if (valid) onSave(selectedCategoryId, amount); };
+        return (
+            <IOSSheet
+                visible={visible}
+                onClose={onClose}
+                title="New budget"
+                leading={{ label: 'Cancel', onPress: onClose }}
+                trailing={{ label: 'Save', onPress: save, disabled: !valid }}
+            >
+                <Text style={TYPE.caption} className="text-text-secondary mb-2">Category</Text>
+                {CATEGORIES.length === 0 && (
+                    <Text style={TYPE.caption} className="text-text-tertiary mb-4">
+                        Every category already has a budget this month. Tap one in the
+                        list to change its limit.
+                    </Text>
+                )}
+                <View className="flex-row flex-wrap gap-2 mb-5">
+                    {CATEGORIES.map((cat) => {
+                        const selected = selectedCategoryId === cat.id;
+                        return (
+                            <Pressable
+                                key={cat.id}
+                                onPress={() => { haptics.select(); setSelectedCategoryId(cat.id); }}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected }}
+                                style={{ paddingHorizontal: 14, minHeight: 36, justifyContent: 'center', borderRadius: 18, backgroundColor: selected ? COLORS.brand.primaryDark : COLORS.surface.secondary }}
+                            >
+                                <Text style={{ ...TYPE.callout, color: selected ? COLORS.brand.onAccent : COLORS.text.primary }}>{cat.name}</Text>
+                            </Pressable>
+                        );
+                    })}
+                </View>
+                <Text style={TYPE.caption} className="text-text-secondary mb-2">Monthly limit (₹)</Text>
+                <TextInput
+                    className="bg-surface-secondary rounded-control px-4 h-[52px] text-lg text-text-primary"
+                    style={FACE.regular}
+                    value={limit}
+                    onChangeText={setLimit}
+                    keyboardType="numeric"
+                    placeholder="Enter amount"
+                    placeholderTextColor={COLORS.text.tertiary}
+                />
+                {error ? <Text style={TYPE.caption} className="text-loss mt-3">{error}</Text> : null}
+            </IOSSheet>
+        );
+    }
+
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <KeyboardAvoidingView
@@ -343,9 +433,9 @@ const CreateBudgetModal: React.FC<{
             >
                 <View className="bg-surface-primary w-[85%] p-6" style={{ borderRadius: RADIUS.card }}>
                     <Text style={TYPE.heading} className="text-text-primary mb-4">New budget</Text>
-                    <Text className="text-sm text-text-secondary mb-2 font-inter">Category</Text>
+                    <Text className="text-sm text-text-secondary mb-2 font-inter ios:font-system">Category</Text>
                     {CATEGORIES.length === 0 && (
-                        <Text className="text-sm text-text-tertiary mb-4 leading-5 font-inter">
+                        <Text className="text-sm text-text-tertiary mb-4 leading-5 font-inter ios:font-system">
                             Every category already has a budget this month. Tap one in the
                             list to change its limit.
                         </Text>
@@ -363,21 +453,21 @@ const CreateBudgetModal: React.FC<{
                             </TouchableOpacity>
                         ))}
                     </View>
-                    <Text className="text-sm text-text-secondary mb-2 font-inter">Monthly limit (₹)</Text>
+                    <Text className="text-sm text-text-secondary mb-2 font-inter ios:font-system">Monthly limit (₹)</Text>
                     <TextInput
-                        className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter"
+                        className="bg-surface-primary border border-border rounded-control px-4 h-[52px] text-lg text-text-primary mb-6 font-inter ios:font-system"
                         value={limit}
                         onChangeText={setLimit}
                         keyboardType="numeric"
                         placeholder="Enter amount"
                     />
                     {error && (
-                        <Text className="text-loss text-sm mb-4 -mt-3 font-inter">{error}</Text>
+                        <Text className="text-loss text-sm mb-4 -mt-3 font-inter ios:font-system">{error}</Text>
                     )}
 
                     <View className="flex-row justify-end gap-3">
                         <TouchableOpacity onPress={onClose} className="px-4 py-2">
-                            <Text className="text-text-secondary font-inter-semibold">Cancel</Text>
+                            <Text className="text-text-secondary font-inter-semibold ios:font-system ios:font-semibold">Cancel</Text>
                         </TouchableOpacity>
                         <PressableScale
                             onPress={() => {
@@ -387,7 +477,7 @@ const CreateBudgetModal: React.FC<{
                             accessibilityRole="button"
                             className="bg-brand-primary-dark px-6 py-2.5 rounded-control"
                         >
-                            <Text className="text-white font-inter-semibold">Save</Text>
+                            <Text className="text-white font-inter-semibold ios:font-system ios:font-semibold">Save</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -399,6 +489,7 @@ const CreateBudgetModal: React.FC<{
 // ─── Main Screen ──────────────────────────────────────────────────
 
 export const VitalsScreen: React.FC = () => {
+    const tabClearance = useTabBarClearance();
     const dispatch = useAppDispatch();
     const navigation = useNavigation();
 
@@ -552,12 +643,12 @@ export const VitalsScreen: React.FC = () => {
                 onSave={handleUpdateBudget}
             />
 
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + tabClearance }}>
 
                 {/* Header */}
                 <View className="pt-4 pb-2 flex-row justify-between items-center" style={{ paddingHorizontal: GUTTER }}>
                     <View>
-                        <Text style={TYPE.title} className="text-text-primary">Money</Text>
+                        <Text accessibilityRole="header" style={TYPE.largeTitle} className="text-text-primary">Money</Text>
                         <Text style={TYPE.caption} className="text-text-tertiary mt-0.5">{format(new Date(), 'MMMM yyyy')}</Text>
                     </View>
                     <View className="flex-row items-center gap-3">
@@ -569,7 +660,7 @@ export const VitalsScreen: React.FC = () => {
                             accessibilityLabel="Your profile"
                             className="w-10 h-10 rounded-full bg-brand-primary-dark items-center justify-center"
                         >
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-white">{userInitial}</Text>
+                            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-white">{userInitial}</Text>
                         </PressableScale>
                     </View>
                 </View>
@@ -650,7 +741,7 @@ export const VitalsScreen: React.FC = () => {
                 >
                     <Calculator size={18} color={COLORS.brand.link} />
                     <View className="flex-1 ml-3">
-                        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Can I afford it before payday?</Text>
+                        <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">Can I afford it before payday?</Text>
                         <Text style={TYPE.caption} className="text-text-secondary">Type a price, see what is left on the 1st</Text>
                     </View>
                     <ChevronRight size={18} color={COLORS.brand.link} />
@@ -662,7 +753,7 @@ export const VitalsScreen: React.FC = () => {
                     <View className="flex-row justify-between items-center mb-3">
                         <Text style={TYPE.heading} className="text-text-primary">Budgets</Text>
                         <TouchableOpacity onPress={() => setCreateModalVisible(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button">
-                            <Text className="text-brand-link font-inter-semibold text-sm">Add budget</Text>
+                            <Text className="text-brand-link font-inter-semibold ios:font-system ios:font-semibold text-sm">Add budget</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -670,10 +761,10 @@ export const VitalsScreen: React.FC = () => {
                         <View className="mb-4">
                             <View className="flex-row items-baseline justify-between mb-2">
                                 <View className="flex-row items-baseline">
-                                    <Text className="text-2xl font-inter-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>₹{inr(budgetedSpent)}</Text>
-                                    <Text className="text-sm text-text-tertiary ml-1.5 font-inter">of ₹{inr(totalBudget)} budgeted</Text>
+                                    <Text className="text-2xl font-inter-bold ios:font-system ios:font-bold text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>₹{inr(budgetedSpent)}</Text>
+                                    <Text className="text-sm text-text-tertiary ml-1.5 font-inter ios:font-system">of ₹{inr(totalBudget)} budgeted</Text>
                                 </View>
-                                <Text className="text-sm font-inter-semibold text-text-secondary">{overallPercentage}%</Text>
+                                <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-text-secondary">{overallPercentage}%</Text>
                             </View>
                             <BarFill
                                 percent={Math.min(overallPercentage, 100)}
@@ -682,7 +773,7 @@ export const VitalsScreen: React.FC = () => {
                             />
                         </View>
                     ) : (
-                        <Text className="text-sm text-text-secondary font-inter mb-2">
+                        <Text className="text-sm text-text-secondary font-inter ios:font-system mb-2">
                             ₹{totalSpent.toLocaleString('en-IN')} spent this month and no budget yet. Set one and it becomes a number you can check against.
                         </Text>
                     )}
@@ -717,7 +808,7 @@ export const VitalsScreen: React.FC = () => {
                         onPress={() => navigation.navigate('MoneyManager' as never)}
                         accessibilityRole="button"
                     >
-                        <Text className="text-sm font-inter-semibold text-text-primary">Needs, wants and savings (50/30/20)</Text>
+                        <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-text-primary">Needs, wants and savings (50/30/20)</Text>
                         <ChevronRight size={16} color={COLORS.text.tertiary} />
                     </TouchableOpacity>
                 </View>
@@ -734,8 +825,8 @@ export const VitalsScreen: React.FC = () => {
                         accessibilityRole="button"
                     >
                         <View className="flex-1 mr-3">
-                            <Text className="text-sm font-inter-semibold text-text-primary">Find recurring charges</Text>
-                            <Text className={`text-xs mt-0.5 font-inter ${risenCount > 0 ? 'text-alert-amber' : 'text-text-secondary'}`}>
+                            <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-text-primary">Find recurring charges</Text>
+                            <Text className={`text-xs mt-0.5 font-inter ios:font-system ${risenCount > 0 ? 'text-alert-amber' : 'text-text-secondary'}`}>
                                 {risenCount > 0
                                     ? `${risenCount === 1 ? 'One subscription' : `${risenCount} subscriptions`} went up in price`
                                     : 'Subscriptions and bills hiding in these categories'}
@@ -754,7 +845,7 @@ export const VitalsScreen: React.FC = () => {
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             accessibilityRole="button"
                         >
-                            <Text className="text-brand-link font-inter-semibold text-sm">Fix categories</Text>
+                            <Text className="text-brand-link font-inter-semibold ios:font-system ios:font-semibold text-sm">Fix categories</Text>
                         </TouchableOpacity>
                     </View>
                     {latest.map((txn) => (
@@ -784,17 +875,7 @@ export const VitalsScreen: React.FC = () => {
 
             {/* Same shape, place and wording style as Goals' New goal, so
                 the main action looks the same on every tab that has one. */}
-            <PressableScale
-                containerStyle={{ position: 'absolute', right: GUTTER, bottom: 24 }}
-                style={{ height: 52, paddingHorizontal: 20, borderRadius: 26, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.brand.primaryDark, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
-                onPress={() => navigation.navigate('AddTransaction' as never)}
-                activeScale={0.92}
-                accessibilityRole="button"
-                accessibilityLabel="Add a transaction"
-            >
-                <Plus color={COLORS.brand.onAccent} size={18} strokeWidth={2.6} />
-                <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent, marginLeft: 6 }}>Add</Text>
-            </PressableScale>
+            <FloatingAction label="Add" accessibilityLabel="Add a transaction" onPress={() => navigation.navigate('AddTransaction' as never)} />
         </SafeAreaView>
     );
 };

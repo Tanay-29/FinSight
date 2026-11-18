@@ -14,7 +14,7 @@ import { Slider } from '../Slider';
 import { Readout } from '../CardChrome';
 import { fixedPaymentPayoff, minimumDuePayoff, inr, inrShort, monthsLabel } from '../../../utils/moneyMath';
 import { CREDIT_CARD } from '../../../data/taxConstants';
-import { COLORS, FONTS, TYPE } from '../../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../../theme/tokens';
 
 const CHART_H = 120;
 
@@ -79,8 +79,8 @@ export const MinimumDueExplorable: React.FC = () => {
                 ) : null}
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>Now</Text>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>{monthsLabel(horizon)}</Text>
+                <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>Now</Text>
+                <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>{monthsLabel(horizon)}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
@@ -94,7 +94,7 @@ export const MinimumDueExplorable: React.FC = () => {
                 </Text>
             </View>
 
-            <Text style={{ ...TYPE.caption, fontFamily: FONTS.regular, color: treadmill ? COLORS.semantic.alertCritical : COLORS.text.tertiary }}>
+            <Text style={{ ...TYPE.caption, ...FACE.regular, color: treadmill ? COLORS.semantic.alertCritical : COLORS.text.tertiary }}>
                 {treadmill
                     ? `Interest in the first month is ${inr(firstMonthInterest)}. Paying less than that means the balance grows every month.`
                     : `Interest in the first month is ${inr(firstMonthInterest)}. Everything above that reduces what you owe.`}

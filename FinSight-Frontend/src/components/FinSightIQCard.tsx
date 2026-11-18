@@ -21,7 +21,7 @@ import { fetchAIAdvice, calculateIQScore } from '../store/slices/iqSlice';
 import { buildLocalAdvice, isServerPlaceholder } from '../utils/localCoach';
 import { AnimatedNumber } from './AnimatedNumber';
 import { PressableScale } from './PressableScale';
-import { FONTS, COLORS, TYPE } from '../theme/tokens';
+import { COLORS, TYPE, FACE } from '../theme/tokens';
 
 // ─── Gauge config ─────────────────────────────────────────────
 
@@ -207,7 +207,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
                 </Text>
             </View>
 
-            <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary, marginTop: -12 }}>
+            <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary, marginTop: -12 }}>
                 {grade}
             </Text>
         </View>
@@ -279,7 +279,7 @@ const FinSightIQCard: React.FC = () => {
                     <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.brand.soft, alignItems: 'center', justifyContent: 'center' }}>
                         <BrainCircuit size={18} color={COLORS.brand.primary} />
                     </View>
-                    <Text style={{ fontSize: 15, fontFamily: FONTS.bold, color: COLORS.text.primary }}>FinSight IQ</Text>
+                    <Text style={{ fontSize: 15, ...FACE.bold, color: COLORS.text.primary }}>FinSight IQ</Text>
                 </View>
                 <PressableScale
                     onPress={handleRefresh}
@@ -315,10 +315,10 @@ const FinSightIQCard: React.FC = () => {
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                         <MessageCircle size={15} color={COLORS.brand.primary} style={{ marginTop: 1 }} />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.brand.primary, marginBottom: 3 }}>
+                            <Text style={{ fontSize: 12, ...FACE.bold, color: COLORS.brand.primary, marginBottom: 3 }}>
                                 {fromModel ? 'A closer look' : 'From your numbers'}
                             </Text>
-                            <Text style={{ fontSize: 13, color: COLORS.text.primary, lineHeight: 19, fontFamily: FONTS.medium }}>
+                            <Text style={{ fontSize: 13, color: COLORS.text.primary, lineHeight: 19, ...FACE.medium }}>
                                 {shown.mood}
                             </Text>
                             <Text style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 17, marginTop: 4 }}>
@@ -339,7 +339,7 @@ const FinSightIQCard: React.FC = () => {
             {shown?.quests?.length ? (
                 <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18 }}>
                     <Text style={{
-                        fontSize: 11, fontFamily: FONTS.bold, color: COLORS.text.tertiary,
+                        fontSize: 11, ...FACE.bold, color: COLORS.text.tertiary,
                         textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10,
                     }}>
                         Do next
@@ -361,7 +361,7 @@ const FinSightIQCard: React.FC = () => {
                             >
                                 <Icon size={15} color={color} style={{ marginTop: 2 }} />
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: COLORS.text.primary }}>
+                                    <Text style={{ fontSize: 13, ...FACE.bold, color: COLORS.text.primary }}>
                                         {quest.title}
                                     </Text>
                                     <Text
@@ -371,7 +371,7 @@ const FinSightIQCard: React.FC = () => {
                                         {quest.description}
                                     </Text>
                                 </View>
-                                <Text style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.text.tertiary, marginTop: 1 }}>
+                                <Text style={{ fontSize: 12, ...FACE.bold, color: COLORS.text.tertiary, marginTop: 1 }}>
                                     +{quest.points}
                                 </Text>
                             </View>

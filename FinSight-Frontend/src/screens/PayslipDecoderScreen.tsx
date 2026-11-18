@@ -15,7 +15,7 @@ import { inr } from '../utils/moneyMath';
 import { PressableScale } from '../components/PressableScale';
 import { ScreenHeader } from '../components/ScreenHeader';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, FACE } from '../theme/tokens';
 
 const PayslipDecoderScreen: React.FC = () => {
     const reduced = useReducedMotion();
@@ -43,14 +43,14 @@ const PayslipDecoderScreen: React.FC = () => {
                         multiline value={text} onChangeText={setText}
                         placeholder={'Basic 20,000\nHRA 10,000\nEmployee PF 2,400 ...'}
                         placeholderTextColor={COLORS.text.tertiary} textAlignVertical="top"
-                        style={{ minHeight: 160, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.strong, backgroundColor: COLORS.surface.primary, color: COLORS.text.primary, fontFamily: FONTS.regular, fontSize: 15, lineHeight: 22 }}
+                        style={{ minHeight: 160, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border.strong, backgroundColor: COLORS.surface.primary, color: COLORS.text.primary, ...FACE.regular, fontSize: 15, lineHeight: 22 }}
                     />
 
                     <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
                         <PressableScale onPress={() => decode(text)} disabled={!ready} accessibilityRole="button" containerStyle={{ flex: 1 }}
                             style={{ height: 48, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: ready ? COLORS.brand.primaryDark : COLORS.surface.tertiary }}>
                             <ScanLine size={16} color={ready ? COLORS.brand.onAccent : COLORS.text.tertiary} />
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: ready ? COLORS.brand.onAccent : COLORS.text.tertiary, marginLeft: 8 }}>Decode</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.bold, color: ready ? COLORS.brand.onAccent : COLORS.text.tertiary, marginLeft: 8 }}>Decode</Text>
                         </PressableScale>
                         <PressableScale onPress={() => { haptics.tap(); setText(SAMPLE_PAYSLIP); decode(SAMPLE_PAYSLIP); }} accessibilityRole="button"
                             style={{ height: 48, paddingHorizontal: 16, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border.strong, backgroundColor: COLORS.surface.primary }}>
@@ -61,7 +61,7 @@ const PayslipDecoderScreen: React.FC = () => {
                     {parsed && !found ? (
                         <Animated.View entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(240)} style={{ marginTop: 20, padding: 14, borderRadius: 14, backgroundColor: COLORS.semantic.alertBg }}>
                             <Text style={{ ...TYPE.callout, color: COLORS.semantic.alertAmber }}>No lines with amounts found.</Text>
-                            <Text style={{ fontFamily: FONTS.regular, fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>Each line should end with a number, like "Basic 20,000".</Text>
+                            <Text style={{ ...FACE.regular, fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>Each line should end with a number, like "Basic 20,000".</Text>
                         </Animated.View>
                     ) : null}
 
@@ -80,7 +80,7 @@ const PayslipDecoderScreen: React.FC = () => {
                                         <Text style={{ ...TYPE.caption, color: COLORS.semantic.alertAmber, marginLeft: 6 }}>Worth asking payroll</Text>
                                     </View>
                                     {parsed.flags.map((f) => (
-                                        <Text key={f} style={{ fontFamily: FONTS.regular, fontSize: 13, lineHeight: 19, color: COLORS.text.primary, marginBottom: 4 }}>{'•'} {f}</Text>
+                                        <Text key={f} style={{ ...FACE.regular, fontSize: 13, lineHeight: 19, color: COLORS.text.primary, marginBottom: 4 }}>{'•'} {f}</Text>
                                     ))}
                                 </View>
                             ) : (
@@ -104,7 +104,7 @@ const PayslipDecoderScreen: React.FC = () => {
 
 const Tile: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => (
     <View style={{ flex: 1, padding: 12, borderRadius: 12, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
-        <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary }}>{label}</Text>
+        <Text style={{ ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary }}>{label}</Text>
         <Text numberOfLines={1} style={{ ...TYPE.amountSm, color, marginTop: 2 }}>{value}</Text>
     </View>
 );
@@ -123,11 +123,11 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; lines: PayslipLi
                             <Text style={{ ...TYPE.callout, color: COLORS.text.primary, flex: 1, marginRight: 10 }}>{l.label}</Text>
                             <Text style={{ ...TYPE.amountSm, color: COLORS.text.primary }}>₹{inr(l.amount)}</Text>
                         </View>
-                        {l.note ? <Text style={{ fontFamily: FONTS.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.secondary, marginTop: 2 }}>{l.note}</Text> : null}
+                        {l.note ? <Text style={{ ...FACE.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.secondary, marginTop: 2 }}>{l.note}</Text> : null}
                     </View>
                 ))}
             </View>
-            {note ? <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>{note}</Text> : null}
+            {note ? <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>{note}</Text> : null}
         </View>
     )
 );

@@ -32,7 +32,7 @@ import { AmountInput } from '../components/AmountInput';
 import { inr } from '../utils/moneyMath';
 import { format } from 'date-fns';
 import * as haptics from '../utils/haptics';
-import { COLORS, CATEGORY_COLORS, categoryTint, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, categoryTint, TYPE, GUTTER, RADIUS, FACE } from '../theme/tokens';
 
 /**
  * "1,200", "₹ 1200.50" and "1200" are all the same amount. Null when the text
@@ -76,7 +76,7 @@ const Tile: React.FC<{
         <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? color : tint }}>
             {React.createElement(icon, { size: 19, color: selected ? COLORS.surface.primary : color })}
         </View>
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ ...TYPE.caption, fontSize: 12, marginTop: 6, color: selected ? COLORS.text.primary : COLORS.text.secondary, fontFamily: selected ? FONTS.semibold : FONTS.medium }}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ ...TYPE.caption, fontSize: 12, marginTop: 6, color: selected ? COLORS.text.primary : COLORS.text.secondary, ...(selected ? FACE.semibold : FACE.medium) }}>
             {label}
         </Text>
     </PressableScale>
@@ -201,7 +201,7 @@ export default function AddTransactionScreen() {
                                         accessibilityState={{ selected: on }}
                                         style={{ paddingHorizontal: 18, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? COLORS.surface.primary : 'transparent' }}
                                     >
-                                        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: on ? (t === 'debit' ? COLORS.text.primary : COLORS.semantic.profit) : COLORS.text.tertiary }}>
+                                        <Text style={{ ...TYPE.caption, ...FACE.semibold, color: on ? (t === 'debit' ? COLORS.text.primary : COLORS.semantic.profit) : COLORS.text.tertiary }}>
                                             {t === 'debit' ? 'Spent' : 'Received'}
                                         </Text>
                                     </Pressable>
@@ -240,7 +240,7 @@ export default function AddTransactionScreen() {
                             placeholderTextColor={COLORS.text.tertiary}
                             maxLength={40}
                             accessibilityLabel={isDebit ? 'Where you spent it' : 'Where it came from'}
-                            style={{ ...TYPE.body, fontFamily: FONTS.semibold, fontSize: 17, color: COLORS.text.primary, padding: 0, marginTop: 4, height: 28 }}
+                            style={{ ...TYPE.body, ...FACE.semibold, fontSize: 17, color: COLORS.text.primary, padding: 0, marginTop: 4, height: 28 }}
                         />
                     </View>
 
@@ -286,7 +286,7 @@ export default function AddTransactionScreen() {
                                 {isParsed ? <Check size={17} color={COLORS.semantic.profit} strokeWidth={2.6} /> : <ClipboardPaste size={17} color={COLORS.brand.link} />}
                             </View>
                             <View style={{ flex: 1, marginLeft: 12 }}>
-                                <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>
+                                <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary }}>
                                     {isParsed ? 'Filled from your message' : 'Paste a bank message'}
                                 </Text>
                                 <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>
@@ -307,14 +307,14 @@ export default function AddTransactionScreen() {
                                     multiline
                                     textAlignVertical="top"
                                     accessibilityLabel="Bank message"
-                                    style={{ ...TYPE.caption, fontFamily: FONTS.regular, fontSize: 14, lineHeight: 20, color: COLORS.text.primary, minHeight: 84, padding: 12, borderRadius: RADIUS.control, backgroundColor: COLORS.surface.secondary }}
+                                    style={{ ...TYPE.caption, ...FACE.regular, fontSize: 14, lineHeight: 20, color: COLORS.text.primary, minHeight: 84, padding: 12, borderRadius: RADIUS.control, backgroundColor: COLORS.surface.secondary }}
                                 />
                                 <PressableScale
                                     onPress={readMessage}
                                     accessibilityRole="button"
                                     style={{ marginTop: 10, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.soft }}
                                 >
-                                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.link }}>Read this message</Text>
+                                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.brand.link }}>Read this message</Text>
                                 </PressableScale>
                             </Animated.View>
                         ) : null}
@@ -337,7 +337,7 @@ export default function AddTransactionScreen() {
                         {saving ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={{ ...TYPE.callout, fontSize: 16, fontFamily: FONTS.semibold, color: value ? '#FFFFFF' : COLORS.text.tertiary }}>
+                            <Text style={{ ...TYPE.callout, fontSize: 16, ...FACE.semibold, color: value ? '#FFFFFF' : COLORS.text.tertiary }}>
                                 {value ? `Save ₹${inr(value)}` : 'Save'}
                             </Text>
                         )}

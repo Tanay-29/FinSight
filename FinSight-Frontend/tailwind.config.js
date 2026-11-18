@@ -87,6 +87,10 @@ module.exports = {
                 'inter-bold': ['Inter_700Bold'],
                 // Display face, one weight only. Headlines and the IQ score.
                 display: ['InstrumentSerif'],
+                // iOS only, as `ios:font-system` next to each Inter class: the
+                // system face (SF Pro), which takes its weight from
+                // `ios:font-bold` and friends. See FONTS in tokens.ts.
+                system: ['System'],
             },
             // The Phase 0 scale, mapped onto the class names already in use so
             // 338 existing sites pick it up without being rewritten. Relative

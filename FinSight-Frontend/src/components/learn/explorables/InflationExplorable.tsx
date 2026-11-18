@@ -10,7 +10,7 @@ import { Slider } from '../Slider';
 import { Readout } from '../CardChrome';
 import { presentValue } from '../../../utils/runway';
 import { inr, inrShort } from '../../../utils/moneyMath';
-import { COLORS, FONTS, TYPE } from '../../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../../theme/tokens';
 
 export const InflationExplorable: React.FC = () => {
     const [amount, setAmount] = useState(1_000_000);
@@ -42,7 +42,7 @@ export const InflationExplorable: React.FC = () => {
                 <Text style={{ ...TYPE.caption, color: COLORS.text.primary }}>
                     To have what {inrShort(amount)} buys today, you would need {inr(needed)} in {years} years.
                 </Text>
-                <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>
+                <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 6 }}>
                     Money sitting in a savings account at 3% loses ground every year against 6% inflation. This is the reason to invest at all, before any talk of returns.
                 </Text>
             </View>

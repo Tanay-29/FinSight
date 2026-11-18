@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { TrendingUp } from 'lucide-react-native';
-import { FONTS, COLORS, TYPE, RADIUS, SPACING } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, SPACING, FACE } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
 import { setUser, fetchUserProfile, toAuthUser } from '../store/slices/authSlice';
 import type { AppDispatch, RootState } from '../store/store';
@@ -170,7 +170,7 @@ export const RootNavigator = () => {
                     onPress={() => dispatch(fetchUserProfile(user.uid))}
                     style={{ marginTop: SPACING[5], backgroundColor: COLORS.brand.primaryDark, paddingHorizontal: SPACING[8], paddingVertical: SPACING[3], borderRadius: RADIUS.pill }}
                 >
-                    <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }}>Try again</Text>
+                    <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.brand.onAccent }}>Try again</Text>
                 </Pressable>
             </View>
         );

@@ -24,7 +24,7 @@ import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { MessageSquareText, PieChart, TrendingUp, ArrowRight, Utensils } from 'lucide-react-native';
 import { PressableScale } from '../components/PressableScale';
 import * as haptics from '../utils/haptics';
-import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, SPACING, GUTTER, FONTS } from '../theme/tokens';
+import { COLORS, CATEGORY_COLORS, TYPE, RADIUS, SPACING, GUTTER, FACE } from '../theme/tokens';
 
 interface Panel {
     key: string;
@@ -238,7 +238,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onDone }) => {
                     className="bg-brand-primary-dark rounded-pill h-[52px] flex-row items-center justify-center"
                 >
                     <Text
-                        style={[TYPE.callout, { fontFamily: FONTS.semibold }]}
+                        style={[TYPE.callout, { ...FACE.semibold }]}
                         className="text-white mr-1.5"
                     >
                         {last ? 'Get started' : 'Next'}

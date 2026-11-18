@@ -28,7 +28,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { completeModule } from '../store/slices/learningSlice';
 import Confetti from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-import { FONTS, COLORS, TYPE, RADIUS } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, FACE } from '../theme/tokens';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -55,16 +55,16 @@ const ReadingPhase: React.FC<{
         <View className="mx-5 mt-4 bg-surface-primary rounded-2xl p-5 border border-border">
             <View className="flex-row items-center mb-3">
                 <BookOpen size={16} color={COLORS.brand.primary} />
-                <Text className="text-sm font-inter-semibold text-brand-link ml-1.5">In this module</Text>
+                <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-brand-link ml-1.5">In this module</Text>
             </View>
-            <Text className="text-base text-text-secondary leading-7 font-inter">{module.content}</Text>
+            <Text className="text-base text-text-secondary leading-7 font-inter ios:font-system">{module.content}</Text>
         </View>
 
         {/* Key Points */}
         <View className="mx-5 mt-4">
             <View className="flex-row items-center mb-3">
                 <Lightbulb size={16} color={COLORS.semantic.alertAmberFill} />
-                <Text className="text-sm font-inter-bold text-text-primary ml-1.5">Key takeaways</Text>
+                <Text className="text-sm font-inter-bold ios:font-system ios:font-bold text-text-primary ml-1.5">Key takeaways</Text>
             </View>
             {module.keyPoints.map((point, idx) => (
                 <View
@@ -72,9 +72,9 @@ const ReadingPhase: React.FC<{
                     className="flex-row items-start mb-2 bg-alert-bg border border-alert-bg rounded-xl px-4 py-3"
                 >
                     <View className="w-5 h-5 rounded-full bg-alert-amber-fill items-center justify-center mt-0.5 mr-3 shrink-0">
-                        <Text className="text-white text-xs font-inter-bold">{idx + 1}</Text>
+                        <Text className="text-white text-xs font-inter-bold ios:font-system ios:font-bold">{idx + 1}</Text>
                     </View>
-                    <Text className="text-sm text-text-secondary leading-5 flex-1 font-inter">{point}</Text>
+                    <Text className="text-sm text-text-secondary leading-5 flex-1 font-inter ios:font-system">{point}</Text>
                 </View>
             ))}
         </View>
@@ -86,10 +86,10 @@ const ReadingPhase: React.FC<{
                 className="bg-brand-primary-dark rounded-pill h-[52px] justify-center flex-row items-center justify-center"
             >
                 <Star size={18} color="white" />
-                <Text className="text-white font-inter-bold text-base ml-2">Test yourself</Text>
+                <Text className="text-white font-inter-bold ios:font-system ios:font-bold text-base ml-2">Test yourself</Text>
                 <ChevronRight size={18} color="white" className="ml-1" />
             </PressableScale>
-            <Text className="text-center text-xs text-text-tertiary mt-2 font-inter">3 quick questions</Text>
+            <Text className="text-center text-xs text-text-tertiary mt-2 font-inter ios:font-system">3 quick questions</Text>
         </View>
     </ScrollView>
 );
@@ -156,10 +156,10 @@ const QuizPhase: React.FC<{
             {/* Progress indicator */}
             <View className="mx-5 mt-4 mb-5">
                 <View className="flex-row justify-between mb-1.5">
-                    <Text className="text-xs text-text-tertiary font-inter-medium">
+                    <Text className="text-xs text-text-tertiary font-inter-medium ios:font-system ios:font-medium">
                         Question {qIndex + 1} of {questions.length}
                     </Text>
-                    <Text className="text-xs text-brand-link font-inter-semibold">
+                    <Text className="text-xs text-brand-link font-inter-semibold ios:font-system ios:font-semibold">
                         {score} correct
                     </Text>
                 </View>
@@ -177,7 +177,7 @@ const QuizPhase: React.FC<{
                 entering={reduced ? FadeIn.duration(160) : SlideInRight.duration(240)}
             >
                 <View className="mx-5 bg-surface-primary rounded-2xl p-5 border border-border mb-4">
-                    <Text className="text-base font-inter-bold text-text-primary leading-6">{q.question}</Text>
+                    <Text className="text-base font-inter-bold ios:font-system ios:font-bold text-text-primary leading-6">{q.question}</Text>
                 </View>
 
                 {/* Options */}
@@ -207,12 +207,12 @@ const QuizPhase: React.FC<{
                             ) : answered && idx === selectedOption ? (
                                 <X size={14} color="white" strokeWidth={3} />
                             ) : (
-                                <Text className="text-xs font-inter-bold text-text-secondary">
+                                <Text className="text-xs font-inter-bold ios:font-system ios:font-bold text-text-secondary">
                                     {['A', 'B', 'C', 'D'][idx]}
                                 </Text>
                             )}
                         </View>
-                        <Text style={{ color: getOptionTextColor(idx) }} className="text-sm flex-1 leading-5 font-inter">
+                        <Text style={{ color: getOptionTextColor(idx) }} className="text-sm flex-1 leading-5 font-inter ios:font-system">
                             {option}
                         </Text>
                     </PressableScale>
@@ -226,11 +226,11 @@ const QuizPhase: React.FC<{
                                 ? <Check size={14} color={COLORS.semantic.profit} strokeWidth={3} />
                                 : <X size={14} color={COLORS.semantic.alertCritical} strokeWidth={3} />
                             }
-                            <Text style={{ color: isCorrect ? COLORS.semantic.profit : COLORS.semantic.alertCritical }} className="text-xs font-inter-bold ml-1.5">
+                            <Text style={{ color: isCorrect ? COLORS.semantic.profit : COLORS.semantic.alertCritical }} className="text-xs font-inter-bold ios:font-system ios:font-bold ml-1.5">
                                 {isCorrect ? 'Correct!' : 'Not quite'}
                             </Text>
                         </View>
-                        <Text className="text-sm text-text-secondary leading-5 font-inter">{q.explanation}</Text>
+                        <Text className="text-sm text-text-secondary leading-5 font-inter ios:font-system">{q.explanation}</Text>
                     </View>
                 )}
 
@@ -240,7 +240,7 @@ const QuizPhase: React.FC<{
                         onPress={handleNext}
                         className="mx-5 mt-5 bg-brand-primary-dark rounded-pill h-[52px] justify-center flex-row items-center justify-center"
                     >
-                        <Text className="text-white font-inter-bold text-base mr-2">
+                        <Text className="text-white font-inter-bold ios:font-system ios:font-bold text-base mr-2">
                             {qIndex + 1 < questions.length ? 'Next question' : 'See results'}
                         </Text>
                         <ChevronRight size={18} color="white" />
@@ -297,10 +297,10 @@ const DonePhase: React.FC<{
                         alignItems: 'center', justifyContent: 'center',
                     }}
                 >
-                    <Text style={{ color: passed ? COLORS.brand.primary : COLORS.semantic.loss }} className="text-4xl font-inter-bold">
+                    <Text style={{ color: passed ? COLORS.brand.primary : COLORS.semantic.loss }} className="text-4xl font-inter-bold ios:font-system ios:font-bold">
                         {score}/{total}
                     </Text>
-                    <Text style={{ color: passed ? COLORS.brand.link : COLORS.semantic.loss }} className="text-xs font-inter-semibold mt-0.5">
+                    <Text style={{ color: passed ? COLORS.brand.link : COLORS.semantic.loss }} className="text-xs font-inter-semibold ios:font-system ios:font-semibold mt-0.5">
                         {pct}% correct
                     </Text>
                 </View>
@@ -310,7 +310,7 @@ const DonePhase: React.FC<{
             <Text style={TYPE.title} className="text-text-primary mt-6 text-center px-8">
                 {perfect ? 'Full marks' : passed ? 'Passed' : 'Not yet'}
             </Text>
-            <Text className="text-sm text-text-secondary mt-2 text-center px-8 leading-5 font-inter">
+            <Text className="text-sm text-text-secondary mt-2 text-center px-8 leading-5 font-inter ios:font-system">
                 {perfect
                     ? `Every answer right on "${moduleName}".`
                     : passed
@@ -323,7 +323,7 @@ const DonePhase: React.FC<{
             {streak > 0 && passed && (
                 <View className="mt-5 flex-row items-center bg-alert-bg border border-alert-bg rounded-2xl px-5 py-3">
                     <Flame size={20} color={COLORS.semantic.alertAmber} />
-                    <Text className="text-sm font-inter-bold text-alert-amber ml-2">
+                    <Text className="text-sm font-inter-bold ios:font-system ios:font-bold text-alert-amber ml-2">
                         {streak}-day learning streak
                     </Text>
                 </View>
@@ -334,7 +334,7 @@ const DonePhase: React.FC<{
             {streakSaved && (
                 <View className="mt-3 flex-row items-center bg-brand-soft border border-brand-edge rounded-2xl px-5 py-3">
                     <Snowflake size={20} color={COLORS.brand.link} />
-                    <Text className="text-sm font-inter-bold text-brand-link ml-2">
+                    <Text className="text-sm font-inter-bold ios:font-system ios:font-bold text-brand-link ml-2">
                         Streak freeze used. Your streak is safe.
                     </Text>
                 </View>
@@ -344,7 +344,7 @@ const DonePhase: React.FC<{
             {badgeEarned && (
                 <View className="mt-4 flex-row items-center bg-profit-bg border border-profit-bg rounded-2xl px-5 py-3">
                     <Trophy size={20} color={COLORS.semantic.profit} />
-                    <Text className="text-sm font-inter-bold text-profit ml-2">
+                    <Text className="text-sm font-inter-bold ios:font-system ios:font-bold text-profit ml-2">
                         Course badge earned
                     </Text>
                 </View>
@@ -357,7 +357,7 @@ const DonePhase: React.FC<{
             {isSaving && (
                 <View className="mt-4 flex-row items-center">
                     <ActivityIndicator size="small" color={COLORS.brand.primary} />
-                    <Text className="text-xs text-text-tertiary ml-2 font-inter">Saving your progress</Text>
+                    <Text className="text-xs text-text-tertiary ml-2 font-inter ios:font-system">Saving your progress</Text>
                 </View>
             )}
 
@@ -365,13 +365,13 @@ const DonePhase: React.FC<{
                 <View className="mt-4 mx-5 bg-alert-bg border border-alert-bg rounded-2xl p-3.5 flex-row items-start">
                     <CloudOff size={15} color={COLORS.semantic.alertAmber} style={{ marginTop: 1 }} />
                     <View className="flex-1 ml-2.5">
-                        <Text className="text-xs text-alert-amber leading-4 font-inter">
+                        <Text className="text-xs text-alert-amber leading-4 font-inter ios:font-system">
                             You finished this, but it did not save, so the next module stays
                             locked until it does.
                         </Text>
                         <Text
                             onPress={onRetrySave}
-                            style={{ fontSize: 12, fontFamily: FONTS.bold, color: COLORS.semantic.alertAmber, marginTop: 6 }}
+                            style={{ fontSize: 12, ...FACE.bold, color: COLORS.semantic.alertAmber, marginTop: 6 }}
                         >
                             Try saving again
                         </Text>
@@ -398,7 +398,7 @@ const DonePhase: React.FC<{
                         <BrainCircuit size={20} color={COLORS.brand.link} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={{ ...TYPE.callout, fontFamily: FONTS.semibold, color: COLORS.text.primary }}>Revise with flashcards</Text>
+                        <Text style={{ ...TYPE.callout, ...FACE.semibold, color: COLORS.text.primary }}>Revise with flashcards</Text>
                         <Text style={{ ...TYPE.caption, color: COLORS.text.secondary, marginTop: 1 }}>Quick cards from this module</Text>
                     </View>
                     <ChevronRight size={18} color={COLORS.text.tertiary} />
@@ -409,7 +409,7 @@ const DonePhase: React.FC<{
                     className="bg-brand-primary-dark rounded-pill h-[52px] justify-center flex-row items-center justify-center"
                 >
                     <CheckCircle2 size={18} color="white" />
-                    <Text className="text-white font-inter-bold text-base ml-2">Back to course</Text>
+                    <Text className="text-white font-inter-bold ios:font-system ios:font-bold text-base ml-2">Back to course</Text>
                 </PressableScale>
 
                 <TouchableOpacity
@@ -418,7 +418,7 @@ const DonePhase: React.FC<{
                     className="border border-border-strong rounded-pill h-[52px] flex-row items-center justify-center"
                 >
                     <RefreshCw size={16} color={COLORS.text.secondary} />
-                    <Text className="text-text-secondary font-inter-semibold text-sm ml-2">Retake quiz</Text>
+                    <Text className="text-text-secondary font-inter-semibold ios:font-system ios:font-semibold text-sm ml-2">Retake quiz</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>

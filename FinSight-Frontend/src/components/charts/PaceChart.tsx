@@ -16,7 +16,7 @@ import { smoothPath, areaPath, nearestIndex, niceCeil } from './curve';
 import { ScrubOverlay } from './ScrubOverlay';
 import { inrShort } from '../../utils/moneyMath';
 import * as haptics from '../../utils/haptics';
-import { COLORS, FONTS } from '../../theme/tokens';
+import { COLORS, FACE } from '../../theme/tokens';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -129,18 +129,18 @@ export const PaceChart: React.FC<Props> = ({ cumulative, daysInMonth, projected,
             {model ? (
                 <>
                     {[1, 0.5].map((f) => (
-                        <Text key={f} style={{ position: 'absolute', right: 0, width: PAD_R - 4, top: baseline - f * (baseline - PAD_TOP) - 7, textAlign: 'right', fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>
+                        <Text key={f} style={{ position: 'absolute', right: 0, width: PAD_R - 4, top: baseline - f * (baseline - PAD_TOP) - 7, textAlign: 'right', ...FACE.medium, fontSize: 10, color: COLORS.text.tertiary }}>
                             {inrShort(model.top * f)}
                         </Text>
                     ))}
                     {model.limitY !== null && limitLabel ? (
-                        <Text style={{ position: 'absolute', left: PAD_L + 2, top: model.limitY - 16, fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.text.secondary }}>
+                        <Text style={{ position: 'absolute', left: PAD_L + 2, top: model.limitY - 16, ...FACE.semibold, fontSize: 11, color: COLORS.text.secondary }}>
                             {limitLabel}
                         </Text>
                     ) : null}
                     <View pointerEvents="none" style={{ position: 'absolute', bottom: 0, left: PAD_L, right: PAD_R, flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>1st</Text>
-                        <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.text.tertiary }}>{daysInMonth}{daysInMonth === 31 ? 'st' : 'th'}</Text>
+                        <Text style={{ ...FACE.medium, fontSize: 10, color: COLORS.text.tertiary }}>1st</Text>
+                        <Text style={{ ...FACE.medium, fontSize: 10, color: COLORS.text.tertiary }}>{daysInMonth}{daysInMonth === 31 ? 'st' : 'th'}</Text>
                     </View>
                     <ScrubOverlay onScrub={scrub} onEnd={end} label="Running total this month. Press and slide to read a day." />
                 </>

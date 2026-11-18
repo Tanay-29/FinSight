@@ -10,7 +10,7 @@ import { View, Text } from 'react-native';
 import { Slider } from '../Slider';
 import { Readout } from '../CardChrome';
 import { salaryBreakdown, inr, inrShort } from '../../../utils/moneyMath';
-import { COLORS, FONTS, TYPE } from '../../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../../theme/tokens';
 
 interface Segment { key: string; label: string; value: number; color: string }
 
@@ -71,7 +71,7 @@ export const SalarySlipExplorable: React.FC<{ initialCtc?: number }> = ({ initia
                     {Math.round(b.gapPercent)}% of CTC never reaches the bank
                 </Text>
                 {b.assumptions.map((a) => (
-                    <Text key={a} style={{ fontFamily: FONTS.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.tertiary }}>
+                    <Text key={a} style={{ ...FACE.regular, fontSize: 12, lineHeight: 17, color: COLORS.text.tertiary }}>
                         {'•'} {a}
                     </Text>
                 ))}

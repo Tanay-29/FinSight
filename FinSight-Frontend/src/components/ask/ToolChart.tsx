@@ -17,7 +17,7 @@ import { BarFill } from '../BarFill';
 import * as haptics from '../../utils/haptics';
 import type { ToolSeries, ToolBar } from '../../utils/askTools';
 import { inrShort } from '../../utils/moneyMath';
-import { COLORS, FONTS, MOTION } from '../../theme/tokens';
+import { COLORS, MOTION, FACE } from '../../theme/tokens';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -159,24 +159,24 @@ export const LinesChart: React.FC<{ series: ToolSeries[]; xUnit: 'year' | 'month
                     <Text
                         key={`t${i}`}
                         numberOfLines={1}
-                        style={{ position: 'absolute', left: model.lines[i].end.x + 8, top, width: PAD_R - 8, fontFamily: FONTS.bold, fontSize: 12, color: toneColour(model.lines[i].s.tone) }}
+                        style={{ position: 'absolute', left: model.lines[i].end.x + 8, top, width: PAD_R - 8, ...FACE.bold, fontSize: 12, color: toneColour(model.lines[i].s.tone) }}
                     >
                         {Number.isFinite(model.lines[i].last) ? `₹${inrShort(model.lines[i].last)}` : ''}
                     </Text>
                 )) : null}
-                <Text style={{ position: 'absolute', left: PAD_L, bottom: 2, fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary }}>Now</Text>
+                <Text style={{ position: 'absolute', left: PAD_L, bottom: 2, ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary }}>Now</Text>
                 {model ? <ScrubOverlay onScrub={scrub} onEnd={() => setAt(null)} label="Chart. Press and slide to read it at any point." /> : null}
-                <Text style={{ position: 'absolute', right: PAD_R, bottom: 2, fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary }}>{spanLabel}</Text>
+                <Text style={{ position: 'absolute', right: PAD_R, bottom: 2, ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary }}>{spanLabel}</Text>
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: 8, minHeight: 18 }}>
-                {readings ? <Text style={{ fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.text.primary }}>{atLabel}</Text> : null}
+                {readings ? <Text style={{ ...FACE.semibold, fontSize: 12, color: COLORS.text.primary }}>{atLabel}</Text> : null}
                 {series.map((s, i) => (
                     <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ width: 14, height: 3, borderRadius: 2, backgroundColor: toneColour(s.tone), marginRight: 6 }} />
-                        <Text style={{ fontFamily: FONTS.medium, fontSize: 12, color: COLORS.text.secondary }}>
+                        <Text style={{ ...FACE.medium, fontSize: 12, color: COLORS.text.secondary }}>
                             {s.label}
                             {readings && readings[i] && Number.isFinite(readings[i]!.v) ? (
-                                <Text style={{ fontFamily: FONTS.bold, color: toneColour(s.tone) }}> ₹{inrShort(readings[i]!.v)}</Text>
+                                <Text style={{ ...FACE.bold, color: toneColour(s.tone) }}> ₹{inrShort(readings[i]!.v)}</Text>
                             ) : null}
                         </Text>
                     </View>
@@ -197,8 +197,8 @@ export const BarsChart: React.FC<{ bars: ToolBar[] }> = ({ bars }) => {
                 return (
                     <View key={i} style={{ marginBottom: 12 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
-                            <Text style={{ fontFamily: FONTS.medium, fontSize: 13, color: COLORS.text.secondary }}>{b.label}</Text>
-                            <Text style={{ fontFamily: FONTS.bold, fontSize: 13, color: b.tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.primary }}>₹{inrShort(b.value)}</Text>
+                            <Text style={{ ...FACE.medium, fontSize: 13, color: COLORS.text.secondary }}>{b.label}</Text>
+                            <Text style={{ ...FACE.bold, fontSize: 13, color: b.tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.primary }}>₹{inrShort(b.value)}</Text>
                         </View>
                         <BarFill percent={Math.max(2, (b.value / scaleMax) * 100)} color={toneColour(b.tone)} height={10} delay={i * 80} />
                     </View>

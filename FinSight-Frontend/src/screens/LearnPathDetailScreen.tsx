@@ -77,15 +77,15 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                 <View className="mx-5 mt-4 bg-surface-primary border border-border rounded-2xl p-5">
                     <View className="flex-row items-center mb-2">
                         <BookOpen size={16} color={COLORS.brand.primary} />
-                        <Text className="text-base font-inter-bold text-text-primary ml-2">Course overview</Text>
+                        <Text className="text-base font-inter-bold ios:font-system ios:font-bold text-text-primary ml-2">Course overview</Text>
                     </View>
-                    <Text className="text-sm text-text-secondary leading-6 mb-4 font-inter">{path.overview}</Text>
+                    <Text className="text-sm text-text-secondary leading-6 mb-4 font-inter ios:font-system">{path.overview}</Text>
 
                     {/* Progress */}
                     <View className="mb-4">
                         <View className="flex-row justify-between items-center mb-1.5">
-                            <Text className="text-sm font-inter-semibold text-text-secondary">Your progress</Text>
-                            <Text className="text-xs text-text-tertiary font-inter">
+                            <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-text-secondary">Your progress</Text>
+                            <Text className="text-xs text-text-tertiary font-inter ios:font-system">
                                 {completedCount}/{totalCount} modules
                             </Text>
                         </View>
@@ -96,7 +96,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                     {badgeEarned && (
                         <View className="bg-profit-bg border border-profit-bg rounded-xl px-4 py-3 flex-row items-center">
                             <Trophy size={16} color={COLORS.semantic.profit} />
-                            <Text className="text-sm font-inter-semibold text-profit ml-2">
+                            <Text className="text-sm font-inter-semibold ios:font-system ios:font-semibold text-profit ml-2">
                                 Course badge earned
                             </Text>
                         </View>
@@ -105,16 +105,16 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                     {/* Stats row */}
                     <View className="flex-row mt-4 gap-3">
                         <View className="flex-1 bg-brand-soft rounded-xl p-3 items-center">
-                            <Text className="text-lg font-inter-bold text-brand-link">{totalCount}</Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">Modules</Text>
+                            <Text className="text-lg font-inter-bold ios:font-system ios:font-bold text-brand-link">{totalCount}</Text>
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter ios:font-system">Modules</Text>
                         </View>
                         <View className="flex-1 bg-alert-bg rounded-xl p-3 items-center">
-                            <Text className="text-lg font-inter-bold text-alert-amber">{completedCount}</Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">Completed</Text>
+                            <Text className="text-lg font-inter-bold ios:font-system ios:font-bold text-alert-amber">{completedCount}</Text>
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter ios:font-system">Completed</Text>
                         </View>
                         <View className="flex-1 bg-profit-bg rounded-xl p-3 items-center">
-                            <Text className="text-lg font-inter-bold text-profit">{progressPct}%</Text>
-                            <Text className="text-xs text-text-secondary mt-0.5 font-inter">Done</Text>
+                            <Text className="text-lg font-inter-bold ios:font-system ios:font-bold text-profit">{progressPct}%</Text>
+                            <Text className="text-xs text-text-secondary mt-0.5 font-inter ios:font-system">Done</Text>
                         </View>
                     </View>
                 </View>
@@ -123,7 +123,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                 <View className="mx-5 mt-5">
                     <View className="flex-row items-center mb-3">
                         <Layers size={16} color={COLORS.text.primary} />
-                        <Text className="text-base font-inter-bold text-text-primary ml-2">
+                        <Text className="text-base font-inter-bold ios:font-system ios:font-bold text-text-primary ml-2">
                             Modules ({totalCount})
                         </Text>
                     </View>
@@ -183,7 +183,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                         ) : isLocked ? (
                                             <Lock size={13} color={COLORS.text.tertiary} />
                                         ) : (
-                                            <Text className="text-xs font-inter-bold" style={{ color: isCurrent ? COLORS.brand.primary : COLORS.text.tertiary }}>
+                                            <Text className="text-xs font-inter-bold ios:font-system ios:font-bold" style={{ color: isCurrent ? COLORS.brand.primary : COLORS.text.tertiary }}>
                                                 {String(index + 1).padStart(2, '0')}
                                             </Text>
                                         )}
@@ -192,22 +192,22 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                     {/* Info */}
                                     <View className="flex-1">
                                         <Text
-                                            className="text-sm font-inter-semibold mb-1"
+                                            className="text-sm font-inter-semibold ios:font-system ios:font-semibold mb-1"
                                             style={{ color: isComplete ? COLORS.text.secondary : COLORS.text.primary }}
                                         >
                                             {module.title}
                                         </Text>
                                         <View className="flex-row items-center gap-2">
                                             <Clock size={11} color={COLORS.text.tertiary} />
-                                            <Text className="text-xs text-text-tertiary font-inter">{module.duration}</Text>
+                                            <Text className="text-xs text-text-tertiary font-inter ios:font-system">{module.duration}</Text>
                                             <View style={{ backgroundColor: diff.bg }} className="px-1.5 py-0.5 rounded-full">
-                                                <Text style={{ color: diff.text }} className="text-[10px] font-inter-semibold">
+                                                <Text style={{ color: diff.text }} className="text-[10px] font-inter-semibold ios:font-system ios:font-semibold">
                                                     {module.difficulty.charAt(0).toUpperCase() + module.difficulty.slice(1)}
                                                 </Text>
                                             </View>
                                             {module.quiz?.length && (
                                                 <View className="px-1.5 py-0.5 rounded-full bg-brand-soft">
-                                                    <Text className="text-[10px] font-inter-semibold text-brand-link">
+                                                    <Text className="text-[10px] font-inter-semibold ios:font-system ios:font-semibold text-brand-link">
                                                         {module.quiz.length} Qs
                                                     </Text>
                                                 </View>
@@ -223,7 +223,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                                 {isCurrent && (
                                     <View className="bg-brand-primary-dark px-4 py-1.5 flex-row items-center justify-center">
                                         <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
-                                        <Text className="text-white text-xs font-inter-semibold ml-1.5">{completedCount === 0 ? 'Start here' : 'Continue here'}</Text>
+                                        <Text className="text-white text-xs font-inter-semibold ios:font-system ios:font-semibold ml-1.5">{completedCount === 0 ? 'Start here' : 'Continue here'}</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>
@@ -232,7 +232,7 @@ export const LearnPathDetailScreen: React.FC<Props> = ({ route, navigation }) =>
                     }) : (
                         <View className="bg-surface-primary border border-border rounded-2xl p-5 items-center">
                             <BookOpen size={24} color={COLORS.border.strong} />
-                            <Text className="text-sm text-text-tertiary mt-2 font-inter">No modules found</Text>
+                            <Text className="text-sm text-text-tertiary mt-2 font-inter ios:font-system">No modules found</Text>
                         </View>
                     )}
                 </View>

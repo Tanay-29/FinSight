@@ -7,11 +7,11 @@ import { View, Text } from 'react-native';
 import { Slider } from '../Slider';
 import { Readout } from '../CardChrome';
 import { noCostEmi, inr } from '../../../utils/moneyMath';
-import { COLORS, FONTS, TYPE } from '../../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../../theme/tokens';
 
 const Row: React.FC<{ label: string; value: string; strong?: boolean }> = ({ label, value, strong }) => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: strong ? 0 : 1, borderBottomColor: COLORS.border.default }}>
-        <Text style={{ ...TYPE.callout, fontSize: 14, color: strong ? COLORS.text.primary : COLORS.text.secondary, fontFamily: strong ? FONTS.bold : FONTS.medium }}>{label}</Text>
+        <Text style={{ ...TYPE.callout, fontSize: 14, color: strong ? COLORS.text.primary : COLORS.text.secondary, ...(strong ? FACE.bold : FACE.medium) }}>{label}</Text>
         <Text style={{ ...TYPE.amountSm, color: strong ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{value}</Text>
     </View>
 );
@@ -41,7 +41,7 @@ export const NoCostEmiExplorable: React.FC = () => {
                 <Row label="Cash discount not taken" value={inr(r.foregoneDiscount)} />
                 <Row label="What you really pay" value={inr(r.trueCost)} strong />
             </View>
-            <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 8 }}>
+            <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginTop: 8 }}>
                 Assumes the lender's rate is 15% a year and a 199 fee, typical of card EMIs. The interest line is real, it is just paid by the seller's discount; the GST on it is yours.
             </Text>
         </View>

@@ -26,7 +26,7 @@ import { inr } from '../utils/moneyMath';
 import { PressableScale } from '../components/PressableScale';
 import { Confetti } from '../components/Confetti';
 import * as haptics from '../utils/haptics';
-import { COLORS, FONTS, TYPE, GUTTER } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, FACE } from '../theme/tokens';
 
 const TAG_COLOR = {
     wise: () => COLORS.semantic.profit,
@@ -116,7 +116,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                 </Pressable>
                 <View style={{ flex: 1, marginLeft: 14 }}>
                     <Text style={{ ...TYPE.caption, color: COLORS.text.primary }}>{scenario.title}</Text>
-                    <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>
+                    <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>
                         {done ? 'Year complete' : `Month ${shown.month} of ${monthsTotal}`}
                     </Text>
                 </View>
@@ -187,7 +187,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                                             <Text style={{ ...TYPE.body, fontSize: 15, lineHeight: 21, color: avail.ok ? COLORS.text.primary : COLORS.text.tertiary, flex: 1 }}>{o.label}</Text>
                                         </View>
                                         {!avail.ok ? (
-                                            <Text style={{ fontFamily: FONTS.medium, fontSize: 12, color: COLORS.text.tertiary, marginTop: 4 }}>{avail.reason}</Text>
+                                            <Text style={{ ...FACE.medium, fontSize: 12, color: COLORS.text.tertiary, marginTop: 4 }}>{avail.reason}</Text>
                                         ) : null}
                                     </PressableScale>
                                 );
@@ -209,7 +209,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                     <View style={{ paddingHorizontal: GUTTER, paddingVertical: 8 }}>
                         <PressableScale onPress={next} disabled={picked === null} accessibilityRole="button"
                             style={{ height: 52, borderRadius: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: picked !== null ? COLORS.brand.primaryDark : COLORS.surface.tertiary }}>
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: picked !== null ? COLORS.brand.onAccent : COLORS.text.tertiary, marginRight: 6 }}>{isLast ? 'See your year' : 'Next month'}</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.bold, color: picked !== null ? COLORS.brand.onAccent : COLORS.text.tertiary, marginRight: 6 }}>{isLast ? 'See your year' : 'Next month'}</Text>
                             <ChevronRight size={18} color={picked !== null ? COLORS.brand.onAccent : COLORS.text.tertiary} />
                         </PressableScale>
                     </View>
@@ -220,7 +220,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                         <Scorecard state={state} played={played} />
                         <PressableScale onPress={() => { haptics.tap(); navigation.goBack(); }} accessibilityRole="button"
                             style={{ height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand.primaryDark, marginTop: 20 }}>
-                            <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: COLORS.brand.onAccent }}>Done</Text>
+                            <Text style={{ ...TYPE.callout, ...FACE.bold, color: COLORS.brand.onAccent }}>Done</Text>
                         </PressableScale>
                     </Animated.View>
                 </ScrollView>
@@ -257,7 +257,7 @@ const Chip: React.FC<{ text: string; tone?: 'good' | 'bad' }> = ({ text, tone })
         paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
         backgroundColor: tone === 'good' ? COLORS.semantic.profitBg : tone === 'bad' ? COLORS.semantic.lossBg : COLORS.surface.tertiary,
     }}>
-        <Text style={{ fontFamily: FONTS.semibold, fontSize: 12, fontVariant: ['tabular-nums'], color: tone === 'good' ? COLORS.semantic.profit : tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.secondary }}>
+        <Text style={{ ...FACE.semibold, fontSize: 12, fontVariant: ['tabular-nums'], color: tone === 'good' ? COLORS.semantic.profit : tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.secondary }}>
             {text}
         </Text>
     </View>
@@ -267,7 +267,7 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; tone
     <View style={{ flex: 1, padding: 10, borderRadius: 12, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
             {icon}
-            <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4 }}>{label}</Text>
+            <Text style={{ ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4 }}>{label}</Text>
         </View>
         <Text numberOfLines={1} style={{ ...TYPE.amountSm, color: tone === 'good' ? COLORS.semantic.profit : tone === 'bad' ? COLORS.semantic.alertCritical : COLORS.text.primary }}>{value}</Text>
     </View>
@@ -280,9 +280,9 @@ const Meter: React.FC<{ icon: React.ReactNode; label: string; value: number }> =
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {icon}
-                    <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4 }}>{label}</Text>
+                    <Text style={{ ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4 }}>{label}</Text>
                 </View>
-                <Text style={{ fontFamily: FONTS.semibold, fontSize: 11, color }}>{value}</Text>
+                <Text style={{ ...FACE.semibold, fontSize: 11, color }}>{value}</Text>
             </View>
             <View style={{ height: 5, borderRadius: 3, backgroundColor: COLORS.surface.tertiary, overflow: 'hidden' }}>
                 <View style={{ width: `${value}%`, height: 5, backgroundColor: color }} />
@@ -319,7 +319,7 @@ const Scorecard: React.FC<{ state: SimState; played: Played[] }> = ({ state, pla
                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: TAG_COLOR[p.option.tag](), marginRight: 10 }} />
                         <View style={{ flex: 1 }}>
                             <Text style={{ ...TYPE.caption, color: COLORS.text.primary }}>{p.scene.title}</Text>
-                            <Text numberOfLines={1} style={{ fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text.tertiary }}>{p.option.label}</Text>
+                            <Text numberOfLines={1} style={{ ...FACE.regular, fontSize: 12, color: COLORS.text.tertiary }}>{p.option.label}</Text>
                         </View>
                     </View>
                 ))}
@@ -330,8 +330,8 @@ const Scorecard: React.FC<{ state: SimState; played: Played[] }> = ({ state, pla
 
 const Tile: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
     <View style={{ flex: 1, padding: 12, borderRadius: 12, backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
-        <Text style={{ fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text.tertiary }}>{label}</Text>
-        <Text style={{ ...TYPE.callout, fontFamily: FONTS.bold, color: color ?? COLORS.text.primary, marginTop: 2 }}>{value}</Text>
+        <Text style={{ ...FACE.medium, fontSize: 11, color: COLORS.text.tertiary }}>{label}</Text>
+        <Text style={{ ...TYPE.callout, ...FACE.bold, color: color ?? COLORS.text.primary, marginTop: 2 }}>{value}</Text>
     </View>
 );
 

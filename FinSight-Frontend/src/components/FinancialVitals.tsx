@@ -13,7 +13,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { SpendSparkline, SparkDay, dayLabel } from './SpendSparkline';
 import { AnimatedNumber } from './AnimatedNumber';
 import { inr } from '../utils/moneyMath';
-import { COLORS, FONTS, TYPE, GUTTER, RADIUS } from '../theme/tokens';
+import { COLORS, TYPE, GUTTER, RADIUS, FACE } from '../theme/tokens';
 
 interface FinancialVitalsProps {
     totalSpent: number;
@@ -63,7 +63,7 @@ export const FinancialVitals: React.FC<FinancialVitalsProps> = ({ totalSpent, da
                 {comparison ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border.default }}>
                         <tone.Icon size={13} color={tone.color} />
-                        <Text style={{ ...TYPE.caption, fontFamily: FONTS.semibold, color: tone.color, marginLeft: 6 }}>
+                        <Text style={{ ...TYPE.caption, ...FACE.semibold, color: tone.color, marginLeft: 6 }}>
                             {comparison.type === 'flat'
                                 ? 'About the same as the 30 days before'
                                 : `${comparison.percentage}% ${comparison.type === 'increase' ? 'more' : 'less'} than the 30 days before`}

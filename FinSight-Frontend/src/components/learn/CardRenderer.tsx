@@ -24,7 +24,7 @@ import { CibilExplorable } from './explorables/CibilExplorable';
 import { InflationExplorable } from './explorables/InflationExplorable';
 import { inr } from '../../utils/moneyMath';
 import * as haptics from '../../utils/haptics';
-import { COLORS, FONTS, TYPE } from '../../theme/tokens';
+import { COLORS, TYPE, FACE } from '../../theme/tokens';
 
 export interface CardViewProps<C extends Card = Card> {
     card: C;
@@ -51,7 +51,7 @@ const InfoView: React.FC<{ card: InfoCard }> = ({ card }) => (
         {card.source ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
                 <ExternalLink size={11} color={COLORS.text.tertiary} />
-                <Text numberOfLines={1} style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4, flex: 1 }}>{card.source}</Text>
+                <Text numberOfLines={1} style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary, marginLeft: 4, flex: 1 }}>{card.source}</Text>
             </View>
         ) : null}
     </View>
@@ -199,7 +199,7 @@ const TapSortView: React.FC<CardViewProps<TapSortCard>> = ({ card, onAnswer }) =
                             })}
                         </View>
                         {wrong ? (
-                            <Text style={{ fontFamily: FONTS.medium, fontSize: 12, color: COLORS.semantic.alertCritical, marginTop: 6 }}>
+                            <Text style={{ ...FACE.medium, fontSize: 12, color: COLORS.semantic.alertCritical, marginTop: 6 }}>
                                 Belongs under {card.buckets[it.bucket]}
                             </Text>
                         ) : null}
@@ -247,7 +247,7 @@ const OrderStepsView: React.FC<CardViewProps<OrderStepsCard>> = ({ card, onAnswe
                                 backgroundColor: right ? COLORS.semantic.profitBg : wrong ? COLORS.semantic.lossBg : COLORS.brand.soft,
                             }}>
                                 <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: right ? COLORS.semantic.profit : wrong ? COLORS.semantic.loss : COLORS.brand.primaryDark, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                                    <Text style={{ fontFamily: FONTS.bold, fontSize: 11, color: COLORS.brand.onAccent }}>{pos + 1}</Text>
+                                    <Text style={{ ...FACE.bold, fontSize: 11, color: COLORS.brand.onAccent }}>{pos + 1}</Text>
                                 </View>
                                 <Text style={{ ...TYPE.callout, fontSize: 14, color: COLORS.text.primary, flex: 1 }}>{card.steps[orig]}</Text>
                             </View>

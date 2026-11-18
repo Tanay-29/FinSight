@@ -15,7 +15,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, PanResponder, LayoutChangeEvent, ViewStyle } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import * as haptics from '../../utils/haptics';
-import { COLORS, FONTS, MOTION, TYPE } from '../../theme/tokens';
+import { COLORS, MOTION, TYPE, FACE } from '../../theme/tokens';
 
 interface SliderProps {
     label: string;
@@ -136,8 +136,8 @@ export const Slider: React.FC<SliderProps> = ({
             </View>
             {minLabel || maxLabel ? (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
-                    <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>{minLabel}</Text>
-                    <Text style={{ fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text.tertiary }}>{maxLabel}</Text>
+                    <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>{minLabel}</Text>
+                    <Text style={{ ...FACE.regular, fontSize: 11, color: COLORS.text.tertiary }}>{maxLabel}</Text>
                 </View>
             ) : null}
         </View>

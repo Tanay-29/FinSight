@@ -21,6 +21,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, ScrollView, Pressable, AppState, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTabBarClearance } from '../navigation/tabBarMetrics';
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { Flame, Check, Play, Plus, Bell, ArrowRight, Sparkles, CalendarDays, ClipboardCheck, ArrowUp } from 'lucide-react-native';
@@ -42,7 +43,7 @@ import {
     syncReminders, getReminderPreference, enableReminders, formatReminderTime, ReminderPreference, DEFAULT_REMINDER,
 } from '../services/reminderService';
 import * as haptics from '../utils/haptics';
-import { COLORS, TYPE, RADIUS, GUTTER, FONTS } from '../theme/tokens';
+import { COLORS, TYPE, RADIUS, GUTTER, FACE } from '../theme/tokens';
 
 const REMINDER_ASKED_KEY = 'finsight:reminder-asked';
 
@@ -70,6 +71,7 @@ const nextStep = (
 };
 
 export const TodayScreen: React.FC = () => {
+    const tabClearance = useTabBarClearance();
     const navigation = useNavigation<any>();
     const dispatch = useAppDispatch();
     const reduced = useReducedMotion();
@@ -229,7 +231,7 @@ export const TodayScreen: React.FC = () => {
         <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top', 'left', 'right']}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 32 }}
+                contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 32 + tabClearance }}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.brand.primary} colors={[COLORS.brand.primary]} />
                 }
@@ -257,7 +259,7 @@ export const TodayScreen: React.FC = () => {
                             accessibilityLabel="Your profile"
                             className="w-9 h-9 rounded-full bg-brand-primary-dark items-center justify-center"
                         >
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]}>
+                            <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.onAccent }]}>
                                 {(name || 'Y').charAt(0).toUpperCase()}
                             </Text>
                         </PressableScale>
@@ -276,7 +278,7 @@ export const TodayScreen: React.FC = () => {
                             <Text style={TYPE.callout} className="text-text-primary">{line}</Text>
                             {tip && (
                                 <Pressable onPress={showTip} hitSlop={8} className="mt-2" accessibilityRole="button">
-                                    <Text style={[TYPE.caption, { fontFamily: FONTS.semibold }]} className="text-brand-link">Another one</Text>
+                                    <Text style={[TYPE.caption, { ...FACE.semibold }]} className="text-brand-link">Another one</Text>
                                 </Pressable>
                             )}
                         </View>
@@ -394,7 +396,7 @@ export const TodayScreen: React.FC = () => {
                                 <Text style={TYPE.caption} className="text-text-secondary mt-0.5">That is a win. It counts on the Money tab.</Text>
                             </View>
                             <Pressable onPress={() => navigation.navigate('AddTransaction')} hitSlop={8} accessibilityRole="button">
-                                <Text style={[TYPE.caption, { fontFamily: FONTS.semibold }]} className="text-brand-link">I did spend</Text>
+                                <Text style={[TYPE.caption, { ...FACE.semibold }]} className="text-brand-link">I did spend</Text>
                             </Pressable>
                         </View>
                     ) : (
@@ -407,7 +409,7 @@ export const TodayScreen: React.FC = () => {
                                     containerStyle={{ flex: 1 }}
                                     style={{ height: 48, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.border.strong, alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Nothing today</Text>
+                                    <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">Nothing today</Text>
                                 </PressableScale>
                                 <PressableScale
                                     onPress={() => { haptics.tap(); navigation.navigate('AddTransaction'); }}
@@ -415,7 +417,7 @@ export const TodayScreen: React.FC = () => {
                                     containerStyle={{ flex: 1 }}
                                     style={{ height: 48, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.primaryDark, alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.onAccent }]}>Yes, add it</Text>
+                                    <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.onAccent }]}>Yes, add it</Text>
                                 </PressableScale>
                             </View>
                         </>
@@ -442,7 +444,7 @@ export const TodayScreen: React.FC = () => {
                                     containerStyle={{ flex: 1 }}
                                     style={{ height: 42, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.soft, borderWidth: 1, borderColor: COLORS.brand.edge, alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                    <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.link }]}>{formatReminderTime(h, 0)}</Text>
+                                    <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.link }]}>{formatReminderTime(h, 0)}</Text>
                                 </PressableScale>
                             ))}
                         </View>
@@ -469,7 +471,7 @@ export const TodayScreen: React.FC = () => {
                             <CalendarDays size={19} color={COLORS.brand.link} strokeWidth={1.8} />
                         </View>
                         <View className="flex-1">
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">Your month, in review</Text>
+                            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">Your month, in review</Text>
                         </View>
                         <ArrowRight size={18} color={COLORS.text.tertiary} />
                     </PressableScale>
@@ -486,7 +488,7 @@ export const TodayScreen: React.FC = () => {
                             <ClipboardCheck size={19} color={COLORS.brand.link} strokeWidth={1.8} />
                         </View>
                         <View className="flex-1">
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary">
+                            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary">
                                 {quizBase ? 'See how much you have learned' : 'How much do you know about money?'}
                             </Text>
                             <Text style={TYPE.caption} className="text-text-secondary mt-0.5">
@@ -508,7 +510,7 @@ export const TodayScreen: React.FC = () => {
                         <Sparkles size={18} color={COLORS.brand.link} strokeWidth={2} />
                         <View className="flex-1 ml-3">
                             <Text style={TYPE.micro} className="text-brand-link">Next step for you</Text>
-                            <Text style={[TYPE.callout, { fontFamily: FONTS.semibold }]} className="text-text-primary mt-0.5">{step.label}</Text>
+                            <Text style={[TYPE.callout, { ...FACE.semibold }]} className="text-text-primary mt-0.5">{step.label}</Text>
                         </View>
                         <ArrowRight size={18} color={COLORS.brand.link} />
                     </PressableScale>
@@ -525,7 +527,7 @@ const SmallButton: React.FC<{ icon: React.ReactNode; label: string; onPress: () 
         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, height: 38, borderRadius: RADIUS.pill, backgroundColor: COLORS.brand.soft }}
     >
         {icon}
-        <Text style={[TYPE.callout, { fontFamily: FONTS.semibold, color: COLORS.brand.link, marginLeft: 4 }]}>{label}</Text>
+        <Text style={[TYPE.callout, { ...FACE.semibold, color: COLORS.brand.link, marginLeft: 4 }]}>{label}</Text>
     </PressableScale>
 );
 
