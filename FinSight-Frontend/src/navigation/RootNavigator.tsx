@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
-import { View, Text, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable, Image } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { TrendingUp } from 'lucide-react-native';
 import { COLORS, TYPE, RADIUS, SPACING, FACE } from '../theme/tokens';
 import { onAuthChange } from '../services/authService';
 import { setUser, fetchUserProfile, toAuthUser } from '../store/slices/authSlice';
@@ -125,18 +124,7 @@ export const RootNavigator = () => {
                     backgroundColor: COLORS.brand.primaryDark,
                 }}
             >
-                <View
-                    style={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: RADIUS.pill - 6,
-                        backgroundColor: 'rgba(255,255,255,0.16)',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <TrendingUp size={30} color={COLORS.brand.onAccent} strokeWidth={1.8} />
-                </View>
+                <Image source={require('../../assets/fini.png')} style={{ width: 84, height: 84 }} accessibilityLabel="Fini" accessibilityIgnoresInvertColors />
                 <Text
                     style={{
                         ...TYPE.heading,

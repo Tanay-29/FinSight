@@ -285,9 +285,7 @@ const LoginScreen: React.FC = () => {
                     entering={reduced ? FadeIn.duration(200) : FadeIn.duration(400)}
                     style={{ alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: insets.top + 20, paddingBottom: 24 }}
                 >
-                    <View style={{ width: 64, height: 64, borderRadius: 16, overflow: 'hidden', backgroundColor: COLORS.brand.onAccent }}>
-                        <Image source={require('../../assets/icon.png')} style={{ width: 64, height: 64 }} accessibilityIgnoresInvertColors />
-                    </View>
+                    <Image source={require('../../assets/fini.png')} style={{ width: 84, height: 84 }} accessibilityLabel="Fini" accessibilityIgnoresInvertColors />
                     <Text accessibilityRole="header" style={TYPE.title} className="text-white mt-3">FinSight</Text>
                 </Animated.View>
 
