@@ -44,3 +44,5 @@ yarn-error.*
 
 # Firebase iOS config. Holds the iOS client ID; kept out of this public repo.
 GoogleService-Info.plist
+# Firebase Android config, same reason.
+google-services.json

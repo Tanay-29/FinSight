@@ -20,7 +20,7 @@ const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 /** The iOS OAuth client. Android needs none: it matches on package and SHA-1. */
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
-const NOT_CONFIGURED = 'Google sign-in is not set up in this build yet. Use your phone number or email for now.';
+const NOT_CONFIGURED = 'Google sign-in is not set up in this build yet. Use your email for now.';
 
 let configured = false;
 

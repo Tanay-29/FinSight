@@ -17,7 +17,7 @@
  * move to Create account, and buttons dip under the finger. No layout animations: an error that
  * makes the sheet taller should appear, and the form around it hold still.
  */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -27,6 +27,8 @@ import {
     KeyboardAvoidingView,
     ScrollView,
     Pressable,
+    Image,
+    Keyboard,
     LayoutChangeEvent,
     ViewStyle,
 } from 'react-native';
@@ -34,7 +36,8 @@ import Animated, {
     FadeIn, FadeInDown, FadeInLeft, useReducedMotion,
     useAnimatedStyle, useSharedValue, withTiming,
 } from 'react-native-reanimated';
-import { Eye, EyeOff, TrendingUp } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, signInUser, signInWithGoogleUser, clearError } from '../store/slices/authSlice';
 import { sendPasswordReset } from '../services/authService';
@@ -249,6 +252,20 @@ const LoginScreen: React.FC = () => {
 
     const message = fieldError ?? error;
 
+    // The form fits on one screen and does not scroll. It only becomes
+    // scrollable when the keyboard is up or the phone is too short to show
+    // everything, so a field can never end up out of reach.
+    const insets = useSafeAreaInsets();
+    const [keyboardOpen, setKeyboardOpen] = useState(false);
+    const [frameHeight, setFrameHeight] = useState(0);
+    const [contentHeight, setContentHeight] = useState(0);
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
+    const scrollable = keyboardOpen || contentHeight > frameHeight + 1;
+
     return (
         <KeyboardAvoidingView
             className="flex-1 bg-brand-primary-dark"
@@ -259,27 +276,19 @@ const LoginScreen: React.FC = () => {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 bounces={false}
+                scrollEnabled={scrollable}
+                onLayout={(e) => setFrameHeight(e.nativeEvent.layout.height)}
+                onContentSizeChange={(_, h) => setContentHeight(h)}
             >
-                {/* The claim. Concrete, because "Your Daily Money Mentor" told
-                    a student nothing they could picture. */}
+                {/* The name and the mark, nothing else. */}
                 <Animated.View
                     entering={reduced ? FadeIn.duration(200) : FadeIn.duration(400)}
-                    style={{ paddingHorizontal: GUTTER, paddingTop: 60, paddingBottom: 30 }}
+                    style={{ alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: insets.top + 20, paddingBottom: 24 }}
                 >
-                    <View className="flex-row items-center mb-5">
-                        <View className="w-9 h-9 bg-white/20 items-center justify-center mr-2.5" style={{ borderRadius: RADIUS.tile }}>
-                            <TrendingUp size={18} color={COLORS.brand.onAccent} strokeWidth={1.8} />
-                        </View>
-                        <Text style={TYPE.heading} className="text-white">FinSight</Text>
+                    <View style={{ width: 64, height: 64, borderRadius: 16, overflow: 'hidden', backgroundColor: COLORS.brand.onAccent }}>
+                        <Image source={require('../../assets/icon.png')} style={{ width: 64, height: 64 }} accessibilityIgnoresInvertColors />
                     </View>
-
-                    <Text style={TYPE.title} className="text-white mb-3">
-                        Paste a bank text.{'\n'}See where it went.
-                    </Text>
-                    <Text style={TYPE.body} className="text-brand-on-dark">
-                        Built for students who want to know where the money goes,
-                        without a spreadsheet.
-                    </Text>
+                    <Text accessibilityRole="header" style={TYPE.title} className="text-white mt-3">FinSight</Text>
                 </Animated.View>
 
                 {/* The sheet. Rises once, then never moves again. */}
@@ -287,7 +296,7 @@ const LoginScreen: React.FC = () => {
                     entering={reduced ? FadeIn.duration(220) : FadeInDown.duration(260)}
                     // Colour in style, not className: on an animated view that
                     // also takes a style, the class background can be dropped.
-                    style={{ flex: 1, backgroundColor: COLORS.surface.secondary, borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, paddingHorizontal: GUTTER, paddingTop: 24, paddingBottom: 40 }}
+                    style={{ flex: 1, backgroundColor: COLORS.surface.secondary, borderTopLeftRadius: RADIUS.pill, borderTopRightRadius: RADIUS.pill, paddingHorizontal: GUTTER, paddingTop: 20, paddingBottom: insets.bottom + 16 }}
                 >
                         <Animated.View key="choose" entering={reduced ? undefined : FadeInLeft.duration(220)}>
                             <ModeSwitch mode={mode} onChange={switchMode} />
