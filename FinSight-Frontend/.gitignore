@@ -41,3 +41,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase iOS config. Holds the iOS client ID; kept out of this public repo.
+GoogleService-Info.plist
