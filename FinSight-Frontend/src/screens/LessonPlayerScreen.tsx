@@ -20,7 +20,7 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalSafeAreaView } from '../components/ModalSafeAreaView';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { X, ChevronRight, Flame, BrainCircuit, RotateCcw, Bell, Check, Award } from 'lucide-react-native';
@@ -190,14 +190,14 @@ const LessonPlayerScreen: React.FC = () => {
 
     if (!plan) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary, alignItems: 'center', justifyContent: 'center', padding: GUTTER }}>
+            <ModalSafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary, alignItems: 'center', justifyContent: 'center', padding: GUTTER }}>
                 <Text style={{ ...TYPE.heading, color: COLORS.text.primary }}>
                     {params.mode === 'autopsy' ? 'Not enough logged last month to explain it' : 'That lesson is not here'}
                 </Text>
                 <PressableScale onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
                     <Text style={{ ...TYPE.callout, color: COLORS.brand.link }}>Go back</Text>
                 </PressableScale>
-            </SafeAreaView>
+            </ModalSafeAreaView>
         );
     }
 
@@ -214,7 +214,7 @@ const LessonPlayerScreen: React.FC = () => {
     });
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
+        <ModalSafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
             {/* Header: close, segmented progress */}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 12 }}>
                 <Pressable
@@ -439,7 +439,7 @@ const LessonPlayerScreen: React.FC = () => {
             )}
 
             <Confetti active={celebrating} onDone={() => setCelebrating(false)} />
-        </SafeAreaView>
+        </ModalSafeAreaView>
     );
 };
 

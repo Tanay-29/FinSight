@@ -12,9 +12,8 @@
  * screen before it is confirmed.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, ScrollView, Modal, TextInput, Platform, KeyboardAvoidingView, Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, Modal, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeIn, FadeInDown, SlideInDown, useReducedMotion } from 'react-native-reanimated';

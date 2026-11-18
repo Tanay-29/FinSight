@@ -12,7 +12,7 @@
  */
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalSafeAreaView } from '../components/ModalSafeAreaView';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { X, Check, ChevronRight } from 'lucide-react-native';
@@ -59,7 +59,7 @@ const MoneyQuizScreen: React.FC = () => {
     if (done) {
         const gain = before ? score - before.score : null;
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
+            <ModalSafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
                 <ScrollView contentContainerStyle={{ padding: GUTTER, paddingBottom: 32 }}>
                     <Animated.View entering={reduced ? FadeIn.duration(160) : FadeIn.duration(300)} style={{ alignItems: 'center', paddingTop: 12 }}>
                         <Mascot mood={gain === null || gain > 0 ? 'celebrate' : 'happy'} size={120} />
@@ -104,12 +104,12 @@ const MoneyQuizScreen: React.FC = () => {
                     </PressableScale>
                 </ScrollView>
                 <Confetti active={!reduced && (gain === null || gain > 0)} count={36} />
-            </SafeAreaView>
+            </ModalSafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
+        <ModalSafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 12 }}>
                 <Pressable
                     onPress={() => { haptics.tap(); navigation.goBack(); }}
@@ -174,7 +174,7 @@ const MoneyQuizScreen: React.FC = () => {
                     <ChevronRight size={18} color={picked === undefined ? COLORS.text.tertiary : COLORS.brand.onAccent} />
                 </PressableScale>
             </View>
-        </SafeAreaView>
+        </ModalSafeAreaView>
     );
 };
 

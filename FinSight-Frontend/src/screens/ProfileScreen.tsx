@@ -5,7 +5,8 @@
  * writes an actual file, and deleting the account really deletes it.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, Switch, Alert, ActivityIndicator, Platform } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';

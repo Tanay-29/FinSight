@@ -8,7 +8,8 @@
  * system table cell does. Only used on iOS.
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Pressable } from './Pressable';
 import { ChevronRight } from 'lucide-react-native';
 import { COLORS, FACE, RADIUS } from '../theme/tokens';
 import * as haptics from '../utils/haptics';

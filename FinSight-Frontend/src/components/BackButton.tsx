@@ -7,7 +7,7 @@
  * that gesture.
  */
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable } from './Pressable';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, ChevronLeft } from 'lucide-react-native';
 import { COLORS, IS_IOS } from '../theme/tokens';

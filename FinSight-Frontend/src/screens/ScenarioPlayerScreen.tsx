@@ -10,7 +10,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalSafeAreaView } from '../components/ModalSafeAreaView';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown, SlideInRight, useReducedMotion } from 'react-native-reanimated';
 import { X, ChevronRight, Wallet, TrendingUp, CreditCard, Heart, Landmark, Lock } from 'lucide-react-native';
@@ -62,9 +62,9 @@ const ScenarioPlayerScreen: React.FC = () => {
 
     if (!scenario || !opened) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary, alignItems: 'center', justifyContent: 'center' }}>
+            <ModalSafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ ...TYPE.heading, color: COLORS.text.primary }}>That story is not here</Text>
-            </SafeAreaView>
+            </ModalSafeAreaView>
         );
     }
 
@@ -108,7 +108,7 @@ const ScenarioPlayerScreen: React.FC = () => {
     const monthsTotal = 12;
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
+        <ModalSafeAreaView style={{ flex: 1, backgroundColor: COLORS.surface.secondary }} edges={['top', 'bottom']}>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 10 }}>
                 <Pressable onPress={() => { haptics.tap(); navigation.goBack(); }} accessibilityRole="button" accessibilityLabel="Close" hitSlop={12}
                     style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface.primary, borderWidth: 1, borderColor: COLORS.border.default }}>
@@ -226,7 +226,7 @@ const ScenarioPlayerScreen: React.FC = () => {
                 </ScrollView>
             )}
             <Confetti active={celebrating} onDone={() => setCelebrating(false)} />
-        </SafeAreaView>
+        </ModalSafeAreaView>
     );
 };
 

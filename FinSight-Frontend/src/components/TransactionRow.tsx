@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
+import { Pressable } from './Pressable';
 import {
     Utensils, ShoppingBag, Car, ShoppingCart, Zap, Film,
     TrendingUp, Heart, BookOpen, Home, Package, DollarSign,

@@ -11,7 +11,8 @@
  * Only used on iOS. Android keeps its own bottom sheets and dialogs.
  */
 import React from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, ScrollView, Text, View } from 'react-native';
+import { Pressable } from './Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { COLORS, FACE, GUTTER } from '../theme/tokens';
