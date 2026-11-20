@@ -201,7 +201,7 @@ export const ProfileScreen: React.FC = () => {
     const handleAbout = () => {
         Alert.alert(
             'About FinSight',
-            `Version ${appVersion}\n\nA financial literacy and personal finance app for Indian students. FinSight is educational: it holds no money, moves no money and connects to no bank.`
+            `Version ${appVersion}\n\nLearn money basics, track what you spend, and see the real cost before you buy.`
         );
     };
 

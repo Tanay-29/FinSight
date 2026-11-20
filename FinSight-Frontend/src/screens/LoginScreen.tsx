@@ -476,9 +476,6 @@ const LoginScreen: React.FC = () => {
                                 )}
                             </PressableScale>
 
-                            <Text style={TYPE.caption} className="text-text-tertiary text-center mt-5">
-                                FinSight is educational. It holds no money and connects to no bank.
-                            </Text>
                         </Animated.View>
                 </Animated.View>
             </ScrollView>
